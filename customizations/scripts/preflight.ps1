@@ -20,7 +20,7 @@ try {
     $engine = Resolve-PatchStackPath -Path $EnginePath -MustExist
     $stack = Resolve-PatchStackPath -Path $StackPath -MustExist
 
-    Assert-GitRepository -Repository $engine
+    Assert-EngineGitRepository -Repository $engine
     Assert-GitRepository -Repository $stack
     Assert-NoGitOperation -Repository $engine
     if (-not $AllowDirty) {

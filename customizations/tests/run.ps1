@@ -1,5 +1,5 @@
 [CmdletBinding()]
-param()
+param([string]$TemporaryDirectory = [System.IO.Path]::GetTempPath())
 
 Set-StrictMode -Version 2.0
 $ErrorActionPreference = "Stop"
@@ -111,7 +111,8 @@ function Configure-TestIdentity {
     ))
 }
 
-$testRoot = Join-Path ([System.IO.Path]::GetTempPath()) (
+$temporaryBase = [System.IO.Path]::GetFullPath($TemporaryDirectory).TrimEnd("\")
+$testRoot = Join-Path $temporaryBase (
     "godot-patch-stack-tests-" + [guid]::NewGuid().ToString("N")
 )
 [void](New-Item -ItemType Directory -Path $testRoot)
@@ -141,23 +142,33 @@ try {
 
     Write-TestUtf8NoBom -Path (Join-Path $engine "engine.txt") -Content "personal core`n"
     [void](Invoke-TestGit -Repository $engine -Arguments @("add", "engine.txt"))
-    [void](Invoke-TestGit -Repository $engine -Arguments @(
-        "commit", "-m", "Core: Add personal behavior", "-m",
-        "Godot-Patch-Topic: core.alpha"
-    ))
+    $oldAuthorDate = $env:GIT_AUTHOR_DATE
+    $oldCommitterDate = $env:GIT_COMMITTER_DATE
+    $env:GIT_AUTHOR_DATE = "2020-01-02T03:04:05Z"
+    $env:GIT_COMMITTER_DATE = "2020-02-03T04:05:06Z"
+    try {
+        [void](Invoke-TestGit -Repository $engine -Arguments @(
+            "commit", "-m", "Core: Add personal behavior", "-m",
+            "Godot-Patch-Topic: core.alpha"
+        ))
 
-    Write-TestUtf8NoBom -Path (Join-Path $engine "editor.txt") -Content "personal editor`n"
-    [System.IO.File]::WriteAllBytes(
-        (Join-Path $engine "payload.bin"),
-        [byte[]](0, 1, 2, 10, 13, 128, 255)
-    )
-    [void](Invoke-TestGit -Repository $engine -Arguments @(
-        "add", "editor.txt", "payload.bin"
-    ))
-    [void](Invoke-TestGit -Repository $engine -Arguments @(
-        "commit", "-m", "Editor: Add personal behavior", "-m",
-        "Godot-Patch-Topic: editor.beta"
-    ))
+        Write-TestUtf8NoBom -Path (Join-Path $engine "editor.txt") -Content "personal editor`n"
+        [System.IO.File]::WriteAllBytes(
+            (Join-Path $engine "payload.bin"),
+            [byte[]](0, 1, 2, 10, 13, 128, 255)
+        )
+        [void](Invoke-TestGit -Repository $engine -Arguments @(
+            "add", "editor.txt", "payload.bin"
+        ))
+        [void](Invoke-TestGit -Repository $engine -Arguments @(
+            "commit", "-m", "Editor: Add personal behavior", "-m",
+            "Godot-Patch-Topic: editor.beta"
+        ))
+    }
+    finally {
+        $env:GIT_AUTHOR_DATE = $oldAuthorDate
+        $env:GIT_COMMITTER_DATE = $oldCommitterDate
+    }
 
     [void](Invoke-TestGit -Arguments @("init", "-b", "main", $stack))
     Configure-TestIdentity -Repository $stack
@@ -206,6 +217,66 @@ try {
         -Message "First topic order mismatch."
     Assert-TestEqual -Expected "editor.beta" -Actual ([string]$lock.patches[1].topic) `
         -Message "Second topic order mismatch."
+    Assert-TestTrue -Condition (Test-Path -LiteralPath (
+        Join-Path $stack ([string]$lock.historyBundle.file)
+    )) -Message "Incremental personal history bundle is missing."
+    $catalogOnly = Invoke-TestScript -Name "verify-stack.ps1" -Arguments @(
+        "-EnginePath", (Join-Path $testRoot "not-created"), "-StackPath", $stack, "-SkipBranchComparison"
+    )
+    Assert-TestEqual -Expected 0 -Actual $catalogOnly.ExitCode `
+        -Message "Standalone catalog validation unexpectedly required an engine checkout."
+    $bundlePath = Join-Path $stack ([string]$lock.historyBundle.file)
+    $bundleBytes = [System.IO.File]::ReadAllBytes($bundlePath)
+    $damagedBundle = [byte[]]$bundleBytes.Clone()
+    $damagedBundle[$damagedBundle.Length - 1] = $damagedBundle[$damagedBundle.Length - 1] -bxor 1
+    [System.IO.File]::WriteAllBytes($bundlePath, $damagedBundle)
+    $bundleDrift = Invoke-TestScript -Name "verify-stack.ps1" -Arguments @(
+        "-StackPath", $stack, "-SkipBranchComparison"
+    )
+    Assert-TestEqual -Expected 1 -Actual $bundleDrift.ExitCode `
+        -Message "Personal history bundle SHA-256 drift was not rejected."
+    [System.IO.File]::WriteAllBytes($bundlePath, $bundleBytes)
+
+    $bootstrapped = Join-Path $testRoot "bootstrapped"
+    $bootstrap = Invoke-TestScript -Name "initialize-engine.ps1" -Arguments @(
+        "-EnginePath", $bootstrapped, "-StackPath", $stack, "-UpstreamUrl", $upstream
+    )
+    Assert-TestEqual -Expected 0 -Actual $bootstrap.ExitCode -Message (
+        "Fresh initialization failed: $($bootstrap.Text)"
+    )
+    $bootstrapHead = @(Invoke-TestGit -Repository $bootstrapped -Arguments @("rev-parse", "HEAD"))[0]
+    Assert-TestEqual -Expected ([string]$lock.integration.commit) -Actual $bootstrapHead `
+        -Message "Initialization did not preserve the exact integration commit."
+    foreach ($reference in @("master", "origin/master")) {
+        $base = @(Invoke-TestGit -Repository $bootstrapped -Arguments @("rev-parse", $reference))[0]
+        Assert-TestEqual -Expected $initialBase -Actual $base -Message "Initialized mirror mismatch."
+    }
+    $bootstrapAgain = Invoke-TestScript -Name "initialize-engine.ps1" -Arguments @(
+        "-EnginePath", $bootstrapped, "-StackPath", $stack, "-UpstreamUrl", $upstream
+    )
+    Assert-TestEqual -Expected 0 -Actual $bootstrapAgain.ExitCode -Message (
+        "Repeated initialization failed: $($bootstrapAgain.Text)"
+    )
+    Write-TestUtf8NoBom -Path (Join-Path $bootstrapped "dirty.txt") -Content "keep me`n"
+    $dirtyBootstrap = Invoke-TestScript -Name "initialize-engine.ps1" -Arguments @(
+        "-EnginePath", $bootstrapped, "-StackPath", $stack, "-UpstreamUrl", $upstream
+    )
+    Assert-TestEqual -Expected 3 -Actual $dirtyBootstrap.ExitCode `
+        -Message "Initialization did not reject a dirty existing engine."
+    Assert-TestTrue -Condition (Test-Path -LiteralPath (Join-Path $bootstrapped "dirty.txt")) `
+        -Message "Initialization discarded existing work."
+    Remove-Item -LiteralPath (Join-Path $bootstrapped "dirty.txt")
+
+    $flatEngine = Join-Path $stack "flat-engine"
+    [void](New-Item -ItemType Directory -Path $flatEngine)
+    Write-TestUtf8NoBom -Path (Join-Path $flatEngine "keep.txt") -Content "preserve flat directory`n"
+    $flatBootstrap = Invoke-TestScript -Name "initialize-engine.ps1" -Arguments @(
+        "-EnginePath", $flatEngine, "-StackPath", $stack, "-UpstreamUrl", $upstream
+    )
+    Assert-TestEqual -Expected 3 -Actual $flatBootstrap.ExitCode `
+        -Message "A flat directory inherited the parent Git repository."
+    Assert-TestTrue -Condition (Test-Path -LiteralPath (Join-Path $flatEngine "keep.txt")) `
+        -Message "Initialization changed an existing flat directory."
 
     $verify = Invoke-TestScript -Name "verify-stack.ps1" -Arguments @(
         "-EnginePath", $engine, "-StackPath", $stack
@@ -232,6 +303,10 @@ try {
         -Algorithm SHA256).Hash
     Assert-TestEqual -Expected $expectedBinaryHash -Actual $actualBinaryHash `
         -Message "Binary patch content mismatch."
+    $replayedTree = @(Invoke-TestGit -Repository $replay -Arguments @("rev-parse", "HEAD^{tree}"))[0]
+    $sourceTree = @(Invoke-TestGit -Repository $engine -Arguments @("rev-parse", "HEAD^{tree}"))[0]
+    Assert-TestEqual -Expected $sourceTree -Actual $replayedTree `
+        -Message "Patch replay did not reconstruct the source tree."
 
     $dirty = Join-Path $testRoot "dirty"
     [void](Invoke-TestGit -Arguments @("clone", $upstream, $dirty))
@@ -299,34 +374,44 @@ try {
         -Message "Fixture upstream did not advance."
 
     $update = Invoke-TestScript -Name "update-engine.ps1" -Arguments @(
-        "-EnginePath", $engine, "-StackPath", $stack
+        "-EnginePath", $bootstrapped, "-StackPath", $stack
     )
     Assert-TestEqual -Expected 0 -Actual $update.ExitCode -Message (
         "Engine update failed: $($update.Text)"
     )
-    $updatedBaseLines = @(Invoke-TestGit -Repository $engine -Arguments @(
+    $updatedBaseLines = @(Invoke-TestGit -Repository $bootstrapped -Arguments @(
         "rev-parse", "origin/master"
     ))
     $updatedBase = $updatedBaseLines[0].Trim()
     Assert-TestEqual -Expected $newUpstream -Actual $updatedBase `
         -Message "Updated upstream ref mismatch."
-    $isAncestorRaw = @(& git -C $engine merge-base --is-ancestor origin/master HEAD 2>&1)
+    $mirror = @(Invoke-TestGit -Repository $bootstrapped -Arguments @("rev-parse", "master"))[0]
+    Assert-TestEqual -Expected $newUpstream -Actual $mirror -Message "Local pristine mirror did not advance."
+    $isAncestorRaw = @(& git -C $bootstrapped merge-base --is-ancestor origin/master HEAD 2>&1)
     $isAncestorExit = $LASTEXITCODE
     Assert-TestEqual -Expected 0 -Actual $isAncestorExit `
         -Message "personal/main was not rebased onto origin/master: $($isAncestorRaw -join ' ')"
 
     $finalVerify = Invoke-TestScript -Name "verify-stack.ps1" -Arguments @(
-        "-EnginePath", $engine, "-StackPath", $stack
+        "-EnginePath", $bootstrapped, "-StackPath", $stack
     )
     Assert-TestEqual -Expected 0 -Actual $finalVerify.ExitCode -Message (
         "Final verification failed: $($finalVerify.Text)"
     )
+    $afterUpdate = Invoke-TestScript -Name "initialize-engine.ps1" -Arguments @(
+        "-EnginePath", (Join-Path $testRoot "after-update"),
+        "-StackPath", $stack, "-UpstreamUrl", $upstream
+    )
+    Assert-TestEqual -Expected 0 -Actual $afterUpdate.ExitCode -Message (
+        "Initialization from the updated catalog failed: $($afterUpdate.Text)"
+    )
 
     Write-Output "PASS export: ordered text and binary patches"
+    Write-Output "PASS initialize: exact commit identity, repeat safety, independent repository boundary"
     Write-Output "PASS apply: exact-base git am --3way reconstruction"
     Write-Output "PASS safety: dirty worktree rejection"
     Write-Output "PASS conflict: preserved git am state and abort recovery"
-    Write-Output "PASS integrity: patch SHA-256 drift detection"
+    Write-Output "PASS integrity: patch and incremental bundle SHA-256 drift detection"
     Write-Output "PASS update: fetch + rebase + re-export + verification"
     Write-Output "All patch-stack integration tests passed."
     exit 0
@@ -336,7 +421,7 @@ catch {
     exit 1
 }
 finally {
-    $tempRoot = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath()).TrimEnd("\")
+    $tempRoot = $temporaryBase
     $resolvedTestRoot = [System.IO.Path]::GetFullPath($testRoot)
     $expectedPrefix = $tempRoot + "\godot-patch-stack-tests-"
     if ($resolvedTestRoot.StartsWith(

@@ -1,3 +1,4 @@
 # Preserve archived evidence and generated patch/catalog hashes byte-for-byte.
-# engine/.gitattributes retains the upstream engine's own EOL policy.
+# The independent engine checkout has its own upstream EOL policy.
 * -text
+*.bundle binary

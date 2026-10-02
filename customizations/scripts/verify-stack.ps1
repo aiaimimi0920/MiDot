@@ -17,10 +17,12 @@ if ([string]::IsNullOrWhiteSpace($StackPath)) {
 
 try {
     Assert-GitAvailable
-    $engine = Resolve-PatchStackPath -Path $EnginePath -MustExist
+    $engine = Resolve-PatchStackPath -Path $EnginePath
     $stack = Resolve-PatchStackPath -Path $StackPath -MustExist
-    Assert-GitRepository -Repository $engine
     Assert-GitRepository -Repository $stack
+    if (-not $SkipBranchComparison -or $RunTests) {
+        Assert-EngineGitRepository -Repository $engine
+    }
     $config = Get-PatchStackConfig -StackPath $stack
     $lock = Assert-PatchStackCatalog -StackPath $stack -Config $config
 

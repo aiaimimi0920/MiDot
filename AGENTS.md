@@ -1,5 +1,16 @@
 # Godot Engine Workspace Instructions
 
+## Repository ownership
+
+- MiDot is the patch/catalog and workspace orchestration repository. Never add
+  `engine/` source files or a gitlink to its index; `engine/` is an ignored,
+  independent checkout with the official Godot repository as `origin`.
+- Initialize a new clone with `customizations/scripts/initialize-engine.ps1`.
+  Do not replace or reset an existing engine checkout during initialization.
+- Keep the patch catalog, its incremental personal-history bundle, and the
+  locked upstream/integration commit identities consistent. MiDot's `origin`
+  is not the engine's upstream remote.
+
 ## Upstream synchronization
 
 - For `engine`, synchronize Godot upstream changes with rebase. Prefer the
@@ -28,8 +39,9 @@
 - Treat commits on `personal/main` as the source of truth. Each personal commit
   must represent one reviewable idea and include exactly one topic trailer
   declared by `customizations/stack.json`.
-- Treat `customizations/patches/`, `customizations/series.txt`, and
-  `customizations/stack.lock.json` as generated files. Fix commits rather than
+- Treat `customizations/patches/`, `customizations/series.txt`,
+  `customizations/stack.lock.json`, and `customizations/personal-history.bundle`
+  as generated files. Fix commits rather than
   editing generated patches manually.
 - After changing the personal commit stack, run
   `customizations/scripts/export-patches.ps1 -Replace`, followed by

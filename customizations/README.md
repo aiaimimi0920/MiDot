@@ -1,15 +1,17 @@
 # Godot Personal Patch Stack
 
-This repository stores the reproducible representation of personal Godot
-engine changes. It is intentionally separate from `../engine`, which remains a
-checkout of the official Godot repository.
+This catalog stores the reproducible representation of personal Godot engine
+changes. In MiDot it is tracked by the workspace repository; an existing local
+independent catalog checkout is also supported. `../engine` must always remain
+an independent checkout of the official Godot repository, not flattened source
+tracked by the workspace repository.
 
 ## Source of truth
 
 - `../engine` branch `master` is the pristine upstream mirror.
 - `../engine` branch `personal/main` is the authoritative ordered commit stack.
 - `stack.json` describes stable topics and their dependencies.
-- `patches/`, `series.txt`, and `stack.lock.json` are generated from
+- `patches/`, `series.txt`, `stack.lock.json`, and `personal-history.bundle` are generated from
   `personal/main`. Do not edit generated patches by hand.
 - Topic READMEs distinguish the historical legacy commits from the current
   consolidated source commit on `personal/main`.
@@ -31,6 +33,7 @@ they touch the same Godot source file.
 Run commands from this repository with Windows PowerShell 5.1 or newer:
 
 ```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\initialize-engine.ps1
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\preflight.ps1 -RequireIntegrationBranch
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\export-patches.ps1 -Replace
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify-stack.ps1
@@ -44,6 +47,12 @@ To reconstruct the stack on a clean branch at the lock file's upstream commit:
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\apply-patches.ps1 -EnginePath <path>
 ```
 
+`apply-patches.ps1` reconstructs source content using `git am`; its newly created
+committer dates do not preserve original commit IDs. `initialize-engine.ps1`
+instead fetches the official locked base and imports the incremental history
+bundle, preserving every `sourceCommit` and the integration HEAD. It never
+overwrites an existing checkout and always runs strict branch verification.
+
 `apply-patches.ps1` and `update-engine.ps1` stop on conflicts. They never reset,
 clean, skip, merge, or guess a resolution. Use `git am --abort` or
 `git rebase --abort` to return to the pre-operation state.
@@ -55,6 +64,10 @@ clean, skip, merge, or guess a resolution. Use `git am --abort` or
 - `series.txt`: authoritative application order.
 - `stack.lock.json`: exact upstream/head commits, source commit IDs, subjects,
   file paths, and SHA-256 values.
+- `personal-history.bundle`: personal commits after the locked official base,
+  with that base as a prerequisite; its SHA-256 is recorded in the lock file.
+  It does not duplicate the complete upstream repository and is regenerated
+  automatically after an upstream rebase. Empty stacks do not need a bundle.
 
 The exporter builds a complete staging catalog before replacing generated
 outputs. Existing outputs require the explicit `-Replace` switch.

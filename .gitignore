@@ -1,3 +1,7 @@
+# Independent upstream checkout and incomplete initialization attempts.
+/engine/
+/engine.initialize-*/
+
 # Current and archived compiled releases.
 /export/
 /export.stage-*/
@@ -9,8 +13,6 @@
 /.codex_tmp/
 /.tmp/mimi-stack-replay/
 /.validation/dynamic-theme-final/toolchain/
-/engine/graphify-out/
-/engine/core/graphify-out/
 
 # Generated caches. Keep historical source, probes, patches, and fixtures.
 **/.godot/

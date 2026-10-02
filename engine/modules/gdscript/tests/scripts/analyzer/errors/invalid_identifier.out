@@ -1,3 +1,0 @@
-GDTEST_ANALYZER_ERROR
->> ERROR at line 2: Identifier "GDScriptFunctionState" not declared in the current scope.
->> ERROR at line 3: Identifier "GDScriptNativeClass" not declared in the current scope.

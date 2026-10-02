@@ -11,7 +11,7 @@
                         "branch":  "personal/main",
                         "commit":  "38b6ddee72e16d9d646057ee6ba533c122afc47c"
                     },
-    "generatedAtUtc":  "2026-09-24T03:05:03.3937990Z",
+    "generatedAtUtc":  "2026-10-02T01:36:58.7802334Z",
     "sourceRepositoryWasShallow":  true,
     "patchCount":  56,
     "patches":  [
@@ -463,5 +463,9 @@
                         "file":  "patches/ui/dynamic-color-theme/0056-fix-theme-keep-editor-dynamic-metadata-available.patch",
                         "sha256":  "e16de2aee5f073ad08ef8b83f3ed46b568d6bfb518660c199692d7c179e0929a"
                     }
-                ]
+                ],
+    "historyBundle":  {
+                          "file":  "personal-history.bundle",
+                          "sha256":  "d5e00c7c7063383f53392b813e67af494aec24672c5a9d0e5af5a3e0ac49df80"
+                      }
 }

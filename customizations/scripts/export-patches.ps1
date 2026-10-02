@@ -21,7 +21,7 @@ try {
     Assert-GitAvailable
     $engine = Resolve-PatchStackPath -Path $EnginePath -MustExist
     $stack = Resolve-PatchStackPath -Path $StackPath -MustExist
-    Assert-GitRepository -Repository $engine
+    Assert-EngineGitRepository -Repository $engine
     Assert-GitRepository -Repository $stack
     Assert-NoGitOperation -Repository $engine
     Assert-CleanGitWorktree -Repository $engine
@@ -179,11 +179,21 @@ try {
         patchCount = $entries.Count
         patches = @($entries)
     }
+    if ($commits.Count -gt 0) {
+        $bundlePath = Join-Path $staging "personal-history.bundle"
+        [void](Invoke-GitChecked -Repository $engine -Arguments @(
+            "bundle", "create", $bundlePath, "$baseCommit..refs/heads/$branch"
+        ) -Description "Export incremental personal commit history")
+        $lock.historyBundle = [ordered]@{
+            file = "personal-history.bundle"
+            sha256 = Get-FileSha256 -Path $bundlePath
+        }
+    }
     $lockJson = $lock | ConvertTo-Json -Depth 8
     Write-Utf8NoBom -Path (Join-Path $staging "stack.lock.json") `
         -Content ($lockJson + "`n")
 
-    $outputs = @("patches", "series.txt", "stack.lock.json")
+    $outputs = @("patches", "series.txt", "stack.lock.json", "personal-history.bundle")
     $existing = @($outputs | Where-Object { Test-Path -LiteralPath (Join-Path $stack $_) })
     if ($existing.Count -gt 0 -and -not $Replace) {
         Throw-PatchStackError -Message (
@@ -202,7 +212,10 @@ try {
 
     try {
         foreach ($name in $outputs) {
-            Move-Item -LiteralPath (Join-Path $staging $name) -Destination (Join-Path $stack $name)
+            $generatedPath = Join-Path $staging $name
+            if (Test-Path -LiteralPath $generatedPath) {
+                Move-Item -LiteralPath $generatedPath -Destination (Join-Path $stack $name)
+            }
         }
     }
     catch {

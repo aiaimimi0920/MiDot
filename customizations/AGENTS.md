@@ -5,7 +5,8 @@
   representation.
 - Keep `stack.json` topic IDs and paths stable. Group by modification intent,
   record dependencies explicitly, and require a topic README before export.
-- Do not edit `patches/`, `series.txt`, or `stack.lock.json` manually. Change the
+- Do not edit `patches/`, `series.txt`, `stack.lock.json`, or
+  `personal-history.bundle` manually. Change the
   corresponding commit on `personal/main`, then run
   `scripts/export-patches.ps1 -Replace`.
 - Run `scripts/verify-stack.ps1` after any stack/configuration change and
@@ -16,3 +17,6 @@
   Preserve a stopped `git am`/rebase for explicit resolution, or abort it.
 - Keep all PowerShell compatible with Windows PowerShell 5.1 and write text as
   UTF-8 without BOM.
+- `../engine` must be an independent Git root, never a flattened directory in
+  the MiDot checkout. Initialization restores exact personal commits on a
+  fetched official base, without replacing an existing checkout.

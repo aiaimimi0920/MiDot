@@ -177,6 +177,23 @@ function Assert-GitRepository {
     }
 }
 
+function Assert-EngineGitRepository {
+    param([Parameter(Mandatory = $true)][string]$Repository)
+
+    Assert-GitRepository -Repository $Repository
+    $top = (Invoke-GitChecked -Repository $Repository -Arguments @(
+        "rev-parse", "--show-toplevel"
+    ) -Description "Resolve engine repository root").Text
+    $expected = [System.IO.Path]::GetFullPath($Repository).TrimEnd("\", "/")
+    $actual = [System.IO.Path]::GetFullPath($top).TrimEnd("\", "/")
+    if (-not $expected.Equals($actual, [System.StringComparison]::OrdinalIgnoreCase)) {
+        Throw-PatchStackError -Message (
+            "Engine must be an independent Git checkout rooted at '$expected', " +
+            "not a directory inside '$actual'."
+        ) -ExitCode 3
+    }
+}
+
 function Get-GitBranch {
     param(
         [Parameter(Mandatory = $true)]
@@ -190,6 +207,22 @@ function Get-GitBranch {
         Throw-PatchStackError -Message "Detached HEAD is not allowed: $Repository" -ExitCode 3
     }
     return $result.Text
+}
+
+function Assert-GitBranchNotCheckedOut {
+    param(
+        [Parameter(Mandatory = $true)][string]$Repository,
+        [Parameter(Mandatory = $true)][string]$Reference
+    )
+
+    $worktrees = Invoke-GitChecked -Repository $Repository -Arguments @(
+        "worktree", "list", "--porcelain"
+    ) -Description "Check upstream mirror worktree ownership"
+    if ($worktrees.Lines -ccontains "branch $Reference") {
+        Throw-PatchStackError -Message (
+            "Cannot advance '$Reference' while it is checked out in a worktree."
+        ) -ExitCode 3
+    }
 }
 
 function Get-GitDirectory {
@@ -501,6 +534,25 @@ function Get-PatchStackLock {
             "Unsupported stack.lock.json schemaVersion: $($lock.schemaVersion)"
         )
     }
+    if ($lock.PSObject.Properties.Name -contains "historyBundle") {
+        $history = $lock.historyBundle
+        foreach ($name in @("file", "sha256")) {
+            if ($history.PSObject.Properties.Name -notcontains $name) {
+                Throw-PatchStackError -Message "historyBundle is missing property: $name"
+            }
+        }
+        if ([string]$history.file -ne "personal-history.bundle") {
+            Throw-PatchStackError -Message "Unexpected personal history bundle path."
+        }
+        $bundlePath = Join-Path $StackPath ([string]$history.file)
+        if (-not (Test-Path -LiteralPath $bundlePath -PathType Leaf)) {
+            Throw-PatchStackError -Message "Personal history bundle is missing: $bundlePath"
+        }
+        if ((Get-FileSha256 -Path $bundlePath) -ne [string]$history.sha256) {
+            Throw-PatchStackError -Message "Personal history bundle SHA-256 mismatch."
+        }
+    }
+
     return $lock
 }
 

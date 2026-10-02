@@ -1,0 +1,6 @@
+# Generated patches and catalog hashes must survive Windows checkout unchanged.
+stack.json -text
+stack.lock.json -text
+series.txt -text
+patches/** -text
+*.bundle binary

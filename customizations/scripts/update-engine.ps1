@@ -18,7 +18,7 @@ try {
     Assert-GitAvailable
     $engine = Resolve-PatchStackPath -Path $EnginePath -MustExist
     $stack = Resolve-PatchStackPath -Path $StackPath -MustExist
-    Assert-GitRepository -Repository $engine
+    Assert-EngineGitRepository -Repository $engine
     Assert-GitRepository -Repository $stack
     Assert-NoGitOperation -Repository $engine
     Assert-CleanGitWorktree -Repository $engine
@@ -39,6 +39,14 @@ try {
             "Export and verify the current stack before updating upstream."
         ) -ExitCode 3
     }
+    $mirrorRef = "refs/heads/" + [string]$config.upstream.branch
+    $mirror = Resolve-GitCommit -Repository $engine -Reference $mirrorRef
+    if ($mirror -ne [string]$lock.upstream.commit) {
+        Throw-PatchStackError -Message (
+            "The local upstream mirror differs from the locked base; inspect it before updating."
+        ) -ExitCode 3
+    }
+    Assert-GitBranchNotCheckedOut -Repository $engine -Reference $mirrorRef
 
     $timestamp = [DateTime]::UtcNow.ToString("yyyyMMdd-HHmmss")
     $backupRef = "refs/patch-stack/backups/$timestamp-$($head.Substring(0, 12))"
@@ -81,6 +89,10 @@ try {
         )
         exit 5
     }
+    Assert-GitBranchNotCheckedOut -Repository $engine -Reference $mirrorRef
+    [void](Invoke-GitChecked -Repository $engine -Arguments @(
+        "update-ref", $mirrorRef, $upstreamCommit, $mirror
+    ) -Description "Advance the pristine local upstream mirror without overwriting unrelated changes")
 
     $powerShell = Join-Path $PSHOME "powershell.exe"
     if (-not (Test-Path -LiteralPath $powerShell -PathType Leaf)) {

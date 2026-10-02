@@ -1,36 +1,74 @@
 # MiDot
 
-本仓库以整个 Godot 工作区为版本控制根目录，保存定制引擎的完整源码、个人补丁栈、维护脚本和历史源码资料。`engine/` 与 `customizations/` 是普通版本控制目录，不是 Git submodule；克隆本仓库即可获得其中的文件，无需初始化子模块。
+MiDot 是 Godot 定制功能的**补丁与构建编排仓库**，不是一份压平后的 Godot fork。它保存功能主题、补丁、精确的个人提交栈和维护脚本；`engine/` 是单独从官方仓库建立的 Git checkout，根仓库不跟踪其中的源码。
 
-## 目录
+```text
+MiDot/                         Git origin: aiaimimi0920/MiDot
+├── customizations/            功能主题、补丁、锁文件及维护脚本
+├── archive/                   历史源码与追溯资料
+├── AGENTS.md                  工作区与上游维护约定
+├── engine/                    独立 Git 仓库，根仓库忽略
+│   ├── master                 锁定的官方上游镜像
+│   └── personal/main          官方基线 + 按主题组织的个人提交
+└── export/                    编译发布输出，根仓库忽略
+```
 
-- `engine/`：Godot 引擎源码及当前个人定制功能。构建方式、依赖和平台说明见 `engine/README.md` 与其中的构建脚本。
-- `customizations/`：个人补丁主题、生成的补丁文件、锁文件、验证与维护脚本。维护规则见 `customizations/README.md` 和各级 `AGENTS.md`。
-- `archive/`：历史源码 bundle、原始补丁、资产与追溯资料；历史编译发布包不纳入 Git。
-- `.validation/`、`.runtime/`、`.tmp/`：保留其中的维护与复现源码；日志、构建输出、缓存和重复的引擎回放工作区不纳入 Git。
-- `ENGINE_LOCATIONS.md`：已有本地引擎发布目录登记；其中绝对路径和历史发布记录仅适用于原工作环境。
-- `export/`：编译发布输出，已由根 `.gitignore` 排除。克隆后需要自行编译或另外获取二进制文件。
+## 新环境初始化
 
-## 初始源码来源
+在有 Git 和 Windows PowerShell 5.1 或更新版本的环境中执行：
 
-本仓库初始导入的是已有工作区的源码快照，没有改写原有个人补丁栈：
+```powershell
+git clone --depth 1 https://github.com/aiaimimi0920/MiDot.git
+Set-Location MiDot
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\customizations\scripts\initialize-engine.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\customizations\scripts\verify-stack.ps1
+```
 
-- Godot upstream base：`5ec4857b340b6284a18b49b2eda462bd250f219a`。
-- 本地 `engine/personal/main`：`38b6ddee72e16d9d646057ee6ba533c122afc47c`。
-- 本地 `customizations/main`：`bda4843`；准确的引擎来源和 56 个补丁记录见 `customizations/stack.lock.json`。
+初始化脚本会校验 catalog 的 SHA-256，从 `https://github.com/godotengine/godot.git` 获取锁定官方基线，创建独立的 `engine/.git`、官方 `origin`、`master` 和 `origin/master`，然后恢复精确的 `personal/main` 提交栈，并运行完整分支与提交身份校验。初始化不会默默选用不确定的最新版。
 
-本地原有 `engine/.git` 和 `customizations/.git` 保持不变，但 Git 元数据不会上传。新克隆只有 MiDot 根仓库的历史，不会自动拥有 Godot upstream 分支或 `personal/main` 的提交对象。
+`personal-history.bundle` 是导出器生成的**增量 Git 提交归档**：只包含锁定官方基线之后的个人提交及所需对象，官方基线是其前置条件。它不是完整 Godot 仓库备份。保留它是为了恢复原始 commit hash；普通 `git am` 使用新的 committer date，不能保证与锁文件中的提交身份相同。可阅读、可独立重放的功能补丁仍在 `customizations/patches/`。
 
-因此，直接在 MiDot 克隆中维护工作区文件与构建源码是可行的；需要执行依赖 Godot 分支历史的补丁导出、rebase 或上游更新时，应使用单独的 Godot upstream checkout，按 `customizations/README.md` 重建个人补丁栈并遵循各级 `AGENTS.md`。不要将 MiDot 根仓库的 `origin` 当作 Godot upstream 使用。
+重复初始化只校验已有引擎，不修改文件或 ref。已有目录不独立、工作区脏、分支或提交不匹配时会拒绝覆盖；新初始化失败时保留中间目录并报告位置，不会自动清空已有内容。
 
-仅校验已发布补丁目录与锁文件时，可在仓库根目录执行：
+`--depth 1` 用于避免下载 MiDot 首次误导入源码快照的旧历史；本次修正采用后续提交，没有强制改写已发布历史。
+
+## 更新 Godot 上游
+
+先确认引擎工作区干净，当前个人提交已经导出并通过校验，然后执行：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\customizations\scripts\update-engine.ps1
+```
+
+脚本建立安全引用，获取官方 `master`，将本地 `personal/main` rebase 到新基线，推进纯净的本地 `master`，重新生成补丁、增量提交归档及锁文件，最后校验。若浅仓库缺少 merge base，会停止并提示补充历史；不要用 merge 替代 rebase。
+
+遇到不兼容时按当前功能主题处理冲突，显式 `git rebase --continue` 或 `git rebase --abort`，不自动跳过补丁或猜测冲突。手工完成 rebase 后，重新执行导出和校验。新导出的 catalog 应作为一个整体提交到 MiDot，供其他环境恢复。
+
+## 修改定制功能
+
+源码修改发生在 `engine/personal/main`。每个个人提交代表一个可审查的功能意图，并包含 `stack.json` 声明的唯一 `Godot-Patch-Topic` trailer。然后执行：
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\customizations\scripts\export-patches.ps1 -Replace
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\customizations\scripts\verify-stack.ps1
+```
+
+不要直接编辑生成的 `patches/`、`series.txt`、`stack.lock.json` 或 `personal-history.bundle`。按改动主题执行相应功能验证，再构建引擎并发布到 `export/`。构建依赖和平台说明见初始化后 `engine/README.md` 及其中的构建脚本。
+
+只校验 catalog、不获取引擎时可以执行：
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\customizations\scripts\verify-stack.ps1 -SkipBranchComparison
 ```
 
-根 `.gitattributes` 保留补丁、锁文件和历史资料的原始字节，避免 Windows 换行转换破坏校验值；`engine/.gitattributes` 继续使用引擎自身的规则。
+## 本地资料与兼容性
+
+原工作环境已有的 `engine/.git`、`customizations/.git` 和发布文件保持独立，不通过根仓库上传 Git 元数据。新克隆中的 `customizations/` 由 MiDot 根仓库管理，不要求额外的子仓库。初始化和维护脚本同时支持这两种 catalog 布局。
+
+历史源码 bundle、补丁与复现项目保留；编译包、工具安装、日志、缓存和重复的临时源码 checkout 由 `.gitignore` 排除。`ENGINE_LOCATIONS.md` 中的绝对路径与旧发布记录是本地登记，不是新克隆后的默认入口。
+
+根 `.gitattributes` 保留生成补丁和锁文件的原始字节，避免 Windows 换行转换破坏校验值；独立的 `engine` 使用上游自身的属性规则。
 
 ## 许可证
 
-Godot 引擎许可证见 `engine/LICENSE.txt`，第三方版权与许可证见 `engine/COPYRIGHT.txt` 及相关源码目录。个人集成的外部项目来源、固定版本和许可证记录见 `customizations/audits/external_upstreams.md`；发布或使用时仍须遵守各组件的许可证。
+Godot 引擎许可证见初始化后的 `engine/LICENSE.txt`，第三方版权和许可证见 `engine/COPYRIGHT.txt` 及相关源码目录。个人集成项目的来源、固定版本和许可证记录见 `customizations/audits/external_upstreams.md`。使用和发布仍须遵守各组件许可证。
