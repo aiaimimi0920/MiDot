@@ -5,7 +5,6 @@ MiDot 是 Godot 定制功能的**补丁与构建编排仓库**，不是一份压
 ```text
 MiDot/                         Git origin: aiaimimi0920/MiDot
 ├── customizations/            功能主题、补丁、锁文件及维护脚本
-├── archive/                   精简的旧源码历史与追溯资料，不是构建输入
 ├── AGENTS.md                  工作区与上游维护约定
 ├── engine/                    独立 Git 仓库，根仓库忽略
 │   ├── master                 锁定的官方上游镜像
@@ -65,9 +64,9 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\customizations\scripts
 
 原工作环境已有的 `engine/.git`、`customizations/.git` 和发布文件保持独立，不通过根仓库上传 Git 元数据。新克隆中的 `customizations/` 由 MiDot 根仓库管理，不要求额外的子仓库。初始化和维护脚本同时支持这两种 catalog 布局。
 
-历史源码 bundle 和原始补丁保留在 `archive/`；正式测试源码位于 `customizations/tests/` 或对应主题的 `verification/`。目录归属与迁移位置见 [归档说明](archive/README.md) 和 [测试说明](customizations/tests/README.md)。
+工作区只维护当前版本需要的源码目录、补丁、配置和测试，不再保留 `archive/` 旧源码及编译归档。正式测试源码位于 `customizations/tests/` 或对应主题的 `verification/`，运行方法见 [测试说明](customizations/tests/README.md)。`customizations/personal-history.bundle` 是当前初始化流程恢复锁定个人提交栈的必要输入，仍须随补丁与锁文件一起维护。
 
-根 `.tmp/`、可再生成的 doctool 文档快照、旧测试副本、编译包、工具安装、日志和缓存由 `.gitignore` 排除。取消跟踪不等于删除本地文件，也不会清除已有 Git 历史。`ENGINE_LOCATIONS.md` 中的绝对路径与旧发布记录是本地登记，不是新克隆后的默认入口。
+根 `.tmp/`、已退役的 `archive/`、编译包、工具安装、日志和缓存由 `.gitignore` 排除。当前仓库不再包含 `archive/`，也不维护额外的历史备份；已有克隆中的本地遗留归档不是运行输入，可以删除。此次整理不改写已有 Git 历史。[本地引擎入口](ENGINE_LOCATIONS.md) 中的绝对路径仅用于本机，新克隆仍按上面的初始化流程建立引擎。
 
 根 `.gitattributes` 保留生成补丁和锁文件的原始字节，避免 Windows 换行转换破坏校验值；独立的 `engine` 使用上游自身的属性规则。
 

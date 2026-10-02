@@ -32,8 +32,8 @@ determined reverse engineer, or add authenticated encryption.
 - Historical implementation: `cd5d03d9ea340f42f9ef91941026d7874c423a83`.
 - Current legacy-branch implementation:
   `40f7ec6b34d6a3930facbbd3209956abf263a9b7`.
-- Binary-safe source patches are retained under
-  `../archive/legacy-godot-4-3-1-03e0afdd/raw-author-patches/`.
+- The current implementation is distributed through the maintained topic patches
+  and locked personal commit stack; no archived source checkout is required.
 
 ## Consolidated source
 

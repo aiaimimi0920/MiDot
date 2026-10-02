@@ -93,4 +93,4 @@ console 启动器、运行依赖、三个 PCK、验证脚本和全部最终日�
 
 每次验证均执行专属进程清理；最终审计匹配的 Godot 测试进程为 0。已有 graphify 缓存保留，并通过 `engine/.git/info/exclude` 作本地排除。源码工作区保持干净，`master` 未改变。
 
-构建验收当时的交付位置是 `engine/bin/`、源码提交栈和 `customizations/`；随后已完成独立发布步骤：日常 `export/` 已替换为 `a87330bfbdc5e03971cb76dae4d1ba248f2118fd` 构建，build manifest SHA-256 记录在 `export/publication-manifest.json`，发布回执同样位于该文件；被替换的旧 export 完整保留在 `archive/export-a87330bfb-20260923-contrast2`。本 topic 的 204 editor、311 runtime 和 C++ 检查只证明 color-dynamic 引擎功能，不延伸为其他项目的视觉验收。
+构建验收当时的交付位置是 `engine/bin/`、源码提交栈和 `customizations/`；随后已完成独立发布步骤：日常 `export/` 当时替换为 `a87330bfbdc5e03971cb76dae4d1ba248f2118fd` 构建，build manifest SHA-256 和发布回执当时记录在 `export/publication-manifest.json`。2026-10-02 工作区整理已停止维护旧 export 归档，历史回退目录不再是有效入口；当前入口见根目录的 `ENGINE_LOCATIONS.md`，本记录不代表当前发布身份。本 topic 的 204 editor、311 runtime 和 C++ 检查只证明 color-dynamic 引擎功能，不延伸为其他项目的视觉验收。

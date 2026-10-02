@@ -2,11 +2,12 @@
 /engine/
 /engine.initialize-*/
 
-# Current and archived compiled releases.
+# Local compiled releases.
 /export/
 /export.stage-*/
-/archive/export-*/
-/archive/engine-color-dynamic-*/
+
+# Retired archives are not part of the maintained workspace.
+/archive/
 
 # Local tool installations and temporary workspaces.
 /.tools/
@@ -14,17 +15,7 @@
 /.tmp/
 /.validation/dynamic-theme-final/toolchain/
 
-# Reproducible documentation snapshots and superseded fixture locations.
-# Maintained fixture sources live in customizations/tests or topic verification/.
-/archive/analysis/color-doc*/
-/archive/verification/*-doctool*/
-/archive/verification/gdscript-helper-smoke/
-/archive/verification/gif-smoke/
-/archive/verification/process-smoke/
-/archive/verification/spine-smoke/
-/archive/verification/spout-smoke/
-
-# Generated caches. Keep historical source, probes, patches, and fixtures.
+# Generated caches. Maintained tests live in customizations/.
 **/.godot/
 **/__pycache__/
 *.pyc
@@ -43,4 +34,3 @@
 /.runtime/**/*.dll
 /.runtime/**/*.pck
 /.runtime/**/*.pdb
-/archive/verification/**/*.log
