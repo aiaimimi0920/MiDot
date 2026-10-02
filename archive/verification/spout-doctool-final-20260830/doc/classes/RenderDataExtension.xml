@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RenderDataExtension" inherits="RenderData" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="_get_camera_attributes" qualifiers="virtual const">
+			<return type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="_get_environment" qualifiers="virtual const">
+			<return type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="_get_render_scene_buffers" qualifiers="virtual const">
+			<return type="RenderSceneBuffers" />
+			<description>
+			</description>
+		</method>
+		<method name="_get_render_scene_data" qualifiers="virtual const">
+			<return type="RenderSceneData" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>

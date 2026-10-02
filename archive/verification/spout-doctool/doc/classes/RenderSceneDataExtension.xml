@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RenderSceneDataExtension" inherits="RenderSceneData" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="_get_cam_projection" qualifiers="virtual const">
+			<return type="Projection" />
+			<description>
+			</description>
+		</method>
+		<method name="_get_cam_transform" qualifiers="virtual const">
+			<return type="Transform3D" />
+			<description>
+			</description>
+		</method>
+		<method name="_get_uniform_buffer" qualifiers="virtual const">
+			<return type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="_get_view_count" qualifiers="virtual const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="_get_view_eye_offset" qualifiers="virtual const">
+			<return type="Vector3" />
+			<param index="0" name="view" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="_get_view_projection" qualifiers="virtual const">
+			<return type="Projection" />
+			<param index="0" name="view" type="int" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>

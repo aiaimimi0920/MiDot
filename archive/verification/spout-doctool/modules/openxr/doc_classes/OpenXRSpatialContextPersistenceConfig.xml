@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="OpenXRSpatialContextPersistenceConfig" inherits="OpenXRStructureBase" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add_persistence_context">
+			<return type="void" />
+			<param index="0" name="persistence_context" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="get_persistence_contexts" qualifiers="const">
+			<return type="Array" />
+			<description>
+			</description>
+		</method>
+		<method name="remove_persistence_context">
+			<return type="void" />
+			<param index="0" name="persistence_context" type="RID" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>

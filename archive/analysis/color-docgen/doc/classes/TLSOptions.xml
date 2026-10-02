@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TLSOptions" inherits="RefCounted" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="client" qualifiers="static">
+			<return type="TLSOptions" />
+			<param index="0" name="trusted_chain" type="X509Certificate" default="null" />
+			<param index="1" name="common_name_override" type="String" default="&quot;&quot;" />
+			<description>
+			</description>
+		</method>
+		<method name="client_unsafe" qualifiers="static">
+			<return type="TLSOptions" />
+			<param index="0" name="trusted_chain" type="X509Certificate" default="null" />
+			<description>
+			</description>
+		</method>
+		<method name="get_common_name_override" qualifiers="const">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="get_own_certificate" qualifiers="const">
+			<return type="X509Certificate" />
+			<description>
+			</description>
+		</method>
+		<method name="get_private_key" qualifiers="const">
+			<return type="CryptoKey" />
+			<description>
+			</description>
+		</method>
+		<method name="get_trusted_ca_chain" qualifiers="const">
+			<return type="X509Certificate" />
+			<description>
+			</description>
+		</method>
+		<method name="is_server" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="is_unsafe_client" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="server" qualifiers="static">
+			<return type="TLSOptions" />
+			<param index="0" name="key" type="CryptoKey" />
+			<param index="1" name="certificate" type="X509Certificate" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>

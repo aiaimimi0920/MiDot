@@ -1,0 +1,369 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ColorScheme" inherits="Resource" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Generates a semantic color palette from a source color or texture.
+	</brief_description>
+	<description>
+		Generates light or dark semantic colors from [member source_color] or the representative color of [member source_texture]. Colors can be requested by [enum ColorRole] with [method get_color], or through the role-specific getter methods.
+		The generated palette updates synchronously when a source, [member dark], or [member contrast_level] changes. The new colors are available before the setter returns and before [signal updated_color_scheme] and [signal Resource.changed] are emitted. Consumers may process their own theme notifications later.
+		[Theme], [Control], [Window], [ColorRect], and dynamic [StyleBox] properties can use this resource to recolor an interface while retaining static fallback colors.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_background">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_BACKGROUND] color.
+			</description>
+		</method>
+		<method name="get_color">
+			<return type="Color" />
+			<param index="0" name="color_role" type="int" enum="ColorRole" />
+			<description>
+				Returns the generated color for [param color_role]. [constant @GlobalScope.COLOR_ROLE_STATIC] returns the source color used by the generated scheme. Invalid role values report an error and return that same source color.
+			</description>
+		</method>
+		<method name="get_error">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_ERROR] color.
+			</description>
+		</method>
+		<method name="get_error_container">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_ERROR_CONTAINER] color.
+			</description>
+		</method>
+		<method name="get_inverse_on_surface">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_INVERSE_ON_SURFACE] color.
+			</description>
+		</method>
+		<method name="get_inverse_primary">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_INVERSE_PRIMARY] color.
+			</description>
+		</method>
+		<method name="get_inverse_surface">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_INVERSE_SURFACE] color.
+			</description>
+		</method>
+		<method name="get_neutral_palette_key_color">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_NEUTRAL_PALETTE_KEY] color.
+			</description>
+		</method>
+		<method name="get_neutral_variant_palette_key_color">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_NEUTRAL_VARIANT_PALETTE_KEY] color.
+			</description>
+		</method>
+		<method name="get_on_background">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_ON_BACKGROUND] color.
+			</description>
+		</method>
+		<method name="get_on_error">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_ON_ERROR] color.
+			</description>
+		</method>
+		<method name="get_on_error_container">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_ON_ERROR_CONTAINER] color.
+			</description>
+		</method>
+		<method name="get_on_primary">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_ON_PRIMARY] color.
+			</description>
+		</method>
+		<method name="get_on_primary_container">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_ON_PRIMARY_CONTAINER] color.
+			</description>
+		</method>
+		<method name="get_on_primary_fixed">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_ON_PRIMARY_FIXED] color.
+			</description>
+		</method>
+		<method name="get_on_primary_fixed_variant">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_ON_PRIMARY_FIXED_VARIANT] color.
+			</description>
+		</method>
+		<method name="get_on_secondary">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_ON_SECONDARY] color.
+			</description>
+		</method>
+		<method name="get_on_secondary_container">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_ON_SECONDARY_CONTAINER] color.
+			</description>
+		</method>
+		<method name="get_on_secondary_fixed">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_ON_SECONDARY_FIXED] color.
+			</description>
+		</method>
+		<method name="get_on_secondary_fixed_variant">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_ON_SECONDARY_FIXED_VARIANT] color.
+			</description>
+		</method>
+		<method name="get_on_surface">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_ON_SURFACE] color.
+			</description>
+		</method>
+		<method name="get_on_surface_variant">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_ON_SURFACE_VARIANT] color.
+			</description>
+		</method>
+		<method name="get_on_tertiary">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_ON_TERTIARY] color.
+			</description>
+		</method>
+		<method name="get_on_tertiary_container">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_ON_TERTIARY_CONTAINER] color.
+			</description>
+		</method>
+		<method name="get_on_tertiary_fixed">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_ON_TERTIARY_FIXED] color.
+			</description>
+		</method>
+		<method name="get_on_tertiary_fixed_variant">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_ON_TERTIARY_FIXED_VARIANT] color.
+			</description>
+		</method>
+		<method name="get_outline">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_OUTLINE] color.
+			</description>
+		</method>
+		<method name="get_outline_variant">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_OUTLINE_VARIANT] color.
+			</description>
+		</method>
+		<method name="get_primary">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_PRIMARY] color.
+			</description>
+		</method>
+		<method name="get_primary_container">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_PRIMARY_CONTAINER] color.
+			</description>
+		</method>
+		<method name="get_primary_fixed">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_PRIMARY_FIXED] color.
+			</description>
+		</method>
+		<method name="get_primary_fixed_dim">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_PRIMARY_FIXED_DIM] color.
+			</description>
+		</method>
+		<method name="get_primary_palette_key_color">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_PRIMARY_PALETTE_KEY] color.
+			</description>
+		</method>
+		<method name="get_scrim">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_SCRIM] color.
+			</description>
+		</method>
+		<method name="get_secondary">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_SECONDARY] color.
+			</description>
+		</method>
+		<method name="get_secondary_container">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_SECONDARY_CONTAINER] color.
+			</description>
+		</method>
+		<method name="get_secondary_fixed">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_SECONDARY_FIXED] color.
+			</description>
+		</method>
+		<method name="get_secondary_fixed_dim">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_SECONDARY_FIXED_DIM] color.
+			</description>
+		</method>
+		<method name="get_secondary_palette_key_color">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_SECONDARY_PALETTE_KEY] color.
+			</description>
+		</method>
+		<method name="get_shadow">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_SHADOW] color.
+			</description>
+		</method>
+		<method name="get_surface">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_SURFACE] color.
+			</description>
+		</method>
+		<method name="get_surface_bright">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_SURFACE_BRIGHT] color.
+			</description>
+		</method>
+		<method name="get_surface_container">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_SURFACE_CONTAINER] color.
+			</description>
+		</method>
+		<method name="get_surface_container_high">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_SURFACE_CONTAINER_HIGH] color.
+			</description>
+		</method>
+		<method name="get_surface_container_highest">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_SURFACE_CONTAINER_HIGHEST] color.
+			</description>
+		</method>
+		<method name="get_surface_container_low">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_SURFACE_CONTAINER_LOW] color.
+			</description>
+		</method>
+		<method name="get_surface_container_lowest">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_SURFACE_CONTAINER_LOWEST] color.
+			</description>
+		</method>
+		<method name="get_surface_dim">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_SURFACE_DIM] color.
+			</description>
+		</method>
+		<method name="get_surface_tint">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_SURFACE_TINT] color.
+			</description>
+		</method>
+		<method name="get_surface_variant">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_SURFACE_VARIANT] color.
+			</description>
+		</method>
+		<method name="get_tertiary">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_TERTIARY] color.
+			</description>
+		</method>
+		<method name="get_tertiary_container">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_TERTIARY_CONTAINER] color.
+			</description>
+		</method>
+		<method name="get_tertiary_fixed">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_TERTIARY_FIXED] color.
+			</description>
+		</method>
+		<method name="get_tertiary_fixed_dim">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_TERTIARY_FIXED_DIM] color.
+			</description>
+		</method>
+		<method name="get_tertiary_palette_key_color">
+			<return type="Color" />
+			<description>
+				Returns the [constant @GlobalScope.COLOR_ROLE_TERTIARY_PALETTE_KEY] color.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="contrast_level" type="float" setter="set_contrast_level" getter="get_contrast_level" default="0.0">
+			Adjusts contrast across the generated palette. Finite values are clamped to [code]-1.0[/code] through [code]1.0[/code], where negative values reduce contrast and positive values increase it. Assigning NaN or infinity reports an error and leaves the current value and palette unchanged.
+		</member>
+		<member name="dark" type="bool" setter="set_dark" getter="is_dark" default="false">
+			If [code]true[/code], generates the dark variant of the color scheme; otherwise generates the light variant.
+		</member>
+		<member name="source_color" type="Color" setter="set_source_color" getter="get_source_color" default="Color(0.40392157, 0.3137255, 0.6431373, 1)">
+			The source color used to generate the palette. Assigning this property clears [member source_texture] and disconnects its change notifications. All components must be finite; an invalid assignment reports an error and leaves both the source and palette unchanged.
+		</member>
+		<member name="source_texture" type="Texture2D" setter="set_source_texture" getter="get_source_texture">
+			An optional texture whose representative color is used to generate the palette. Selecting a texture resets [member source_color] to opaque black. Its [signal Resource.changed] signal triggers synchronous extraction and palette regeneration, including when the same texture resource changes in place. Replacing or clearing the texture disconnects the old source.
+			The extracted seed is cached while the texture is unchanged, so updating [member dark] or [member contrast_level] does not read or quantize the image again.
+			Empty, unreadable, or undecompressible images report a warning and use a black seed. A readable image with no suitable candidate, including a fully transparent image, uses the Material Color Utilities fallback [code]#4285f4[/code]. Clearing an active texture also leaves a black seed.
+		</member>
+	</members>
+	<signals>
+		<signal name="updated_color_scheme">
+			<description>
+				Emitted synchronously after the generated palette is recomputed because a source or generation setting changed. This includes changes signaled by [member source_texture]. Unchanged assignments and rejected non-finite values do not emit this signal.
+			</description>
+		</signal>
+	</signals>
+</class>

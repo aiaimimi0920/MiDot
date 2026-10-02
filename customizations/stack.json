@@ -1,0 +1,384 @@
+{
+  "$schema": "./stack.schema.json",
+  "schemaVersion": 1,
+  "upstream": {
+    "remote": "origin",
+    "branch": "master"
+  },
+  "integrationBranch": "personal/main",
+  "commitTopicTrailer": "Godot-Patch-Topic",
+  "topics": [
+    {
+      "id": "runtime.process-api",
+      "path": "runtime/process-api",
+      "description": "Expose a scriptable asynchronous child-process API backed by platform implementations.",
+      "dependsOn": [],
+      "verification": [
+        {
+          "file": "powershell.exe",
+          "arguments": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "..\\customizations\\scripts\\verify-topic.ps1", "-Topic", "runtime.process-api"]
+        }
+      ]
+    },
+    {
+      "id": "scripting.gdscript-helper",
+      "path": "scripting/gdscript-helper",
+      "description": "Expose GDScript validation, completion, and symbol lookup helpers to scripts.",
+      "dependsOn": [],
+      "verification": [
+        {
+          "file": "powershell.exe",
+          "arguments": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "..\\customizations\\scripts\\verify-topic.ps1", "-Topic", "scripting.gdscript-helper"]
+        }
+      ]
+    },
+    {
+      "id": "media.gif-support",
+      "path": "media/gif-support",
+      "description": "Add GIF frame loading, saving, and editor import support through ImageFrames.",
+      "dependsOn": [],
+      "verification": [
+        {
+          "file": "powershell.exe",
+          "arguments": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "..\\customizations\\scripts\\verify-topic.ps1", "-Topic", "media.gif-support"]
+        }
+      ]
+    },
+    {
+      "id": "media.spout",
+      "path": "media/spout",
+      "description": "Integrate the Windows Spout texture-sharing runtime as a Godot module.",
+      "dependsOn": [],
+      "verification": [
+        {
+          "file": "powershell.exe",
+          "arguments": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "..\\customizations\\scripts\\verify-topic.ps1", "-Topic", "media.spout"]
+        }
+      ]
+    },
+    {
+      "id": "animation.spine-runtime",
+      "path": "animation/spine-runtime",
+      "description": "Integrate Spine Runtime resources, animation objects, rendering, and editor support.",
+      "dependsOn": [],
+      "verification": [
+        {
+          "file": "powershell.exe",
+          "arguments": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "..\\customizations\\scripts\\verify-topic.ps1", "-Topic", "animation.spine-runtime"]
+        }
+      ]
+    },
+    {
+      "id": "ui.dynamic-color-theme",
+      "path": "ui/dynamic-color-theme",
+      "description": "Add Material-derived ColorScheme and ColorRole support throughout Godot themes and controls.",
+      "dependsOn": [],
+      "verification": [
+        {
+          "file": "powershell.exe",
+          "arguments": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "..\\customizations\\scripts\\verify-topic.ps1", "-Topic", "ui.dynamic-color-theme"]
+        }
+      ]
+    },
+    {
+      "id": "branding.windows-icons",
+      "path": "branding/windows-icons",
+      "description": "Use the personal Windows editor and console executable icons.",
+      "dependsOn": [],
+      "verification": [
+        {
+          "file": "powershell.exe",
+          "arguments": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "..\\customizations\\scripts\\verify-topic.ps1", "-Topic", "branding.windows-icons"]
+        }
+      ]
+    },
+    {
+      "id": "ui.texture-button-hit-test-api",
+      "path": "ui/texture-button-hit-test-api",
+      "description": "Expose TextureButton's click-mask-aware hit test to scripts.",
+      "dependsOn": [],
+      "verification": [
+        {
+          "file": "powershell.exe",
+          "arguments": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "..\\customizations\\scripts\\verify-topic.ps1", "-Topic", "ui.texture-button-hit-test-api"]
+        }
+      ]
+    },
+    {
+      "id": "security.encrypted-key-reversal",
+      "path": "security/encrypted-key-reversal",
+      "description": "Reverse encrypted-file key bytes to make custom exports incompatible with stock Godot key ordering.",
+      "dependsOn": [],
+      "verification": [
+        {
+          "file": "powershell.exe",
+          "arguments": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "..\\customizations\\scripts\\verify-topic.ps1", "-Topic", "security.encrypted-key-reversal"]
+        }
+      ]
+    },
+    {
+      "id": "scripting.script-documentation-api",
+      "path": "scripting/script-documentation-api",
+      "description": "Expose structured Script documentation records through a script-callable compatibility API.",
+      "dependsOn": [],
+      "verification": [
+        {
+          "file": "powershell.exe",
+          "arguments": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "..\\customizations\\scripts\\verify-topic.ps1", "-Topic", "scripting.script-documentation-api"]
+        }
+      ]
+    },
+    {
+      "id": "media.gif-streaming-exporter",
+      "path": "media/gif-streaming-exporter",
+      "description": "Add a stateful legacy-compatible GifExporter API with quantization, dithering, transparency compositing, and loop control.",
+      "dependsOn": ["media.gif-support"],
+      "verification": [
+        {
+          "file": "powershell.exe",
+          "arguments": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "..\\customizations\\scripts\\verify-topic.ps1", "-Topic", "media.gif-streaming-exporter"]
+        }
+      ]
+    },
+    {
+      "id": "branding.main-icon",
+      "path": "branding/main-icon",
+      "description": "Use the personal PNG artwork for Godot's main logo and generated application icon.",
+      "dependsOn": [],
+      "verification": [
+        {
+          "file": "powershell.exe",
+          "arguments": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "..\\customizations\\scripts\\verify-topic.ps1", "-Topic", "branding.main-icon"]
+        }
+      ]
+    },
+    {
+      "id": "build.profiles.fortune-wheel",
+      "path": "build/profiles/fortune-wheel",
+      "description": "Provide maintained Web and Windows export-template build profiles for the Fortune Wheel project.",
+      "dependsOn": [],
+      "verification": [
+        {
+          "file": "powershell.exe",
+          "arguments": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "..\\customizations\\scripts\\verify-topic.ps1", "-Topic", "build.profiles.fortune-wheel"]
+        }
+      ]
+    },
+    {
+      "id": "ui.color-role-transform",
+      "path": "ui/color-role-transform",
+      "description": "Resolve semantic Material colors through reusable, composable transformation pipelines.",
+      "dependsOn": ["ui.dynamic-color-theme"],
+      "verification": [
+        {
+          "file": "powershell.exe",
+          "arguments": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "..\\customizations\\scripts\\verify-topic.ps1", "-Topic", "ui.color-role-transform"]
+        }
+      ]
+    },
+    {
+      "id": "ui.button-state-layers",
+      "path": "ui/button-state-layers",
+      "description": "Add optional Material-style focus, hover, and pressed overlay layers to Button.",
+      "dependsOn": [],
+      "verification": [
+        {
+          "file": "powershell.exe",
+          "arguments": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "..\\customizations\\scripts\\verify-topic.ps1", "-Topic", "ui.button-state-layers"]
+        }
+      ]
+    },
+    {
+      "id": "ui.stylebox-elevation",
+      "path": "ui/stylebox-elevation",
+      "description": "Add opt-in Material elevation shadow presets to StyleBoxFlat.",
+      "dependsOn": [],
+      "verification": [
+        {
+          "file": "powershell.exe",
+          "arguments": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "..\\customizations\\scripts\\verify-topic.ps1", "-Topic", "ui.stylebox-elevation"]
+        }
+      ]
+    },
+    {
+      "id": "ui.texture-button-state-text",
+      "path": "ui/texture-button-state-text",
+      "description": "Allow TextureButton states to fall back to translated text or icon-font glyphs.",
+      "dependsOn": ["ui.dynamic-color-theme"],
+      "verification": [
+        {
+          "file": "powershell.exe",
+          "arguments": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "..\\customizations\\scripts\\verify-topic.ps1", "-Topic", "ui.texture-button-state-text"]
+        }
+      ]
+    },
+    {
+      "id": "ui.theme-string-items",
+      "path": "ui/theme-string-items",
+      "description": "Add serializable string items and local string overrides to Godot themes.",
+      "dependsOn": ["ui.dynamic-color-theme"],
+      "verification": [
+        {
+          "file": "powershell.exe",
+          "arguments": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "..\\customizations\\scripts\\verify-topic.ps1", "-Topic", "ui.theme-string-items"]
+        }
+      ]
+    },
+    {
+      "id": "ui.button-text-icon",
+      "path": "ui/button-text-icon",
+      "description": "Allow Button to use translated text glyphs as themeable fallback icons.",
+      "dependsOn": ["ui.theme-string-items"],
+      "verification": [
+        {
+          "file": "powershell.exe",
+          "arguments": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "..\\customizations\\scripts\\verify-topic.ps1", "-Topic", "ui.button-text-icon"]
+        }
+      ]
+    },
+    {
+      "id": "ui.custom-icon-font",
+      "path": "ui/custom-icon-font",
+      "description": "Load an optional project-wide icon font and expose it as the default theme glyph font.",
+      "dependsOn": ["ui.button-text-icon", "ui.texture-button-state-text"],
+      "verification": [
+        {
+          "file": "powershell.exe",
+          "arguments": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "..\\customizations\\scripts\\verify-topic.ps1", "-Topic", "ui.custom-icon-font"]
+        }
+      ]
+    },
+    {
+      "id": "ui.checkbox-state-text",
+      "path": "ui/checkbox-state-text",
+      "description": "Allow CheckBox and CheckButton states to use translated icon-font glyphs with texture fallback.",
+      "dependsOn": ["ui.custom-icon-font", "ui.dynamic-color-theme"],
+      "verification": [
+        {
+          "file": "powershell.exe",
+          "arguments": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "..\\customizations\\scripts\\verify-topic.ps1", "-Topic", "ui.checkbox-state-text"]
+        }
+      ]
+    },
+    {
+      "id": "runtime.texture-streaming-init-order",
+      "path": "runtime/texture-streaming-init-order",
+      "description": "Register texture-streaming project settings before Forward renderer construction.",
+      "dependsOn": [],
+      "verification": [
+        {
+          "file": "powershell.exe",
+          "arguments": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "..\\customizations\\scripts\\verify-topic.ps1", "-Topic", "runtime.texture-streaming-init-order"]
+        }
+      ]
+    },
+    {
+      "id": "editor.headless-export-teardown",
+      "path": "editor/headless-export-teardown",
+      "description": "Treat a destroyed editor singleton as command-line mode so deferred filesystem work stops during headless export teardown.",
+      "dependsOn": [],
+      "verification": [
+        {
+          "file": "powershell.exe",
+          "arguments": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "..\\customizations\\scripts\\verify-topic.ps1", "-Topic", "editor.headless-export-teardown"]
+        }
+      ]
+    },
+    {
+      "id": "editor.legacy-main-screen-dock-cleanup",
+      "path": "editor/legacy-main-screen-dock-cleanup",
+      "description": "Release compatibility-owned main-screen docks and clear stale plugin metadata during editor plugin removal.",
+      "dependsOn": [],
+      "verification": [
+        {
+          "file": "powershell.exe",
+          "arguments": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "..\\customizations\\scripts\\verify-topic.ps1", "-Topic", "editor.legacy-main-screen-dock-cleanup"]
+        }
+      ]
+    },
+    {
+      "id": "geometry.triangle-mesh-refit",
+      "path": "geometry/triangle-mesh-refit",
+      "description": "Expose opt-in face-position refitting with preserved partition, independent snapped corners and transactional input rejection.",
+      "dependsOn": [],
+      "verification": [
+        {
+          "file": "powershell.exe",
+          "arguments": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "..\\customizations\\scripts\\verify-topic.ps1", "-Topic", "geometry.triangle-mesh-refit"]
+        }
+      ]
+    },
+    {
+      "id": "geometry.triangle-mesh-build",
+      "path": "geometry/triangle-mesh-build",
+      "description": "Bound full-binary BVH scratch storage and reserve the triangle vertex-welding map without changing query semantics.",
+      "dependsOn": [],
+      "verification": [
+        {
+          "file": "powershell.exe",
+          "arguments": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "..\\customizations\\scripts\\verify-topic.ps1", "-Topic", "geometry.triangle-mesh-build"]
+        }
+      ]
+    },
+    {
+      "id": "geometry.surface-decode",
+      "path": "geometry/surface-decode",
+      "description": "Decode only vertex, color, skin and index arrays for CPU geometry consumers without allocating unused surface attributes.",
+      "dependsOn": [],
+      "verification": [
+        {
+          "file": "powershell.exe",
+          "arguments": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "..\\customizations\\scripts\\verify-topic.ps1", "-Topic", "geometry.surface-decode"]
+        }
+      ]
+    },
+    {
+      "id": "rendering.unjittered-projection",
+      "path": "rendering/unjittered-projection",
+      "description": "Expose exact pre-jitter camera projections to Forward+ vertex and fragment shaders with per-eye selection and capability gating.",
+      "dependsOn": [],
+      "verification": [
+        {
+          "file": "powershell.exe",
+          "arguments": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "..\\customizations\\scripts\\verify-topic.ps1", "-Topic", "rendering.unjittered-projection"]
+        }
+      ]
+    },
+    {
+      "id": "rendering.viewport-parent-order",
+      "path": "rendering/viewport-parent-order",
+      "description": "Invalidate cached child-before-parent viewport draw order when an active viewport changes parent.",
+      "dependsOn": [],
+      "verification": [
+        {
+          "file": "powershell.exe",
+          "arguments": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "..\\customizations\\scripts\\verify-topic.ps1", "-Topic", "rendering.viewport-parent-order"]
+        }
+      ]
+    },
+    {
+      "id": "rendering.ssr-reprojection-boundary",
+      "path": "rendering/ssr-reprojection-boundary",
+      "description": "Reject SSR history behind the previous camera and outside both image axes while preserving in-image fading.",
+      "dependsOn": [],
+      "verification": [
+        {
+          "file": "powershell.exe",
+          "arguments": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "..\\customizations\\scripts\\verify-topic.ps1", "-Topic", "rendering.ssr-reprojection-boundary"]
+        }
+      ]
+    },
+    {
+      "id": "rendering.material-post-light",
+      "path": "rendering/material-post-light",
+      "description": "Add a Forward+ material-local HDR stage and private custom-light accumulation with explicit renderer capability checks.",
+      "dependsOn": [],
+      "verification": [
+        {
+          "file": "powershell.exe",
+          "arguments": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "..\\customizations\\scripts\\verify-topic.ps1", "-Topic", "rendering.material-post-light"]
+        }
+      ]
+    }
+  ]
+}

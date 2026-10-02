@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="GDExtension" inherits="Resource" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_minimum_library_initialization_level" qualifiers="const">
+			<return type="int" enum="GDExtension.InitializationLevel" />
+			<description>
+			</description>
+		</method>
+		<method name="is_library_open" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="INITIALIZATION_LEVEL_CORE" value="0" enum="InitializationLevel">
+		</constant>
+		<constant name="INITIALIZATION_LEVEL_SERVERS" value="1" enum="InitializationLevel">
+		</constant>
+		<constant name="INITIALIZATION_LEVEL_SCENE" value="2" enum="InitializationLevel">
+		</constant>
+		<constant name="INITIALIZATION_LEVEL_EDITOR" value="3" enum="InitializationLevel">
+		</constant>
+	</constants>
+</class>

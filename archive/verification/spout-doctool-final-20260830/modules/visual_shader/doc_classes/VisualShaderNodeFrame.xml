@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VisualShaderNodeFrame" inherits="VisualShaderNodeResizableBase" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add_attached_node">
+			<return type="void" />
+			<param index="0" name="node" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="remove_attached_node">
+			<return type="void" />
+			<param index="0" name="node" type="int" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="attached_nodes" type="PackedInt32Array" setter="set_attached_nodes" getter="get_attached_nodes" default="PackedInt32Array()">
+		</member>
+		<member name="autoshrink" type="bool" setter="set_autoshrink_enabled" getter="is_autoshrink_enabled" default="true">
+		</member>
+		<member name="tint_color" type="Color" setter="set_tint_color" getter="get_tint_color" default="Color(0.3, 0.3, 0.3, 0.75)">
+		</member>
+		<member name="tint_color_enabled" type="bool" setter="set_tint_color_enabled" getter="is_tint_color_enabled" default="false">
+		</member>
+		<member name="title" type="String" setter="set_title" getter="get_title" default="&quot;Title&quot;">
+		</member>
+	</members>
+</class>

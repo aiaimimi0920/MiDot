@@ -1,0 +1,15 @@
+[gd_resource type="Theme" format=3 uid="uid://i7jkl1v6rghv"]
+
+[sub_resource type="ColorScheme" id="ColorScheme_rmp5n"]
+
+[sub_resource type="ColorScheme" id="ColorScheme_aabhj"]
+
+[sub_resource type="ColorScheme" id="ColorScheme_8eyjb"]
+
+[resource]
+default_color_scheme = SubResource("ColorScheme_8eyjb")
+Button/color_schemes/added_scheme = null
+Button/color_schemes/import_null = null
+Button/color_schemes/import_valid = SubResource("ColorScheme_rmp5n")
+Button/color_schemes/null_scheme = null
+Button/color_schemes/valid_scheme = SubResource("ColorScheme_aabhj")

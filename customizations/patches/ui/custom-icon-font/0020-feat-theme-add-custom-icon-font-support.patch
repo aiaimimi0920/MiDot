@@ -1,0 +1,304 @@
+From 92f3590173207c59347d2a38b0d6c1b85018f254 Mon Sep 17 00:00:00 2001
+From: aiaimimi0920 <153103332+aiaimimi0920@users.noreply.github.com>
+Date: Mon, 31 Aug 2026 09:07:09 +0800
+Subject: [PATCH] feat(theme): add custom icon font support
+
+Godot-Patch-Topic: ui.custom-icon-font
+---
+ doc/classes/ProjectSettings.xml |  3 +++
+ doc/classes/ThemeDB.xml         |  3 +++
+ scene/theme/default_theme.cpp   | 22 ++++++++++++++++------
+ scene/theme/default_theme.h     |  4 ++--
+ scene/theme/theme_db.cpp        | 33 +++++++++++++++++++++++++++++++--
+ scene/theme/theme_db.h          |  3 +++
+ tests/scene/test_theme.cpp      | 12 ++++++++++++
+ 7 files changed, 70 insertions(+), 10 deletions(-)
+
+diff --git a/doc/classes/ProjectSettings.xml b/doc/classes/ProjectSettings.xml
+index a63e258f5676090c4b83b87ad46c676b82e3ddd7..402bccdb436e4a863a57fe975de50148dc90182d 100644
+--- a/doc/classes/ProjectSettings.xml
++++ b/doc/classes/ProjectSettings.xml
+@@ -1273,6 +1273,9 @@
+ 		<member name="gui/theme/custom_font" type="String" setter="" getter="" default="&quot;&quot;">
+ 			Path to a custom [Font] resource to use as default for all GUI elements of the project.
+ 		</member>
++		<member name="gui/theme/custom_icon_font" type="String" setter="" getter="" default="&quot;&quot;">
++			Path to an optional [Font] resource used by GUI theme items that render text glyphs as icons. Changing this setting requires restarting the editor or project.
++		</member>
+ 		<member name="gui/theme/default_font_antialiasing" type="int" setter="" getter="" default="1">
+ 			Font anti-aliasing mode for the default project font. See [member FontFile.antialiasing].
+ 			[b]Note:[/b] This setting does not affect custom [Font]s used within the project. Use the [b]Import[/b] dock for that instead (see [member ResourceImporterDynamicFont.antialiasing]).
+diff --git a/doc/classes/ThemeDB.xml b/doc/classes/ThemeDB.xml
+index 810710ce64f3905524f5126e54bc370ec5b6f0e1..6849e01227ca73cabd170a6282d62915d738476b 100644
+--- a/doc/classes/ThemeDB.xml
++++ b/doc/classes/ThemeDB.xml
+@@ -36,6 +36,9 @@
+ 			The fallback font of every [Control] node and [Theme] resource. Used when no other value is available to the control.
+ 			See also [member Theme.default_font].
+ 		</member>
++		<member name="fallback_icon_font" type="Font" setter="set_fallback_icon_font" getter="get_fallback_icon_font">
++			The fallback font for theme items that render text glyphs as icons. It is initialized from [member ProjectSettings.gui/theme/custom_icon_font].
++		</member>
+ 		<member name="fallback_font_size" type="int" setter="set_fallback_font_size" getter="get_fallback_font_size" default="16">
+ 			The fallback font size of every [Control] node and [Theme] resource. Used when no other value is available to the control.
+ 			See also [member Theme.default_font_size].
+diff --git a/scene/theme/default_theme.cpp b/scene/theme/default_theme.cpp
+index 555b12f2f5bfa8454f619931a6a9f8e6dc36dd70..ac5c682822af1d52ee7e48592b26783cbb2f1bc3 100644
+--- a/scene/theme/default_theme.cpp
++++ b/scene/theme/default_theme.cpp
+@@ -92,7 +92,7 @@ static Ref<StyleBox> make_empty_stylebox(float p_margin_left = -1, float p_margi
+ 	return style;
+ }
+ 
+-void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const Ref<Font> &bold_font, const Ref<Font> &bold_italics_font, const Ref<Font> &italics_font, Ref<Texture2D> &default_icon, Ref<StyleBox> &default_style, float p_scale, const Ref<ColorScheme> &p_color_scheme) {
++void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const Ref<Font> &default_icon_font, const Ref<Font> &bold_font, const Ref<Font> &bold_italics_font, const Ref<Font> &italics_font, Ref<Texture2D> &default_icon, Ref<StyleBox> &default_style, float p_scale, const Ref<ColorScheme> &p_color_scheme) {
+ 	scale = p_scale;
+ 
+ 	// Default theme properties.
+@@ -155,7 +155,7 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 
+ 	theme->set_font(SceneStringName(font), "Button", Ref<Font>());
+ 	theme->set_font_size(SceneStringName(font_size), "Button", -1);
+-	theme->set_font("text_icon_font", "Button", Ref<Font>());
++	theme->set_font("text_icon_font", "Button", default_icon_font);
+ 	theme->set_font_size("text_icon_font_size", "Button", Math::round(24 * scale));
+ 	theme->set_string("text_icon", "Button", "");
+ 	theme->set_constant("outline_size", "Button", 0);
+@@ -181,8 +181,8 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 	theme->set_constant("align_to_largest_stylebox", "Button", 0); // Disabled.
+ 
+ 	// TextureButton state text.
+-	theme->set_font("text_icon_font", "TextureButton", Ref<Font>());
+-	theme->set_font_size("text_icon_font_size", "TextureButton", -1);
++	theme->set_font("text_icon_font", "TextureButton", default_icon_font);
++	theme->set_font_size("text_icon_font_size", "TextureButton", Math::round(24 * scale));
+ 	theme->set_constant("icon_max_width", "TextureButton", 0);
+ 	theme->set_color("text_normal_color", "TextureButton", control_font_color);
+ 	theme->set_color("text_pressed_color", "TextureButton", control_font_pressed_color);
+@@ -253,6 +253,9 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 
+ 	theme->set_font(SceneStringName(font), "OptionButton", Ref<Font>());
+ 	theme->set_font_size(SceneStringName(font_size), "OptionButton", -1);
++	theme->set_font("text_icon_font", "OptionButton", default_icon_font);
++	theme->set_font_size("text_icon_font_size", "OptionButton", -1);
++	theme->set_string("text_icon", "OptionButton", "");
+ 
+ 	theme->set_color(SceneStringName(font_color), "OptionButton", control_font_color);
+ 	theme->set_color("font_pressed_color", "OptionButton", control_font_pressed_color);
+@@ -277,6 +280,9 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 
+ 	theme->set_font(SceneStringName(font), "MenuButton", Ref<Font>());
+ 	theme->set_font_size(SceneStringName(font_size), "MenuButton", -1);
++	theme->set_font("text_icon_font", "MenuButton", default_icon_font);
++	theme->set_font_size("text_icon_font_size", "MenuButton", -1);
++	theme->set_string("text_icon", "MenuButton", "");
+ 
+ 	theme->set_color(SceneStringName(font_color), "MenuButton", control_font_color);
+ 	theme->set_color("font_pressed_color", "MenuButton", control_font_pressed_color);
+@@ -1185,6 +1191,9 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 
+ 	theme->set_font(SceneStringName(font), "ColorPickerButton", Ref<Font>());
+ 	theme->set_font_size(SceneStringName(font_size), "ColorPickerButton", -1);
++	theme->set_font("text_icon_font", "ColorPickerButton", default_icon_font);
++	theme->set_font_size("text_icon_font_size", "ColorPickerButton", Math::round(24 * scale));
++	theme->set_string("text_icon", "ColorPickerButton", "");
+ 
+ 	theme->set_color(SceneStringName(font_color), "ColorPickerButton", Color(1, 1, 1, 1));
+ 	theme->set_color("font_pressed_color", "ColorPickerButton", Color(0.8, 0.8, 0.8, 1));
+@@ -1408,7 +1417,7 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 	default_flat_style->set_bg_color_scale(Color(1, 0.365, 0.365));
+ }
+ 
+-void make_default_theme(float p_scale, Ref<Font> p_font, TextServer::SubpixelPositioning p_font_subpixel, TextServer::Hinting p_font_hinting, TextServer::FontAntialiasing p_font_antialiasing, bool p_font_msdf, bool p_font_generate_mipmaps, Ref<ColorScheme> p_color_scheme) {
++void make_default_theme(float p_scale, Ref<Font> p_font, Ref<Font> p_icon_font, TextServer::SubpixelPositioning p_font_subpixel, TextServer::Hinting p_font_hinting, TextServer::FontAntialiasing p_font_antialiasing, bool p_font_msdf, bool p_font_generate_mipmaps, Ref<ColorScheme> p_color_scheme) {
+ 	Ref<Theme> t;
+ 	t.instantiate();
+ 
+@@ -1458,12 +1467,13 @@ void make_default_theme(float p_scale, Ref<Font> p_font, TextServer::SubpixelPos
+ 		italics_font->set_variation_transform(Transform2D(1.0, 0.2, 0.0, 1.0, 0.0, 0.0));
+ 	}
+ 
+-	fill_default_theme(t, default_font, bold_font, bold_italics_font, italics_font, default_icon, default_style, default_scale, p_color_scheme);
++	fill_default_theme(t, default_font, p_icon_font, bold_font, bold_italics_font, italics_font, default_icon, default_style, default_scale, p_color_scheme);
+ 
+ 	ThemeDB::get_singleton()->set_default_theme(t);
+ 
+ 	ThemeDB::get_singleton()->set_fallback_base_scale(default_scale);
+ 	ThemeDB::get_singleton()->set_fallback_color_scheme(p_color_scheme);
++	ThemeDB::get_singleton()->set_fallback_icon_font(p_icon_font);
+ 	ThemeDB::get_singleton()->set_fallback_icon(default_icon);
+ 	ThemeDB::get_singleton()->set_fallback_stylebox(default_style);
+ 	ThemeDB::get_singleton()->set_fallback_font(default_font);
+diff --git a/scene/theme/default_theme.h b/scene/theme/default_theme.h
+index a365a8f2df4ce189848b217112547634f404f8cd..3df7bad920a296a4666c12921479457b04d6d68d 100644
+--- a/scene/theme/default_theme.h
++++ b/scene/theme/default_theme.h
+@@ -32,5 +32,5 @@
+ 
+ #include "scene/resources/theme.h"
+ 
+-void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const Ref<Font> &bold_font, const Ref<Font> &bold_italics_font, const Ref<Font> &italics_font, Ref<Texture2D> &default_icon, Ref<StyleBox> &default_style, float p_scale, const Ref<ColorScheme> &p_color_scheme);
+-void make_default_theme(float p_scale, Ref<Font> p_font, TextServer::SubpixelPositioning p_font_subpixel = TextServer::SUBPIXEL_POSITIONING_AUTO, TextServer::Hinting p_font_hinting = TextServer::HINTING_LIGHT, TextServer::FontAntialiasing p_font_antialiased = TextServer::FONT_ANTIALIASING_GRAY, bool p_font_msdf = false, bool p_font_generate_mipmaps = false, Ref<ColorScheme> p_color_scheme = Ref<ColorScheme>());
++void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const Ref<Font> &default_icon_font, const Ref<Font> &bold_font, const Ref<Font> &bold_italics_font, const Ref<Font> &italics_font, Ref<Texture2D> &default_icon, Ref<StyleBox> &default_style, float p_scale, const Ref<ColorScheme> &p_color_scheme);
++void make_default_theme(float p_scale, Ref<Font> p_font, Ref<Font> p_icon_font = Ref<Font>(), TextServer::SubpixelPositioning p_font_subpixel = TextServer::SUBPIXEL_POSITIONING_AUTO, TextServer::Hinting p_font_hinting = TextServer::HINTING_LIGHT, TextServer::FontAntialiasing p_font_antialiased = TextServer::FONT_ANTIALIASING_GRAY, bool p_font_msdf = false, bool p_font_generate_mipmaps = false, Ref<ColorScheme> p_color_scheme = Ref<ColorScheme>());
+diff --git a/scene/theme/theme_db.cpp b/scene/theme/theme_db.cpp
+index 3049c4e83ee9bcf3ef86ae275c7277a4a86d7e26..416fab6015e44eaa8da0604c680f9151b8162066 100644
+--- a/scene/theme/theme_db.cpp
++++ b/scene/theme/theme_db.cpp
+@@ -58,6 +58,7 @@ void ThemeDB::initialize_theme() {
+ 
+ 	String project_theme_path = GLOBAL_DEF_RST_BASIC(PropertyInfo(Variant::STRING, "gui/theme/custom", PROPERTY_HINT_FILE, "*.tres,*.res,*.theme", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_RESTART_IF_CHANGED), "");
+ 	String project_font_path = GLOBAL_DEF_RST_BASIC(PropertyInfo(Variant::STRING, "gui/theme/custom_font", PROPERTY_HINT_FILE, "*.tres,*.res,*.otf,*.ttf,*.woff,*.woff2,*.fnt,*.font,*.pfb,*.pfm", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_RESTART_IF_CHANGED), "");
++	String project_icon_font_path = GLOBAL_DEF_RST_BASIC(PropertyInfo(Variant::STRING, "gui/theme/custom_icon_font", PROPERTY_HINT_FILE, "*.tres,*.res,*.otf,*.ttf,*.woff,*.woff2,*.fnt,*.font,*.pfb,*.pfm", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_RESTART_IF_CHANGED), "");
+ 	Color project_color_scheme_source = GLOBAL_DEF_RST_BASIC(PropertyInfo(Variant::COLOR, "gui/theme/custom_color_scheme_source_color", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_RESTART_IF_CHANGED), Color("#6750a4"));
+ 
+ 	Ref<ColorScheme> color_scheme;
+@@ -93,10 +94,20 @@ void ThemeDB::initialize_theme() {
+ 		}
+ 	}
+ 
++	Ref<Font> project_icon_font;
++	if (!project_icon_font_path.is_empty()) {
++		project_icon_font = ResourceLoader::load(project_icon_font_path, "", ResourceFormatLoader::CACHE_MODE_IGNORE);
++		if (project_icon_font.is_valid()) {
++			set_fallback_icon_font(project_icon_font);
++		} else {
++			ERR_PRINT("Error loading custom project icon font '" + project_icon_font_path + "'");
++		}
++	}
++
+ 	// Always generate the default theme to serve as a fallback for all required theme definitions.
+ 
+ 	if (RenderingServer::get_singleton()) {
+-		make_default_theme(default_theme_scale, project_font, font_subpixel_positioning, font_hinting, font_antialiasing, font_msdf, font_generate_mipmaps, color_scheme);
++		make_default_theme(default_theme_scale, project_font, project_icon_font, font_subpixel_positioning, font_hinting, font_antialiasing, font_msdf, font_generate_mipmaps, color_scheme);
+ 	}
+ 
+ 	_init_default_theme_context();
+@@ -108,7 +119,7 @@ void ThemeDB::initialize_theme_noproject() {
+ 	set_fallback_color_scheme(color_scheme);
+ 
+ 	if (RenderingServer::get_singleton()) {
+-		make_default_theme(1.0, Ref<Font>(), TextServer::SUBPIXEL_POSITIONING_AUTO, TextServer::HINTING_LIGHT, TextServer::FONT_ANTIALIASING_GRAY, false, false, color_scheme);
++		make_default_theme(1.0, Ref<Font>(), Ref<Font>(), TextServer::SUBPIXEL_POSITIONING_AUTO, TextServer::HINTING_LIGHT, TextServer::FONT_ANTIALIASING_GRAY, false, false, color_scheme);
+ 	}
+ 
+ 	_init_default_theme_context();
+@@ -124,6 +135,7 @@ void ThemeDB::finalize_theme() {
+ 
+ 	_clear_fallback_color_scheme();
+ 	fallback_font.unref();
++	fallback_icon_font.unref();
+ 	fallback_icon.unref();
+ 	fallback_stylebox.unref();
+ }
+@@ -202,6 +214,19 @@ Ref<Font> ThemeDB::get_fallback_font() {
+ 	return fallback_font;
+ }
+ 
++void ThemeDB::set_fallback_icon_font(const Ref<Font> &p_font) {
++	if (fallback_icon_font == p_font) {
++		return;
++	}
++
++	fallback_icon_font = p_font;
++	emit_signal(SNAME("fallback_changed"));
++}
++
++Ref<Font> ThemeDB::get_fallback_icon_font() {
++	return fallback_icon_font;
++}
++
+ void ThemeDB::set_fallback_font_size(int p_font_size) {
+ 	if (fallback_font_size == p_font_size) {
+ 		return;
+@@ -467,6 +492,8 @@ void ThemeDB::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("get_fallback_color_scheme"), &ThemeDB::get_fallback_color_scheme);
+ 	ClassDB::bind_method(D_METHOD("set_fallback_font", "font"), &ThemeDB::set_fallback_font);
+ 	ClassDB::bind_method(D_METHOD("get_fallback_font"), &ThemeDB::get_fallback_font);
++	ClassDB::bind_method(D_METHOD("set_fallback_icon_font", "font"), &ThemeDB::set_fallback_icon_font);
++	ClassDB::bind_method(D_METHOD("get_fallback_icon_font"), &ThemeDB::get_fallback_icon_font);
+ 	ClassDB::bind_method(D_METHOD("set_fallback_font_size", "font_size"), &ThemeDB::set_fallback_font_size);
+ 	ClassDB::bind_method(D_METHOD("get_fallback_font_size"), &ThemeDB::get_fallback_font_size);
+ 	ClassDB::bind_method(D_METHOD("set_fallback_icon", "icon"), &ThemeDB::set_fallback_icon);
+@@ -478,6 +505,7 @@ void ThemeDB::_bind_methods() {
+ 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "fallback_base_scale", PROPERTY_HINT_RANGE, "0.0,2.0,0.01,or_greater"), "set_fallback_base_scale", "get_fallback_base_scale");
+ 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "fallback_color_scheme", PROPERTY_HINT_RESOURCE_TYPE, ColorScheme::get_class_static(), PROPERTY_USAGE_NONE), "set_fallback_color_scheme", "get_fallback_color_scheme");
+ 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "fallback_font", PROPERTY_HINT_RESOURCE_TYPE, Font::get_class_static(), PROPERTY_USAGE_NONE), "set_fallback_font", "get_fallback_font");
++	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "fallback_icon_font", PROPERTY_HINT_RESOURCE_TYPE, Font::get_class_static(), PROPERTY_USAGE_NONE), "set_fallback_icon_font", "get_fallback_icon_font");
+ 	ADD_PROPERTY(PropertyInfo(Variant::INT, "fallback_font_size", PROPERTY_HINT_RANGE, "0,256,1,or_greater,suffix:px"), "set_fallback_font_size", "get_fallback_font_size");
+ 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "fallback_icon", PROPERTY_HINT_RESOURCE_TYPE, Texture2D::get_class_static(), PROPERTY_USAGE_NONE), "set_fallback_icon", "get_fallback_icon");
+ 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "fallback_stylebox", PROPERTY_HINT_RESOURCE_TYPE, StyleBox::get_class_static(), PROPERTY_USAGE_NONE), "set_fallback_stylebox", "get_fallback_stylebox");
+@@ -512,6 +540,7 @@ ThemeDB::~ThemeDB() {
+ 
+ 	_clear_fallback_color_scheme();
+ 	fallback_font.unref();
++	fallback_icon_font.unref();
+ 	fallback_icon.unref();
+ 	fallback_stylebox.unref();
+ 
+diff --git a/scene/theme/theme_db.h b/scene/theme/theme_db.h
+index bfbdb67cbc2fedf7ee23423c909ed0fff755c97a..af01dfa010f8896c797e1b26d7dc018c86f1e1d5 100644
+--- a/scene/theme/theme_db.h
++++ b/scene/theme/theme_db.h
+@@ -83,6 +83,7 @@ class ThemeDB : public Object {
+ 	float fallback_base_scale = 1.0;
+ 	Ref<ColorScheme> fallback_color_scheme;
+ 	Ref<Font> fallback_font;
++	Ref<Font> fallback_icon_font;
+ 	int fallback_font_size = 16;
+ 	Ref<Texture2D> fallback_icon;
+ 	Ref<StyleBox> fallback_stylebox;
+@@ -151,6 +152,8 @@ public:
+ 
+ 	void set_fallback_font(const Ref<Font> &p_font);
+ 	Ref<Font> get_fallback_font();
++	void set_fallback_icon_font(const Ref<Font> &p_font);
++	Ref<Font> get_fallback_icon_font();
+ 
+ 	void set_fallback_font_size(int p_font_size);
+ 	int get_fallback_font_size();
+diff --git a/tests/scene/test_theme.cpp b/tests/scene/test_theme.cpp
+index 8cf19e3df81cd5acac9cfec0caf8f622bf87a1d8..5a6879b13e8a9a31f31893b8e213c5746a457c0c 100644
+--- a/tests/scene/test_theme.cpp
++++ b/tests/scene/test_theme.cpp
+@@ -196,6 +196,18 @@ TEST_CASE("[Theme] Fallback color scheme changes invalidate theme caches") {
+ 	SIGNAL_UNWATCH(theme_db, SNAME("fallback_changed"));
+ }
+ 
++TEST_CASE("[ThemeDB] Fallback icon font") {
++	ThemeDB *theme_db = ThemeDB::get_singleton();
++	REQUIRE(theme_db != nullptr);
++
++	Ref<Font> original_icon_font = theme_db->get_fallback_icon_font();
++	Ref<FontFile> test_icon_font = memnew(FontFile);
++	theme_db->set_fallback_icon_font(test_icon_font);
++	CHECK(theme_db->get_fallback_icon_font() == test_icon_font);
++
++	theme_db->set_fallback_icon_font(original_icon_font);
++}
++
+ TEST_CASE_FIXTURE(Fixture, "[Theme] Good theme type names") {
+ 	StringName names[] = {
+ 		"", // Empty name.
+
+base-commit: 5ec4857b340b6284a18b49b2eda462bd250f219a
+prerequisite-patch-id: b38459b409a3326aed65d2433e1341638171f884
+prerequisite-patch-id: bdb0fe8d6ba7fff1b900ae33d9bec552ea61724c
+prerequisite-patch-id: 4dcdddc73066f768cb97c56444abacb21bda061c
+prerequisite-patch-id: 1f2fbc55f35da3e943dcbaeeb3c9a6d798621bf3
+prerequisite-patch-id: 4dd1cec6888d5160c85be2072b9e5dd05411d007
+prerequisite-patch-id: 60110ae09a2d09796ad65e339ee0b5abc2ce541a
+prerequisite-patch-id: bdb0025d4207a7cf0e1466ca96b2824d238b3caf
+prerequisite-patch-id: 8c55a8201fec417bc2629b903ea2d630aedab1d8
+prerequisite-patch-id: 9dfaaac9d4a47edf9d1eccce8fa66b69e674a911
+prerequisite-patch-id: 17fa223ec74d20c7792e45826a4f0d8ecd7f85d7
+prerequisite-patch-id: 0fb9ef780b3f10a7e82968e44defda508734fa91
+prerequisite-patch-id: 2af824bf187ff13746bd620b1032f57d166c0114
+prerequisite-patch-id: dc8aa901272b27086c9045fc0b9335986d3a8128
+prerequisite-patch-id: 0ce30d5045f596dbc6bf72cbcd9bb16472513013
+prerequisite-patch-id: 50d820c0fb3ac27ddef8f76b133637558f8bcc8e
+prerequisite-patch-id: 69b2baab747aed9362c0ca4c161fc02e5970db44
+prerequisite-patch-id: 41b4bd5af73a2a33c2e64048b72e0d4f3c664f19
+prerequisite-patch-id: 67083f15ed3c32a690794c698729f213a5245e20
+prerequisite-patch-id: 14ad80fb2ee81b00b9194186196bba9d350bc28e

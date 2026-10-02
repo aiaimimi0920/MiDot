@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="DPITexture" inherits="Texture2D" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="create_from_string" qualifiers="static">
+			<return type="DPITexture" />
+			<param index="0" name="source" type="String" />
+			<param index="1" name="scale" type="float" default="1.0" />
+			<param index="2" name="saturation" type="float" default="1.0" />
+			<param index="3" name="color_map" type="Dictionary" default="{}" />
+			<description>
+			</description>
+		</method>
+		<method name="get_scaled_rid" qualifiers="const">
+			<return type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="get_source" qualifiers="const">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="set_size_override">
+			<return type="void" />
+			<param index="0" name="size" type="Vector2i" />
+			<description>
+			</description>
+		</method>
+		<method name="set_source">
+			<return type="void" />
+			<param index="0" name="source" type="String" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="base_scale" type="float" setter="set_base_scale" getter="get_base_scale" default="1.0">
+		</member>
+		<member name="color_map" type="Dictionary" setter="set_color_map" getter="get_color_map" default="{}">
+		</member>
+		<member name="fix_alpha_border" type="bool" setter="set_fix_alpha_border" getter="get_fix_alpha_border" default="false">
+		</member>
+		<member name="premult_alpha" type="bool" setter="set_premult_alpha" getter="get_premult_alpha" default="false">
+		</member>
+		<member name="resource_local_to_scene" type="bool" setter="set_local_to_scene" getter="is_local_to_scene" overrides="Resource" default="false" />
+		<member name="saturation" type="float" setter="set_saturation" getter="get_saturation" default="1.0">
+		</member>
+	</members>
+</class>

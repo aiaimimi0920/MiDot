@@ -1,0 +1,218 @@
+{
+  "checks": [
+    {
+      "check": "Registered Process",
+      "pass": true
+    },
+    {
+      "check": "Registered ImageFrames",
+      "pass": true
+    },
+    {
+      "check": "Registered GifExporter",
+      "pass": true
+    },
+    {
+      "check": "Registered Spout",
+      "pass": true
+    },
+    {
+      "check": "Registered SpineSprite",
+      "pass": true
+    },
+    {
+      "check": "Registered SpineAtlasResource",
+      "pass": true
+    },
+    {
+      "check": "Registered SpineSkeletonFileResource",
+      "pass": true
+    },
+    {
+      "check": "Registered ColorScheme",
+      "pass": true
+    },
+    {
+      "check": "Registered ColorRoleTransform",
+      "pass": true
+    },
+    {
+      "check": "Script.get_script_documentation_list",
+      "pass": true
+    },
+    {
+      "check": "TextureButton.has_point",
+      "pass": true
+    },
+    {
+      "check": "TextureButton.set_text_normal",
+      "pass": true
+    },
+    {
+      "check": "StyleBoxFlat.set_elevation_level",
+      "pass": true
+    },
+    {
+      "check": "Button.set_text_icon",
+      "pass": true
+    },
+    {
+      "check": "Control.get_theme_color_role",
+      "pass": true
+    },
+    {
+      "check": "Control.add_theme_string_override",
+      "pass": true
+    },
+    {
+      "check": "Window.add_theme_string_override",
+      "pass": true
+    },
+    {
+      "check": "Theme.set_string",
+      "pass": true
+    },
+    {
+      "check": "ThemeDB.get_fallback_icon_font",
+      "pass": true
+    },
+    {
+      "check": "ColorRoleTransform.resolve",
+      "pass": true
+    },
+    {
+      "check": "Texture streaming settings registered",
+      "pass": true
+    },
+    {
+      "check": "Custom icon font setting",
+      "pass": true
+    },
+    {
+      "check": "Theme string round trip",
+      "pass": true
+    },
+    {
+      "check": "Control string override",
+      "pass": true
+    },
+    {
+      "check": "Button text icon round trip",
+      "pass": true
+    },
+    {
+      "check": "TextureButton state text round trip",
+      "pass": true
+    },
+    {
+      "check": "TextureButton accepts an inside point",
+      "pass": true
+    },
+    {
+      "check": "TextureButton rejects outside point",
+      "pass": true
+    },
+    {
+      "check": "StyleBox elevation property",
+      "pass": true
+    },
+    {
+      "check": "Material light/dark color generation",
+      "pass": true
+    },
+    {
+      "check": "GIF export begins",
+      "pass": true
+    },
+    {
+      "check": "GIF frame accepted",
+      "pass": true
+    },
+    {
+      "check": "GIF frame accepted",
+      "pass": true
+    },
+    {
+      "check": "GIF export completes",
+      "pass": true
+    },
+    {
+      "check": "GIF loads through ImageFrames",
+      "pass": true
+    },
+    {
+      "check": "GIF round trip preserves both frames",
+      "pass": true
+    },
+    {
+      "check": "GIF first frame stays red",
+      "pass": true
+    },
+    {
+      "check": "GIF second frame stays blue",
+      "pass": true
+    },
+    {
+      "check": "GDScriptHelper obeys editor-only scope",
+      "pass": true
+    },
+    {
+      "check": "GDScriptHelper accepts valid code",
+      "pass": true
+    },
+    {
+      "check": "GDScriptHelper reports invalid code",
+      "pass": true
+    },
+    {
+      "check": "Spout SDK linked",
+      "pass": true
+    },
+    {
+      "check": "Spout memory buffer created",
+      "pass": true
+    },
+    {
+      "check": "Spout buffer write",
+      "pass": true
+    },
+    {
+      "check": "Spout memory round trip",
+      "pass": true
+    },
+    {
+      "check": "Spout memory buffer released",
+      "pass": true
+    },
+    {
+      "check": "Process child starts",
+      "pass": true
+    },
+    {
+      "check": "Process preserves exit code",
+      "pass": true
+    },
+    {
+      "check": "Process stdout captured",
+      "pass": true
+    },
+    {
+      "check": "Process stderr captured",
+      "pass": true
+    }
+  ],
+  "editor_features": true,
+  "engine": {
+    "build": "custom_build",
+    "hash": "db1af1e99a5025bfbf8b05ef27dd4a5e739ec371",
+    "hex": 264192,
+    "major": 4,
+    "minor": 8,
+    "patch": 0,
+    "status": "dev",
+    "string": "4.8-dev (custom_build)",
+    "timestamp": 1788967264
+  },
+  "executable": "C:/Users/Public/nas_home/godot/export/godot.windows.editor.x86_64.exe",
+  "failures": 0
+}

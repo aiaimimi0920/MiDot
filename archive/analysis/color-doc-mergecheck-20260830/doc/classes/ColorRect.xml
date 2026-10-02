@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ColorRect" inherits="Control" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+		A control that displays a solid color rectangle.
+	</brief_description>
+	<description>
+		Displays a rectangle filled with a solid [member color]. If you need to display the border alone, consider using a [Panel] instead.
+	</description>
+	<tutorials>
+		<link title="2D Dodge The Creeps Demo">https://godotengine.org/asset-library/asset/2712</link>
+	</tutorials>
+	<members>
+		<member name="color" type="Color" setter="set_color" getter="get_color" default="Color(1, 1, 1, 1)" keywords="colour">
+			The fill color of the rectangle.
+		</member>
+		<member name="color_role" type="int" setter="set_color_role" getter="get_color_role" enum="ColorRole" default="0">
+			The semantic role used to resolve the fill color from [member color_scheme]. If set to [constant @GlobalScope.COLOR_ROLE_STATIC], [member color] is used unchanged.
+		</member>
+		<member name="color_scheme" type="ColorScheme" setter="set_color_scheme" getter="get_color_scheme">
+			The color scheme used to resolve [member color_role]. If unset, the control's inherited default color scheme is used.
+		</member>
+	</members>
+</class>

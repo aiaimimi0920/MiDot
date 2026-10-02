@@ -1,0 +1,257 @@
+From b90efd1092359fa49cdebfe05ff2f760e7699229 Mon Sep 17 00:00:00 2001
+From: aiaimimi0920 <153103332+aiaimimi0920@users.noreply.github.com>
+Date: Wed, 23 Sep 2026 02:58:53 -0700
+Subject: [PATCH] perf(scene): cache dynamic theme color reads
+
+Godot-Patch-Topic: ui.dynamic-color-theme
+---
+ modules/color_scheme/color_scheme.cpp |  3 +
+ modules/color_scheme/color_scheme.h   |  8 +++
+ scene/gui/control.cpp                 |  4 ++
+ scene/main/window.cpp                 |  4 ++
+ tests/scene/test_control.cpp          | 83 +++++++++++++++++++++++++++
+ tests/scene/test_window.cpp           |  1 +
+ 6 files changed, 103 insertions(+)
+
+diff --git a/modules/color_scheme/color_scheme.cpp b/modules/color_scheme/color_scheme.cpp
+index 1645f4f754137ddd33a54a72f45df506ed813f04..2050f07480d6d9375c91d3a3f2e96e1408b4dcc2 100644
+--- a/modules/color_scheme/color_scheme.cpp
++++ b/modules/color_scheme/color_scheme.cpp
+@@ -158,6 +158,9 @@ float ColorScheme::get_contrast_level() const {
+ }
+ 
+ Color ColorScheme::get_color(ColorRole p_color_role) {
++#ifdef DEV_ENABLED
++	color_query_count++;
++#endif
+ 	switch (p_color_role) {
+ 		case ColorRole::PRIMARY_PALETTE_KEY:
+ 			return get_primary_palette_key_color();
+diff --git a/modules/color_scheme/color_scheme.h b/modules/color_scheme/color_scheme.h
+index 67d579d22b63797e574524517cc7cf11dac5a440..433d80804d0fa666d406f3f079a723eb8be5e22c 100644
+--- a/modules/color_scheme/color_scheme.h
++++ b/modules/color_scheme/color_scheme.h
+@@ -52,6 +52,10 @@ private:
+ 	bool dirty = false;
+ 	material_color_utilities::SchemeContent scheme;
+ 
++#ifdef DEV_ENABLED
++	uint64_t color_query_count = 0;
++#endif
++
+ 	void _update_color_scheme();
+ 	void _source_texture_changed();
+ 	material_color_utilities::SchemeContent _create_scheme_content();
+@@ -74,6 +78,10 @@ public:
+ 
+ 	Color get_color(ColorRole p_color_role);
+ 
++#ifdef DEV_ENABLED
++	uint64_t get_color_query_count() const { return color_query_count; }
++#endif
++
+ 	static Color get_color_from_argb(material_color_utilities::Argb p_argb);
+ 	Color get_source_color_argb();
+ 
+diff --git a/scene/gui/control.cpp b/scene/gui/control.cpp
+index 4dc71405ed351c604b5f6a91d7d57d19817bfbd9..66982376446f2f4fd5a8868a7911069241a14160 100644
+--- a/scene/gui/control.cpp
++++ b/scene/gui/control.cpp
+@@ -3994,8 +3994,12 @@ Color Control::get_theme_color(const StringName &p_name, const StringName &p_the
+ 		const ColorRole *color_role = data.theme_color_role_override.getptr(String(p_name) + "_role");
+ 		if (color_role) {
+ 			has_local_color_role_override = true;
++			if (data.theme_color_cache.has(p_theme_type) && data.theme_color_cache[p_theme_type].has(p_name)) {
++				return data.theme_color_cache[p_theme_type][p_name];
++			}
+ 			Color dynamic_color;
+ 			if (resolve_dynamic_color(*color_role, dynamic_color)) {
++				data.theme_color_cache[p_theme_type][p_name] = dynamic_color;
+ 				return dynamic_color;
+ 			}
+ 		}
+diff --git a/scene/main/window.cpp b/scene/main/window.cpp
+index 70c42f1dac9a94972de8b41286149069467190dd..928b6a95b95d338831b1bb85f912885de01fa2c3 100644
+--- a/scene/main/window.cpp
++++ b/scene/main/window.cpp
+@@ -2957,8 +2957,12 @@ Color Window::get_theme_color(const StringName &p_name, const StringName &p_them
+ 		const ColorRole *color_role = theme_color_role_override.getptr(String(p_name) + "_role");
+ 		if (color_role) {
+ 			has_local_color_role_override = true;
++			if (theme_color_cache.has(p_theme_type) && theme_color_cache[p_theme_type].has(p_name)) {
++				return theme_color_cache[p_theme_type][p_name];
++			}
+ 			Color dynamic_color;
+ 			if (resolve_dynamic_color(*color_role, dynamic_color)) {
++				theme_color_cache[p_theme_type][p_name] = dynamic_color;
+ 				return dynamic_color;
+ 			}
+ 		}
+diff --git a/tests/scene/test_control.cpp b/tests/scene/test_control.cpp
+index 4bf84e8ffcdec79319683a649f2e51915ae12da4..d12f8d25dbfcb8358637a57a27912b935ca61c28 100644
+--- a/tests/scene/test_control.cpp
++++ b/tests/scene/test_control.cpp
+@@ -36,6 +36,7 @@ TEST_FORCE_LINK(test_control)
+ #include "core/io/dir_access.h"
+ #include "core/io/resource_loader.h"
+ #include "core/io/resource_saver.h"
++#include "core/object/message_queue.h"
+ #include "scene/2d/node_2d.h"
+ #include "scene/gui/button.h"
+ #include "scene/gui/control.h"
+@@ -143,6 +144,7 @@ TEST_CASE("[SceneTree][Control] Dynamic theme colors") {
+ 	CHECK(control->get_theme_color("accent").is_equal_approx(color_scheme->get_color(ColorRole::SECONDARY) * scale));
+ 
+ 	color_scheme->set_dark(true);
++	MessageQueue::get_singleton()->flush();
+ 	CHECK(control->get_theme_color("accent").is_equal_approx(color_scheme->get_color(ColorRole::SECONDARY) * scale));
+ 	Ref<StyleBoxFlat> resolved_stylebox = control->get_theme_stylebox("panel");
+ 	CHECK(resolved_stylebox.is_valid());
+@@ -157,6 +159,87 @@ TEST_CASE("[SceneTree][Control] Dynamic theme colors") {
+ 	memdelete(control);
+ }
+ 
++template <typename T>
++static void check_dynamic_theme_color_cache() {
++	Control *parent = memnew(Control);
++	T *node = memnew(T);
++	SceneTree::get_singleton()->get_root()->add_child(parent);
++	parent->add_child(node);
++	const StringName type = node->get_class_name();
++	Ref<ColorScheme> scheme = memnew(ColorScheme(Color("#6750a4")));
++	Ref<Theme> theme = memnew(Theme);
++	const Color authored("#123456");
++	Color scale(0.8, 0.6, 0.4, 0.5);
++	theme->set_default_color_scheme(scheme);
++	theme->set_color("cached", type, authored);
++	theme->set_color("cached_scale", type, scale);
++	theme->set_color_role("cached_role", type, ColorRole::PRIMARY);
++	theme->set_color_role("cached_role", "Other", ColorRole::ERROR);
++	theme->set_type_variation("CacheVariation", type);
++	parent->set_theme(theme);
++	node->add_theme_color_role_override("cached_role", ColorRole::SECONDARY);
++
++	auto check_cached = [&](const Color &p_expected, const StringName &p_type = StringName()) {
++		CHECK(node->get_theme_color("cached", p_type).is_equal_approx(p_expected));
++#ifdef DEV_ENABLED
++		const uint64_t queries = scheme->get_color_query_count();
++#endif
++		for (int i = 0; i < 32; i++) {
++			CHECK(node->get_theme_color("cached", p_type).is_equal_approx(p_expected));
++		}
++#ifdef DEV_ENABLED
++		CHECK(scheme->get_color_query_count() == queries);
++#endif
++	};
++
++	MessageQueue::get_singleton()->flush();
++	check_cached(scheme->get_secondary() * scale);
++	check_cached(scheme->get_error(), "Other");
++	node->set_theme_type_variation("CacheVariation");
++	check_cached(scheme->get_secondary() * scale, "CacheVariation");
++	scheme->set_dark(true);
++	MessageQueue::get_singleton()->flush();
++	check_cached(scheme->get_secondary() * scale);
++	scheme->set_source_color(Color("#006495"));
++	MessageQueue::get_singleton()->flush();
++	check_cached(scheme->get_secondary() * scale);
++	scheme->set_contrast_level(1.0f);
++	MessageQueue::get_singleton()->flush();
++	check_cached(scheme->get_secondary() * scale);
++	scale = Color(0.5, 0.4, 0.3, 0.2);
++	node->add_theme_color_override("cached_scale", scale);
++	check_cached(scheme->get_secondary() * scale);
++	node->add_theme_color_role_override("cached_scale_role", ColorRole::TERTIARY);
++	check_cached(scheme->get_secondary() * scheme->get_tertiary());
++	node->remove_theme_color_role_override("cached_scale_role");
++
++	Ref<ColorScheme> replacement = memnew(ColorScheme(Color("#b3261e")));
++	node->add_theme_color_scheme_override("cached_scheme", replacement);
++	check_cached(replacement->get_secondary() * scale);
++	node->remove_theme_color_scheme_override("cached_scheme");
++	check_cached(scheme->get_secondary() * scale);
++	node->add_theme_color_role_override("cached_role", ColorRole::STATIC);
++	check_cached(authored);
++	node->add_theme_color_override("cached", Color("#abcdef"));
++	check_cached(Color("#abcdef"));
++	node->remove_theme_color_role_override("cached_role");
++	check_cached(Color("#abcdef"));
++	node->remove_theme_color_override("cached");
++	check_cached(scheme->get_primary() * scale);
++
++	Ref<Theme> new_parent_theme = memnew(Theme);
++	new_parent_theme->set_default_color_scheme(replacement);
++	new_parent_theme->set_color_role("cached_role", type, ColorRole::ERROR);
++	parent->set_theme(new_parent_theme);
++	check_cached(replacement->get_error() * scale);
++	memdelete(parent);
++}
++
++TEST_CASE("[SceneTree][Control][Window] Dynamic theme color caches invalidate without repeated evaluation") {
++	check_dynamic_theme_color_cache<Control>();
++	check_dynamic_theme_color_cache<Window>();
++}
++
+ TEST_CASE("[SceneTree][Control] Dynamic theme color presence and STATIC role") {
+ 	Control *control = memnew(Control);
+ 	SceneTree::get_singleton()->get_root()->add_child(control);
+diff --git a/tests/scene/test_window.cpp b/tests/scene/test_window.cpp
+index b1e1db020b7ad901bc5a7e815a6ceb22aa93cb94..64d2e641ca44f2dd582c6f5f7714dcf6d725866a 100644
+--- a/tests/scene/test_window.cpp
++++ b/tests/scene/test_window.cpp
+@@ -157,6 +157,7 @@ TEST_CASE("[SceneTree][Window] Dynamic theme colors") {
+ 	CHECK(window->get_theme_color("accent").is_equal_approx(color_scheme->get_color(ColorRole::ERROR) * scale));
+ 
+ 	color_scheme->set_dark(true);
++	MessageQueue::get_singleton()->flush();
+ 	CHECK(window->get_theme_color("accent").is_equal_approx(color_scheme->get_color(ColorRole::ERROR) * scale));
+ 
+ 	memdelete(window);
+
+base-commit: 5ec4857b340b6284a18b49b2eda462bd250f219a
+prerequisite-patch-id: b38459b409a3326aed65d2433e1341638171f884
+prerequisite-patch-id: bdb0fe8d6ba7fff1b900ae33d9bec552ea61724c
+prerequisite-patch-id: 4dcdddc73066f768cb97c56444abacb21bda061c
+prerequisite-patch-id: 1f2fbc55f35da3e943dcbaeeb3c9a6d798621bf3
+prerequisite-patch-id: 4dd1cec6888d5160c85be2072b9e5dd05411d007
+prerequisite-patch-id: 60110ae09a2d09796ad65e339ee0b5abc2ce541a
+prerequisite-patch-id: bdb0025d4207a7cf0e1466ca96b2824d238b3caf
+prerequisite-patch-id: 8c55a8201fec417bc2629b903ea2d630aedab1d8
+prerequisite-patch-id: 9dfaaac9d4a47edf9d1eccce8fa66b69e674a911
+prerequisite-patch-id: 17fa223ec74d20c7792e45826a4f0d8ecd7f85d7
+prerequisite-patch-id: 0fb9ef780b3f10a7e82968e44defda508734fa91
+prerequisite-patch-id: 2af824bf187ff13746bd620b1032f57d166c0114
+prerequisite-patch-id: dc8aa901272b27086c9045fc0b9335986d3a8128
+prerequisite-patch-id: 0ce30d5045f596dbc6bf72cbcd9bb16472513013
+prerequisite-patch-id: 50d820c0fb3ac27ddef8f76b133637558f8bcc8e
+prerequisite-patch-id: 69b2baab747aed9362c0ca4c161fc02e5970db44
+prerequisite-patch-id: 41b4bd5af73a2a33c2e64048b72e0d4f3c664f19
+prerequisite-patch-id: 67083f15ed3c32a690794c698729f213a5245e20
+prerequisite-patch-id: 14ad80fb2ee81b00b9194186196bba9d350bc28e
+prerequisite-patch-id: 7d791289954a2144845e9b843451c6c9717daf6a
+prerequisite-patch-id: d5e37dc01427a0639bba6123e6afee995d62ef4a
+prerequisite-patch-id: fa2f2bf9521e391400e0151a1a290fca10a3f124
+prerequisite-patch-id: 2e5d11daca8780d00fe2d10677ac0c26098fae5c
+prerequisite-patch-id: 06b6906be778d545881f82f2431b2204eb052a6c
+prerequisite-patch-id: 6f98206b25188cf56bc55e3fbad4fff5da6d6d4e
+prerequisite-patch-id: 9c598b9a701c8d9fb585255c239a2f64c998f3a0
+prerequisite-patch-id: 148113e476c059293ce209839c317a4945cc1899
+prerequisite-patch-id: 68f8ac60d0f60d3ac0bb1fe23aa79abd660c2009
+prerequisite-patch-id: 470ac52175750bf3eadc5e0286a61411eb3f6ebf
+prerequisite-patch-id: 075c9922d2a9fadb91e8c3402b4e7d2f7bf7f8a1
+prerequisite-patch-id: 3b6bc3f484f1654f8bca99626ff2507a0e17a3ca
+prerequisite-patch-id: d4fed2df8ba748ad28488271c1b2c42cc88f8c17
+prerequisite-patch-id: 6a2c61a480ce572ae1c3692257cf60463d4d3cf9
+prerequisite-patch-id: c0be036c6582ae10a9c24249190be04a37c8392a
+prerequisite-patch-id: 02e0656ba365a7fb2cad0c69ca9ecbcf05ea35f1
+prerequisite-patch-id: 6b9471813c5552c60fce6f086172833038fed2ae
+prerequisite-patch-id: 9a80815a3f443dabb008cef85de0783e1530a9c9
+prerequisite-patch-id: 6cbac35a7fd4756f09c6b54a683203752361d1b8
+prerequisite-patch-id: 3f83b289634f3f0c6efc0f2104447c35fa4e6999
+prerequisite-patch-id: 7fa76bc0dcf10c37ddce6dfe863cf8a15db1a4e3
+prerequisite-patch-id: 59285ed00363fbf066365f96211e649c4e9e8707
+prerequisite-patch-id: 7fef71675ff2ac560045ba78cb2e69d3d05bf3da
+prerequisite-patch-id: cb3f5d7d6c2d28699fd25638d57711baff02bf35
+prerequisite-patch-id: 77196bacb24fd150ffc6b82969c4d274c01d6f9a
+prerequisite-patch-id: e9942d4f02f72a92af555c51c615991adb95fb8e
+prerequisite-patch-id: d4228c26ec2e9e69226ab4b8a1adfe40be71e2e2

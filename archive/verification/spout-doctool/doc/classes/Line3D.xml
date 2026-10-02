@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Line3D" inherits="GeometryInstance3D" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<constants>
+		<constant name="MESH_ALIGNMENT_LOCAL" value="0" enum="MeshAlignment">
+		</constant>
+		<constant name="MESH_ALIGNMENT_BILLBOARD" value="1" enum="MeshAlignment">
+		</constant>
+		<constant name="MESH_ALIGNMENT_MAX" value="2" enum="MeshAlignment">
+		</constant>
+		<constant name="TILING_MODE_UNIT" value="0" enum="TilingMode">
+		</constant>
+		<constant name="TILING_MODE_LENGTH" value="1" enum="TilingMode">
+		</constant>
+		<constant name="TILING_MAX" value="2" enum="TilingMode">
+		</constant>
+		<constant name="MATERIAL_MODE_MIX" value="0" enum="MaterialMode">
+		</constant>
+		<constant name="MATERIAL_MODE_ADD" value="1" enum="MaterialMode">
+		</constant>
+		<constant name="MATERIAL_MODE_CUSTOM" value="2" enum="MaterialMode">
+		</constant>
+		<constant name="MATERIAL_MODE_MAX" value="3" enum="MaterialMode">
+		</constant>
+	</constants>
+</class>

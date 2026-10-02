@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="OpenXRSpatialCapabilityConfigurationAruco" inherits="OpenXRSpatialCapabilityConfigurationBaseHeader" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_enabled_components" qualifiers="const">
+			<return type="PackedInt64Array" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="aruco_dict" type="int" setter="set_aruco_dict" getter="get_aruco_dict" enum="OpenXRSpatialCapabilityConfigurationAruco.ArucoDict" default="16">
+		</member>
+	</members>
+	<constants>
+		<constant name="ARUCO_DICT_4X4_50" value="1" enum="ArucoDict">
+		</constant>
+		<constant name="ARUCO_DICT_4X4_100" value="2" enum="ArucoDict">
+		</constant>
+		<constant name="ARUCO_DICT_4X4_250" value="3" enum="ArucoDict">
+		</constant>
+		<constant name="ARUCO_DICT_4X4_1000" value="4" enum="ArucoDict">
+		</constant>
+		<constant name="ARUCO_DICT_5X5_50" value="5" enum="ArucoDict">
+		</constant>
+		<constant name="ARUCO_DICT_5X5_100" value="6" enum="ArucoDict">
+		</constant>
+		<constant name="ARUCO_DICT_5X5_250" value="7" enum="ArucoDict">
+		</constant>
+		<constant name="ARUCO_DICT_5X5_1000" value="8" enum="ArucoDict">
+		</constant>
+		<constant name="ARUCO_DICT_6X6_50" value="9" enum="ArucoDict">
+		</constant>
+		<constant name="ARUCO_DICT_6X6_100" value="10" enum="ArucoDict">
+		</constant>
+		<constant name="ARUCO_DICT_6X6_250" value="11" enum="ArucoDict">
+		</constant>
+		<constant name="ARUCO_DICT_6X6_1000" value="12" enum="ArucoDict">
+		</constant>
+		<constant name="ARUCO_DICT_7X7_50" value="13" enum="ArucoDict">
+		</constant>
+		<constant name="ARUCO_DICT_7X7_100" value="14" enum="ArucoDict">
+		</constant>
+		<constant name="ARUCO_DICT_7X7_250" value="15" enum="ArucoDict">
+		</constant>
+		<constant name="ARUCO_DICT_7X7_1000" value="16" enum="ArucoDict">
+		</constant>
+	</constants>
+</class>

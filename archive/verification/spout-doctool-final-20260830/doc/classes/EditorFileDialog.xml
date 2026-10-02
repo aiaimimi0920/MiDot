@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="EditorFileDialog" inherits="FileDialog" api_type="editor" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add_side_menu">
+			<return type="void" />
+			<param index="0" name="menu" type="Control" />
+			<param index="1" name="title" type="String" default="&quot;&quot;" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="disable_overwrite_warning" type="bool" setter="set_disable_overwrite_warning" getter="is_overwrite_warning_disabled" default="false">
+		</member>
+	</members>
+</class>

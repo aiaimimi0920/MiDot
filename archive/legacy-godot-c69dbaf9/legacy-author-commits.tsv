@@ -1,0 +1,46 @@
+sha	date	author_name	author_email	subject
+35b77c26abb6c0fee744e3c6e7924fdfd4b47fb4	2023-09-04T15:34:03+08:00	雅觅娱\瓶子	pingzi@yamiyu.com	1. 增加spine支持
+a99bfbe5fb9a43d94c21c959a8a34914e8517def	2023-09-04T15:50:31+08:00	雅觅娱\瓶子	pingzi@yamiyu.com	#2 合并https://github.com/Xwdit/godot yololive的提交：fdf647971162a2ba41f0d1b14d41a013551c0640  98df62578caedac851eb0c70af593b757d37d557  a2c5e55565ece21aed7c5ff080540f79d53aefd4  63d026054cecb9f1c72b9209b00a2d6d9189c45d   5ba966b4d87288616b8b9a574919fd5cf1590483    679e71e71080433b7176c1fc33734455f5e24336     04a8979967ac4b335ae13d72e5edbf6a7368f6f5     323476eca485aed1a29248bf622e1ad3d22f6b8d     7401d2368282bcfce9c6e60641eb008e47cf9cea    36bcaac1de50bf96d2f47c3fc40fa235312f41a7 基本上是Jun 8, 2023 前的所有提交
+d654681d030b458e6b63e07479611933cc610b0f	2023-10-20T09:36:31+08:00	雅觅娱\瓶子	pingzi@yamiyu.com	合并
+ac12837bd91f113b3737a65fe0acbfc93f28553b	2023-09-04T16:54:44+08:00	雅觅娱\瓶子	pingzi@yamiyu.com	#5 fix_bug
+5b6b9edfdf58c5878690190c3b056e040b039df9	2023-09-04T19:47:33+08:00	雅觅娱\瓶子	pingzi@yamiyu.com	#1 修复报错，重新编译
+911562835a79df9dc99c1d049fbca2077b352464	2023-10-20T09:37:50+08:00	雅觅娱\瓶子	pingzi@yamiyu.com	合并
+c0c8a9ceab202642dcd43924fcc382ccbe1900ec	2023-09-09T18:04:12+08:00	雅觅娱\瓶子	pingzi@yamiyu.com	#2 增加gif格式显示
+241f1d152dad2b082490df447fc1d5358f18148f	2023-10-20T09:48:26+08:00	雅觅娱\瓶子	pingzi@yamiyu.com	合并
+3c0d7f49afd133792775813a1d585c6544167cc9	2023-10-20T09:51:19+08:00	雅觅娱\瓶子	pingzi@yamiyu.com	合并
+e084aa23c1d77f34b5b0adc384566099411a555a	2023-10-20T09:58:35+08:00	雅觅娱\瓶子	pingzi@yamiyu.com	合并
+821d01f0533e2a52ef525bb3e943ae904af8d9a2	2023-10-20T09:59:17+08:00	雅觅娱\瓶子	pingzi@yamiyu.com	合并
+4382edd8caf1c45ed3d0763fc9c84311f987e91c	2023-10-20T10:01:14+08:00	雅觅娱\瓶子	pingzi@yamiyu.com	合并
+27c49058371ad5648aaafd4953151a9b99553fbe	2023-10-20T11:19:16+08:00	雅觅娱\瓶子	pingzi@yamiyu.com	1. 更换spine模块
+05a507fa780f41cdb4966d53389be9b21ef1d3ac	2023-10-20T11:48:14+08:00	雅觅娱\瓶子	pingzi@yamiyu.com	修复报错
+68ced3da036dea0c798f869d0fccde9d56c97048	2023-10-20T19:11:41+08:00	雅觅娱\瓶子	pingzi@yamiyu.com	fix bug
+c1115c453435978e35ff15570efeb433871bfa87	2023-10-20T20:08:01+08:00	雅觅娱\瓶子	pingzi@yamiyu.com	先不使用 dev_build=yes 打包
+b5dbcb2ea7eebef870c9efe2f3c475d9453cdc76	2023-11-02T22:27:58+08:00	vmjcv	vmjcv666@gmail.com	no message
+7f987aa5760a5f63dcd16b3ad7ea093515e11d03	2023-11-02T22:44:38+08:00	vmjcv	vmjcv666@gmail.com	fix bug
+2da99e9e8bfc672d94a23baf062f994620a1ce77	2023-11-02T22:56:13+08:00	vmjcv	vmjcv666@gmail.com	fix bug
+b6726b34e07bf528779c08a16abcf1448317ce7b	2023-12-28T09:30:09+08:00	vmjcv	vmjcv666@gmail.com	add icon
+e28a77fd8db08e009c3efe282f53533e0d1b21cf	2024-03-03T03:53:18+08:00	aiaimimi0920	153103332+aiaimimi0920@users.noreply.github.com	#cache code
+a5380d424f6e9c5ee6f9a8521d6770bd5707c5dc	2024-03-03T05:12:10+08:00	aiaimimi0920	153103332+aiaimimi0920@users.noreply.github.com	#delete color scheme
+3f0e0ff50a9f730db0bc86df1064b4ca2ad35aeb	2024-03-03T05:48:45+08:00	aiaimimi0920	153103332+aiaimimi0920@users.noreply.github.com	#cache code 1
+36e4dcfbaba3d5f2ae3fd7ca0628913323e1899b	2024-03-03T06:10:28+08:00	aiaimimi0920	153103332+aiaimimi0920@users.noreply.github.com	#cache code 2
+d9e26d5b8f308d049386baba38eae8ec4369e560	2024-03-04T02:25:27+08:00	aiaimimi0920	153103332+aiaimimi0920@users.noreply.github.com	# cache code
+804ba165fbac53038dbe388c025bc2874f15a713	2024-03-04T04:14:41+08:00	aiaimimi0920	153103332+aiaimimi0920@users.noreply.github.com	#cache code
+4ca785628288daaa334b7524aca53d62042af7b6	2024-03-04T07:07:16+08:00	aiaimimi0920	153103332+aiaimimi0920@users.noreply.github.com	# cache code
+97d7ae0e1d32473068584d1ae9a0f4773e35a31c	2024-03-04T08:18:07+08:00	aiaimimi0920	153103332+aiaimimi0920@users.noreply.github.com	# cache code no success
+8d2c17a83eac013a0fb67307848ce5ceb3d99f62	2024-03-04T08:44:43+08:00	aiaimimi0920	153103332+aiaimimi0920@users.noreply.github.com	# cache code
+55c2043f85d8edcd1a20ced04b06dfc3003465f7	2024-03-04T08:58:04+08:00	aiaimimi0920	153103332+aiaimimi0920@users.noreply.github.com	#cache code
+ed28e352ea79f74305103cc045549e393e0605cc	2024-03-04T09:25:53+08:00	aiaimimi0920	153103332+aiaimimi0920@users.noreply.github.com	# cache
+91670ca867903b228e630d6979f1c7db82ef0eea	2024-03-05T03:20:35+08:00	aiaimimi0920	153103332+aiaimimi0920@users.noreply.github.com	# cache code
+8ff0bc67d5d3af14f21abed3c893cd4a91b986bd	2024-03-05T07:37:28+08:00	aiaimimi0920	153103332+aiaimimi0920@users.noreply.github.com	# cache code
+cb4412f5fea49820125e1d51f1a10893f7d3ca54	2024-03-05T10:56:04+08:00	aiaimimi0920	153103332+aiaimimi0920@users.noreply.github.com	#cache code
+99059eab95b41829f16ad259a90d76ddb40be952	2024-03-06T10:41:33+08:00	aiaimimi0920	153103332+aiaimimi0920@users.noreply.github.com	# cache code
+d168d2585fe970d28608e541d15b1ec068cc2615	2024-03-06T11:33:25+08:00	aiaimimi0920	153103332+aiaimimi0920@users.noreply.github.com	# cache code
+7161e0306b6c5975b6e015476db797a83179ddd9	2024-03-06T14:47:54+08:00	aiaimimi0920	153103332+aiaimimi0920@users.noreply.github.com	#cache code
+c5bbac3b9e1f4296630eac26723fae1ee37123db	2024-03-06T21:34:10+08:00	aiaimimi0920	153103332+aiaimimi0920@users.noreply.github.com	#cache code
+7a065b30f81c30719dfd6dd95b982cd3f88b7479	2024-03-07T01:10:14+08:00	aiaimimi0920	153103332+aiaimimi0920@users.noreply.github.com	#cache code
+ce6bbe0dc39e0c31c9b8e0f7f4037d48c6e523e9	2024-03-07T01:15:45+08:00	aiaimimi0920	153103332+aiaimimi0920@users.noreply.github.com	#CACHE CODE
+973ba8c6ea34d36755ef5d62044e92561728bc0a	2024-03-07T01:56:22+08:00	aiaimimi0920	153103332+aiaimimi0920@users.noreply.github.com	#cache code
+654d56626dd46a2872b17320cc391f171e78dfc8	2024-03-07T03:46:20+08:00	aiaimimi0920	153103332+aiaimimi0920@users.noreply.github.com	# cache code
+cddb925ede6c5a3f578f55ea2184f731d0e039dd	2024-03-07T05:19:24+08:00	aiaimimi0920	153103332+aiaimimi0920@users.noreply.github.com	#cache code
+7692127695d38f40828d48c4e60726a4ef5efd29	2024-03-07T10:11:30+08:00	aiaimimi0920	153103332+aiaimimi0920@users.noreply.github.com	#cache code
+c69dbaf9e042080ace0bbc7a38a62d0aca86f29a	2024-03-08T05:53:23+08:00	aiaimimi0920	153103332+aiaimimi0920@users.noreply.github.com	# dynamic code

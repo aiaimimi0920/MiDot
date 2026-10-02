@@ -1,0 +1,359 @@
+[gd_scene format=3]
+
+[sub_resource type="ColorScheme" id="ColorScheme_d5s58"]
+
+[sub_resource type="Theme" id="Theme_hft16"]
+default_color_scheme = SubResource("ColorScheme_d5s58")
+SmokeFoldableContainer/base_type = &"FoldableContainer"
+SmokeGraphEdit/base_type = &"GraphEdit"
+SmokeGraphFrame/base_type = &"GraphFrame"
+SmokeHSeparator/base_type = &"HSeparator"
+SmokeHSplitContainer/base_type = &"HSplitContainer"
+SmokeRichTextLabel/base_type = &"RichTextLabel"
+SmokeScrollContainer/base_type = &"ScrollContainer"
+SmokeSpinBox/base_type = &"SpinBox"
+SmokeTabBar/base_type = &"TabBar"
+SmokeVSeparator/base_type = &"VSeparator"
+SmokeVSplitContainer/base_type = &"VSplitContainer"
+
+[sub_resource type="Image" id="Image_jivux"]
+data = {
+"data": PackedByteArray(255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255),
+"format": "RGBA8",
+"height": 16,
+"mipmaps": false,
+"width": 16
+}
+
+[sub_resource type="ImageTexture" id="ImageTexture_wcp26"]
+image = SubResource("Image_jivux")
+
+[node name="DynamicThemeSmoke" type="Control" unique_id=1327740561]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme = SubResource("Theme_hft16")
+
+[node name="Background" type="ColorRect" parent="." unique_id=799883707]
+layout_mode = 0
+offset_right = 1100.0
+offset_bottom = 850.0
+color_role = 26
+
+[node name="Caption" type="Label" parent="." unique_id=511594355]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 15.0
+offset_right = 1080.0
+offset_bottom = 60.0
+
+[node name="Foldable" type="FoldableContainer" parent="." unique_id=1365190896]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 80.0
+offset_right = 520.0
+offset_bottom = 230.0
+theme_type_variation = &"SmokeFoldableContainer"
+theme_override_colors/saved_scale = Color(0.8, 0.6, 0.4, 0.5)
+theme_override_color_roles/saved_role = 39
+theme_override_color_schemes/saved_scheme = SubResource("ColorScheme_d5s58")
+title = "FoldableContainer: focus, fold, title position"
+
+[node name="@Label@2" type="Label" parent="Foldable" unique_id=377015044]
+layout_mode = 2
+text = "Inherited dynamic theme
+Authored resources remain shared"
+
+[node name="Tabs" type="TabBar" parent="." unique_id=1550414002]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 250.0
+offset_right = 520.0
+offset_bottom = 292.0
+theme_type_variation = &"SmokeTabBar"
+theme_override_colors/saved_scale = Color(0.8, 0.6, 0.4, 0.5)
+theme_override_color_roles/saved_role = 39
+theme_override_color_schemes/saved_scheme = SubResource("ColorScheme_d5s58")
+current_tab = 1
+tab_count = 4
+tab_0/title = "Selected"
+tab_0/icon = SubResource("ImageTexture_wcp26")
+tab_1/title = "Hovered / focus"
+tab_1/icon = SubResource("ImageTexture_wcp26")
+tab_2/title = "Disabled"
+tab_2/icon = SubResource("ImageTexture_wcp26")
+tab_2/disabled = true
+tab_3/title = "Scroll tab"
+tab_3/icon = SubResource("ImageTexture_wcp26")
+
+[node name="Spin" type="SpinBox" parent="." unique_id=1125511532]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 315.0
+offset_right = 260.0
+offset_bottom = 360.0
+theme_type_variation = &"SmokeSpinBox"
+theme_override_colors/saved_scale = Color(0.8, 0.6, 0.4, 0.5)
+theme_override_color_roles/saved_role = 39
+theme_override_color_schemes/saved_scheme = SubResource("ColorScheme_d5s58")
+value = 42.0
+
+[node name="Button" type="Button" parent="." unique_id=1538130662]
+layout_mode = 0
+offset_left = 300.0
+offset_top = 315.0
+offset_right = 520.0
+offset_bottom = 360.0
+text = "Button"
+
+[node name="Split" type="HSplitContainer" parent="." unique_id=1526258366]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 390.0
+offset_right = 520.0
+offset_bottom = 520.0
+theme_type_variation = &"SmokeHSplitContainer"
+theme_override_colors/saved_scale = Color(0.8, 0.6, 0.4, 0.5)
+theme_override_color_roles/saved_role = 39
+theme_override_color_schemes/saved_scheme = SubResource("ColorScheme_d5s58")
+
+[node name="@Label@7" type="Label" parent="Split" unique_id=1036099228]
+custom_minimum_size = Vector2(190, 110)
+layout_mode = 2
+text = "Horizontal split left"
+
+[node name="@Label@8" type="Label" parent="Split" unique_id=2035329036]
+custom_minimum_size = Vector2(190, 110)
+layout_mode = 2
+text = "Horizontal split right"
+
+[node name="VerticalSplit" type="VSplitContainer" parent="." unique_id=2039761293]
+layout_mode = 0
+offset_left = 855.0
+offset_top = 380.0
+offset_right = 1075.0
+offset_bottom = 620.0
+theme_type_variation = &"SmokeVSplitContainer"
+theme_override_colors/saved_scale = Color(0.8, 0.6, 0.4, 0.5)
+theme_override_color_roles/saved_role = 39
+theme_override_color_schemes/saved_scheme = SubResource("ColorScheme_d5s58")
+
+[node name="@Label@10" type="Label" parent="VerticalSplit" unique_id=934995053]
+custom_minimum_size = Vector2(210, 95)
+layout_mode = 2
+text = "Vertical split top"
+
+[node name="@Label@11" type="Label" parent="VerticalSplit" unique_id=1202943869]
+custom_minimum_size = Vector2(210, 95)
+layout_mode = 2
+text = "Vertical split bottom"
+
+[node name="Scroll" type="ScrollContainer" parent="." unique_id=288344437]
+layout_mode = 0
+offset_left = 550.0
+offset_top = 380.0
+offset_right = 825.0
+offset_bottom = 620.0
+theme_type_variation = &"SmokeScrollContainer"
+theme_override_colors/saved_scale = Color(0.8, 0.6, 0.4, 0.5)
+theme_override_color_roles/saved_role = 39
+theme_override_color_schemes/saved_scheme = SubResource("ColorScheme_d5s58")
+scroll_vertical = 160
+
+[node name="@VBoxContainer@14" type="VBoxContainer" parent="Scroll" unique_id=1059989644]
+layout_mode = 2
+
+[node name="@Label@15" type="Label" parent="Scroll/@VBoxContainer@14" unique_id=332470324]
+layout_mode = 2
+text = "ScrollContainer row 00"
+
+[node name="@Label@16" type="Label" parent="Scroll/@VBoxContainer@14" unique_id=1014924910]
+layout_mode = 2
+text = "ScrollContainer row 01"
+
+[node name="@Label@17" type="Label" parent="Scroll/@VBoxContainer@14" unique_id=437171548]
+layout_mode = 2
+text = "ScrollContainer row 02"
+
+[node name="@Label@18" type="Label" parent="Scroll/@VBoxContainer@14" unique_id=306268472]
+layout_mode = 2
+text = "ScrollContainer row 03"
+
+[node name="@Label@19" type="Label" parent="Scroll/@VBoxContainer@14" unique_id=1806567043]
+layout_mode = 2
+text = "ScrollContainer row 04"
+
+[node name="@Label@20" type="Label" parent="Scroll/@VBoxContainer@14" unique_id=1393332571]
+layout_mode = 2
+text = "ScrollContainer row 05"
+
+[node name="@Label@21" type="Label" parent="Scroll/@VBoxContainer@14" unique_id=998663295]
+layout_mode = 2
+text = "ScrollContainer row 06"
+
+[node name="@Label@22" type="Label" parent="Scroll/@VBoxContainer@14" unique_id=1072158411]
+layout_mode = 2
+text = "ScrollContainer row 07"
+
+[node name="@Label@23" type="Label" parent="Scroll/@VBoxContainer@14" unique_id=1969123657]
+layout_mode = 2
+text = "ScrollContainer row 08"
+
+[node name="@Label@24" type="Label" parent="Scroll/@VBoxContainer@14" unique_id=126453324]
+layout_mode = 2
+text = "ScrollContainer row 09"
+
+[node name="@Label@25" type="Label" parent="Scroll/@VBoxContainer@14" unique_id=1570152235]
+layout_mode = 2
+text = "ScrollContainer row 10"
+
+[node name="@Label@26" type="Label" parent="Scroll/@VBoxContainer@14" unique_id=380854835]
+layout_mode = 2
+text = "ScrollContainer row 11"
+
+[node name="@Label@27" type="Label" parent="Scroll/@VBoxContainer@14" unique_id=1404061712]
+layout_mode = 2
+text = "ScrollContainer row 12"
+
+[node name="@Label@28" type="Label" parent="Scroll/@VBoxContainer@14" unique_id=756357169]
+layout_mode = 2
+text = "ScrollContainer row 13"
+
+[node name="@Label@29" type="Label" parent="Scroll/@VBoxContainer@14" unique_id=509574053]
+layout_mode = 2
+text = "ScrollContainer row 14"
+
+[node name="@Label@30" type="Label" parent="Scroll/@VBoxContainer@14" unique_id=913347517]
+layout_mode = 2
+text = "ScrollContainer row 15"
+
+[node name="@Label@31" type="Label" parent="Scroll/@VBoxContainer@14" unique_id=341214714]
+layout_mode = 2
+text = "ScrollContainer row 16"
+
+[node name="@Label@32" type="Label" parent="Scroll/@VBoxContainer@14" unique_id=1378445348]
+layout_mode = 2
+text = "ScrollContainer row 17"
+
+[node name="RichText" type="RichTextLabel" parent="." unique_id=581324621]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 560.0
+offset_right = 520.0
+offset_bottom = 650.0
+theme_type_variation = &"SmokeRichTextLabel"
+theme_override_colors/saved_scale = Color(0.8, 0.6, 0.4, 0.5)
+theme_override_color_roles/saved_role = 39
+theme_override_color_schemes/saved_scheme = SubResource("ColorScheme_d5s58")
+text = "RichTextLabel body follows default_color
+Authored overrides are preserved."
+
+[node name="HorizontalSeparator" type="HSeparator" parent="." unique_id=750579991]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 665.0
+offset_right = 520.0
+offset_bottom = 677.0
+theme_type_variation = &"SmokeHSeparator"
+theme_override_colors/saved_scale = Color(0.8, 0.6, 0.4, 0.5)
+theme_override_color_roles/saved_role = 39
+theme_override_color_schemes/saved_scheme = SubResource("ColorScheme_d5s58")
+
+[node name="VerticalSeparator" type="VSeparator" parent="." unique_id=410417881]
+layout_mode = 0
+offset_left = 532.0
+offset_top = 380.0
+offset_right = 544.0
+offset_bottom = 650.0
+theme_type_variation = &"SmokeVSeparator"
+theme_override_colors/saved_scale = Color(0.8, 0.6, 0.4, 0.5)
+theme_override_color_roles/saved_role = 39
+theme_override_color_schemes/saved_scheme = SubResource("ColorScheme_d5s58")
+
+[node name="ColorRect" type="ColorRect" parent="." unique_id=875856371]
+layout_mode = 0
+offset_left = 550.0
+offset_top = 700.0
+offset_right = 1075.0
+offset_bottom = 790.0
+color = Color(0.07058824, 0.20392157, 0.3372549, 1)
+color_role = 26
+
+[node name="Graph" type="GraphEdit" parent="." unique_id=2000212357]
+layout_mode = 0
+offset_left = 550.0
+offset_top = 80.0
+offset_right = 1075.0
+offset_bottom = 350.0
+theme_type_variation = &"SmokeGraphEdit"
+theme_override_colors/saved_scale = Color(0.8, 0.6, 0.4, 0.5)
+theme_override_color_roles/saved_role = 39
+theme_override_color_schemes/saved_scheme = SubResource("ColorScheme_d5s58")
+connections = Array[Dictionary]([{
+"from_node": &"Port0",
+"from_port": 0,
+"keep_alive": false,
+"to_node": &"Port1",
+"to_port": 0
+}])
+
+[node name="Frame" type="GraphFrame" parent="Graph" unique_id=1494543313]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 40.0
+offset_right = 470.0
+offset_bottom = 200.0
+mouse_filter = 1
+theme_type_variation = &"SmokeGraphFrame"
+theme_override_colors/saved_scale = Color(0.8, 0.6, 0.4, 0.5)
+theme_override_color_roles/saved_role = 39
+theme_override_color_schemes/saved_scheme = SubResource("ColorScheme_d5s58")
+position_offset = Vector2(10, 40)
+title = "GraphFrame"
+
+[node name="Port0" type="GraphNode" parent="Graph" unique_id=791647950]
+layout_mode = 0
+offset_left = 35.0
+offset_top = 75.0
+offset_right = 209.0
+offset_bottom = 153.0
+mouse_filter = 1
+position_offset = Vector2(35, 75)
+title = "Port0"
+slot/0/left_enabled = true
+slot/0/left_type = 0
+slot/0/left_color = Color(1, 1, 1, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = true
+slot/0/right_type = 0
+slot/0/right_color = Color(1, 1, 1, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+
+[node name="@Label@45" type="Label" parent="Graph/Port0" unique_id=988503594]
+layout_mode = 2
+text = "Active connection"
+
+[node name="Port1" type="GraphNode" parent="Graph" unique_id=213328289]
+layout_mode = 0
+offset_left = 280.0
+offset_top = 75.0
+offset_right = 454.0
+offset_bottom = 153.0
+mouse_filter = 1
+position_offset = Vector2(280, 75)
+title = "Port1"
+slot/0/left_enabled = true
+slot/0/left_type = 0
+slot/0/left_color = Color(1, 1, 1, 1)
+slot/0/left_icon = null
+slot/0/right_enabled = true
+slot/0/right_type = 0
+slot/0/right_color = Color(1, 1, 1, 1)
+slot/0/right_icon = null
+slot/0/draw_stylebox = true
+
+[node name="@Label@48" type="Label" parent="Graph/Port1" unique_id=831039271]
+layout_mode = 2
+text = "Active connection"

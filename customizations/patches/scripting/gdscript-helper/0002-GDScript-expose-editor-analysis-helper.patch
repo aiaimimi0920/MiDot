@@ -1,0 +1,530 @@
+From 6c29e2c8bed2e64cfbf8fd5310b518f56386fac3 Mon Sep 17 00:00:00 2001
+From: aiaimimi0920 <153103332+aiaimimi0920@users.noreply.github.com>
+Date: Sun, 30 Aug 2026 01:29:51 +0800
+Subject: [PATCH] GDScript: expose editor analysis helper
+
+Port the personal validation, function-outline, completion, and symbol-lookup wrapper to the modern EditorLanguage API while retaining headless editor-build use.
+
+Godot-Patch-Topic: scripting.gdscript-helper
+---
+ .../gdscript/doc_classes/GDScriptHelper.xml   | 109 ++++++++++
+ modules/gdscript/gdscript_editor.cpp          |  15 +-
+ modules/gdscript/gdscript_helper.cpp          | 199 ++++++++++++++++++
+ modules/gdscript/gdscript_helper.h            |  98 +++++++++
+ modules/gdscript/register_types.cpp           |   6 +
+ 5 files changed, 420 insertions(+), 7 deletions(-)
+ create mode 100644 modules/gdscript/doc_classes/GDScriptHelper.xml
+ create mode 100644 modules/gdscript/gdscript_helper.cpp
+ create mode 100644 modules/gdscript/gdscript_helper.h
+
+diff --git a/modules/gdscript/doc_classes/GDScriptHelper.xml b/modules/gdscript/doc_classes/GDScriptHelper.xml
+new file mode 100644
+index 0000000000000000000000000000000000000000..92cbf86862a598cdc7b1c3c014870c94598ab977
+--- /dev/null
++++ b/modules/gdscript/doc_classes/GDScriptHelper.xml
+@@ -0,0 +1,109 @@
++<?xml version="1.0" encoding="UTF-8" ?>
++<class name="GDScriptHelper" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
++	<brief_description>
++		Exposes GDScript editor-language analysis to scripts.
++	</brief_description>
++	<description>
++		[GDScriptHelper] validates GDScript source, returns its function outline, requests code completion, and resolves symbols without opening the script editor.
++		[b]Note:[/b] This class is available only in editor builds. Completion and context-sensitive lookup source must contain [code]String.chr(0xffff)[/code] at the cursor position.
++	</description>
++	<tutorials>
++	</tutorials>
++	<methods>
++		<method name="get_completion_hint" qualifiers="const">
++			<return type="String" />
++			<description>
++				Returns the call hint produced by the last successful [method set_completion_code] request.
++			</description>
++		</method>
++		<method name="get_completion_options" qualifiers="const">
++			<return type="Dictionary[]" />
++			<description>
++				Returns completion dictionaries from the last [method set_completion_code] request. Each dictionary contains [code]type[/code], [code]display_text[/code], [code]insert_text[/code], and [code]default_value[/code].
++			</description>
++		</method>
++		<method name="get_errors" qualifiers="const">
++			<return type="Dictionary[]" />
++			<description>
++				Returns validation errors from the last [method set_validate_code] request. Each dictionary contains zero-based [code]line[/code] and [code]column[/code] values and a [code]message[/code].
++			</description>
++		</method>
++		<method name="get_functions" qualifiers="const">
++			<return type="Dictionary" />
++			<description>
++				Returns a dictionary that maps function names to zero-based declaration lines from the last successful [method set_validate_code] request.
++			</description>
++		</method>
++		<method name="has_completion_hint" qualifiers="const">
++			<return type="bool" />
++			<description>
++				Returns [code]true[/code] if the last completion request produced a call hint.
++			</description>
++		</method>
++		<method name="has_completion_options" qualifiers="const">
++			<return type="bool" />
++			<description>
++				Returns [code]true[/code] if the last completion request produced at least one option.
++			</description>
++		</method>
++		<method name="has_errors" qualifiers="const">
++			<return type="bool" />
++			<description>
++				Returns [code]true[/code] if the last validation request produced at least one error.
++			</description>
++		</method>
++		<method name="has_functions" qualifiers="const">
++			<return type="bool" />
++			<description>
++				Returns [code]true[/code] if the last successful validation request found at least one function.
++			</description>
++		</method>
++		<method name="is_completion_forced" qualifiers="const">
++			<return type="bool" />
++			<description>
++				Returns whether completion should take priority over the call hint for the last request.
++			</description>
++		</method>
++		<method name="lookup_code">
++			<return type="Dictionary" />
++			<param index="0" name="code" type="String" />
++			<param index="1" name="symbol" type="String" />
++			<param index="2" name="script_path" type="String" default="&quot;&quot;" />
++			<param index="3" name="script_owner" type="Object" default="null" />
++			<description>
++				Resolves [param symbol] in [param code]. On success, returns a dictionary containing [code]type[/code], [code]script[/code], [code]class_name[/code], [code]class_member[/code], [code]class_path[/code], and [code]location[/code]. Returns an empty dictionary if the symbol cannot be resolved.
++			</description>
++		</method>
++		<method name="set_completion_code">
++			<return type="int" enum="Error" />
++			<param index="0" name="code" type="String" />
++			<param index="1" name="script_path" type="String" default="&quot;&quot;" />
++			<param index="2" name="script_owner" type="Object" default="null" />
++			<description>
++				Analyzes [param code] and stores its completion options and call hint. The source must contain [code]String.chr(0xffff)[/code] at the cursor position.
++			</description>
++		</method>
++		<method name="set_validate_code">
++			<return type="bool" />
++			<param index="0" name="code" type="String" />
++			<param index="1" name="script_path" type="String" default="&quot;&quot;" />
++			<description>
++				Validates [param code], stores its errors and function outline, and returns [code]true[/code] if the source has no errors.
++			</description>
++		</method>
++	</methods>
++	<constants>
++		<constant name="LOOKUP_RESULT_SCRIPT_LOCATION" value="0" enum="LookupResultType" />
++		<constant name="LOOKUP_RESULT_CLASS" value="1" enum="LookupResultType" />
++		<constant name="LOOKUP_RESULT_CLASS_CONSTANT" value="2" enum="LookupResultType" />
++		<constant name="LOOKUP_RESULT_CLASS_PROPERTY" value="3" enum="LookupResultType" />
++		<constant name="LOOKUP_RESULT_CLASS_METHOD" value="4" enum="LookupResultType" />
++		<constant name="LOOKUP_RESULT_CLASS_SIGNAL" value="5" enum="LookupResultType" />
++		<constant name="LOOKUP_RESULT_CLASS_ENUM" value="6" enum="LookupResultType" />
++		<constant name="LOOKUP_RESULT_CLASS_TBD_GLOBALSCOPE" value="7" enum="LookupResultType" is_deprecated="true" />
++		<constant name="LOOKUP_RESULT_CLASS_ANNOTATION" value="8" enum="LookupResultType" />
++		<constant name="LOOKUP_RESULT_LOCAL_CONSTANT" value="9" enum="LookupResultType" />
++		<constant name="LOOKUP_RESULT_LOCAL_VARIABLE" value="10" enum="LookupResultType" />
++		<constant name="LOOKUP_RESULT_MAX" value="11" enum="LookupResultType" />
++	</constants>
++</class>
+diff --git a/modules/gdscript/gdscript_editor.cpp b/modules/gdscript/gdscript_editor.cpp
+index b08055d1d6313e14bdb5815ee11db758670166f9..9c951789aa4a329a0eeaf73f767c791087139dc4 100644
+--- a/modules/gdscript/gdscript_editor.cpp
++++ b/modules/gdscript/gdscript_editor.cpp
+@@ -933,15 +933,16 @@ static String _make_arguments_hint(const GDScriptParser::FunctionNode *p_functio
+  * @param p_expected - The expected variant type at the context were the string is to be insert. Use `Variant::Type::NIL` if this does not apply.
+  */
+ static ScriptLanguage::CodeCompletionOption _calculate_string_insertion(const GDScriptParser::Node *p_existing, const String &p_content, Variant::Type p_expected = Variant::NIL) {
+-	const String quote_style = EDITOR_GET("text_editor/completion/use_single_quotes") ? "'" : "\"";
++	const bool has_editor_settings = EditorSettings::get_singleton() != nullptr;
++	const String quote_style = has_editor_settings && bool(EDITOR_GET("text_editor/completion/use_single_quotes")) ? "'" : "\"";
+ 
+ 	const GDScriptParser::LiteralNode *existing_literal = p_existing && p_existing->type == GDScriptParser::Node::LITERAL ? static_cast<const GDScriptParser::LiteralNode *>(p_existing) : nullptr;
+ 
+ 	const bool has_string_name = existing_literal && existing_literal->value.get_type() == Variant::STRING_NAME;
+ 	const bool has_node_path = existing_literal && existing_literal->value.get_type() == Variant::NODE_PATH;
+ 
+-	const bool should_have_string_name = (p_expected == Variant::STRING_NAME && EDITOR_GET("text_editor/completion/add_string_name_literals")) || has_string_name;
+-	const bool should_have_node_path = (p_expected == Variant::NODE_PATH && EDITOR_GET("text_editor/completion/add_node_path_literals")) || has_node_path;
++	const bool should_have_string_name = (p_expected == Variant::STRING_NAME && has_editor_settings && bool(EDITOR_GET("text_editor/completion/add_string_name_literals"))) || has_string_name;
++	const bool should_have_node_path = (p_expected == Variant::NODE_PATH && has_editor_settings && bool(EDITOR_GET("text_editor/completion/add_node_path_literals"))) || has_node_path;
+ 
+ 	String final_code = p_content.quote(quote_style);
+ 	if (should_have_string_name) {
+@@ -3235,7 +3236,7 @@ static void _list_call_arguments(GDScriptParser::CompletionContext &p_context, c
+ 						r_result.insert(option.display, option);
+ 					}
+ 				}
+-				if (EDITOR_GET("text_editor/completion/complete_file_paths")) {
++				if (EditorSettings::get_singleton() != nullptr && bool(EDITOR_GET("text_editor/completion/complete_file_paths"))) {
+ 					if (p_argidx == 0 && method == SNAME("change_scene_to_file") && ClassDB::is_parent_class(class_name, SNAME("SceneTree"))) {
+ 						HashMap<String, ScriptLanguage::CodeCompletionOption> list;
+ 						_get_directory_contents(existing_argument, EditorFileSystem::get_singleton()->get_filesystem(), list, SNAME("PackedScene"));
+@@ -3371,7 +3372,7 @@ static bool _get_subscript_type(GDScriptParser::CompletionContext &p_context, co
+ 
+ static void _find_call_arguments(GDScriptParser::CompletionContext &p_context, const GDScriptParser::Node *p_call, int p_argidx, HashMap<String, ScriptLanguage::CodeCompletionOption> &r_result, bool &r_forced, String &r_arghint) {
+ 	if (p_call->type == GDScriptParser::Node::PRELOAD) {
+-		if (p_argidx == 0 && bool(EDITOR_GET("text_editor/completion/complete_file_paths"))) {
++		if (p_argidx == 0 && EditorSettings::get_singleton() != nullptr && bool(EDITOR_GET("text_editor/completion/complete_file_paths"))) {
+ 			_get_directory_contents(static_cast<const GDScriptParser::PreloadNode *>(p_call)->path, EditorFileSystem::get_singleton()->get_filesystem(), r_result);
+ 		}
+ 
+@@ -3477,7 +3478,7 @@ static void _find_call_arguments(GDScriptParser::CompletionContext &p_context, c
+ }
+ 
+ ::Error GDScriptEditorLanguage::complete_code(const String &p_code, const String &p_path, Object *p_owner, List<ScriptLanguage::CodeCompletionOption> *r_options, bool &r_forced, String &r_call_hint) {
+-	const String quote_style = EDITOR_GET("text_editor/completion/use_single_quotes") ? "'" : "\"";
++	const String quote_style = EditorSettings::get_singleton() != nullptr && bool(EDITOR_GET("text_editor/completion/use_single_quotes")) ? "'" : "\"";
+ 
+ 	GDScriptParser parser;
+ 	GDScriptAnalyzer analyzer(&parser);
+@@ -3714,7 +3715,7 @@ static void _find_call_arguments(GDScriptParser::CompletionContext &p_context, c
+ 				existing = preload->path;
+ 			}
+ 
+-			if (EDITOR_GET("text_editor/completion/complete_file_paths")) {
++			if (EditorSettings::get_singleton() != nullptr && bool(EDITOR_GET("text_editor/completion/complete_file_paths"))) {
+ 				_get_directory_contents(existing, EditorFileSystem::get_singleton()->get_filesystem(), options);
+ 				r_forced = true;
+ 			}
+diff --git a/modules/gdscript/gdscript_helper.cpp b/modules/gdscript/gdscript_helper.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..5fed0fe05afdd39819ae75f1134e165451d7cdb0
+--- /dev/null
++++ b/modules/gdscript/gdscript_helper.cpp
+@@ -0,0 +1,199 @@
++/**************************************************************************/
++/*  gdscript_helper.cpp                                                   */
++/**************************************************************************/
++/*                         This file is part of:                          */
++/*                             GODOT ENGINE                               */
++/*                        https://godotengine.org                         */
++/**************************************************************************/
++/* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
++/* Copyright (c) 2007-2014 Juan Linietsky, Ariel Manzur.                  */
++/*                                                                        */
++/* Permission is hereby granted, free of charge, to any person obtaining  */
++/* a copy of this software and associated documentation files (the        */
++/* "Software"), to deal in the Software without restriction, including    */
++/* without limitation the rights to use, copy, modify, merge, publish,    */
++/* distribute, sublicense, and/or sell copies of the Software, and to     */
++/* permit persons to whom the Software is furnished to do so, subject to  */
++/* the following conditions:                                              */
++/*                                                                        */
++/* The above copyright notice and this permission notice shall be         */
++/* included in all copies or substantial portions of the Software.        */
++/*                                                                        */
++/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,        */
++/* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF     */
++/* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. */
++/* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY   */
++/* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,   */
++/* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE      */
++/* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
++/**************************************************************************/
++
++#include "gdscript_helper.h"
++
++#ifdef TOOLS_ENABLED
++
++#include "core/io/resource_loader.h"
++#include "core/object/class_db.h"
++#include "editor/gdscript_editor_language.h"
++
++void GDScriptHelper::_bind_methods() {
++	ClassDB::bind_method(D_METHOD("set_validate_code", "code", "script_path"), &GDScriptHelper::set_validate_code, DEFVAL(String()));
++	ClassDB::bind_method(D_METHOD("has_errors"), &GDScriptHelper::has_errors);
++	ClassDB::bind_method(D_METHOD("get_errors"), &GDScriptHelper::get_errors);
++	ClassDB::bind_method(D_METHOD("has_functions"), &GDScriptHelper::has_functions);
++	ClassDB::bind_method(D_METHOD("get_functions"), &GDScriptHelper::get_functions);
++
++	ClassDB::bind_method(D_METHOD("set_completion_code", "code", "script_path", "script_owner"), &GDScriptHelper::set_completion_code, DEFVAL(String()), DEFVAL(Variant()));
++	ClassDB::bind_method(D_METHOD("has_completion_options"), &GDScriptHelper::has_completion_options);
++	ClassDB::bind_method(D_METHOD("get_completion_options"), &GDScriptHelper::get_completion_options);
++	ClassDB::bind_method(D_METHOD("has_completion_hint"), &GDScriptHelper::has_completion_hint);
++	ClassDB::bind_method(D_METHOD("get_completion_hint"), &GDScriptHelper::get_completion_hint);
++	ClassDB::bind_method(D_METHOD("is_completion_forced"), &GDScriptHelper::is_completion_forced);
++
++	ClassDB::bind_method(D_METHOD("lookup_code", "code", "symbol", "script_path", "script_owner"), &GDScriptHelper::lookup_code, DEFVAL(String()), DEFVAL(Variant()));
++
++	BIND_ENUM_CONSTANT(LOOKUP_RESULT_SCRIPT_LOCATION);
++	BIND_ENUM_CONSTANT(LOOKUP_RESULT_CLASS);
++	BIND_ENUM_CONSTANT(LOOKUP_RESULT_CLASS_CONSTANT);
++	BIND_ENUM_CONSTANT(LOOKUP_RESULT_CLASS_PROPERTY);
++	BIND_ENUM_CONSTANT(LOOKUP_RESULT_CLASS_METHOD);
++	BIND_ENUM_CONSTANT(LOOKUP_RESULT_CLASS_SIGNAL);
++	BIND_ENUM_CONSTANT(LOOKUP_RESULT_CLASS_ENUM);
++	BIND_ENUM_CONSTANT(LOOKUP_RESULT_CLASS_TBD_GLOBALSCOPE);
++	BIND_ENUM_CONSTANT(LOOKUP_RESULT_CLASS_ANNOTATION);
++	BIND_ENUM_CONSTANT(LOOKUP_RESULT_LOCAL_CONSTANT);
++	BIND_ENUM_CONSTANT(LOOKUP_RESULT_LOCAL_VARIABLE);
++	BIND_ENUM_CONSTANT(LOOKUP_RESULT_MAX);
++}
++
++int GDScriptHelper::_get_completion_kind_priority(ScriptLanguage::CodeCompletionKind p_kind) {
++	switch (p_kind) {
++		case ScriptLanguage::CODE_COMPLETION_KIND_VARIABLE:
++			return 0;
++		case ScriptLanguage::CODE_COMPLETION_KIND_MEMBER:
++			return 1;
++		case ScriptLanguage::CODE_COMPLETION_KIND_FUNCTION:
++			return 2;
++		case ScriptLanguage::CODE_COMPLETION_KIND_ENUM:
++			return 3;
++		case ScriptLanguage::CODE_COMPLETION_KIND_SIGNAL:
++			return 4;
++		case ScriptLanguage::CODE_COMPLETION_KIND_CONSTANT:
++			return 5;
++		case ScriptLanguage::CODE_COMPLETION_KIND_CLASS:
++			return 6;
++		case ScriptLanguage::CODE_COMPLETION_KIND_NODE_PATH:
++			return 7;
++		case ScriptLanguage::CODE_COMPLETION_KIND_FILE_PATH:
++			return 8;
++		case ScriptLanguage::CODE_COMPLETION_KIND_PLAIN_TEXT:
++			return 9;
++		case ScriptLanguage::CODE_COMPLETION_KIND_KEYWORD:
++			return 10;
++		case ScriptLanguage::CODE_COMPLETION_KIND_MAX:
++			return 11;
++	}
++	return 11;
++}
++
++bool GDScriptHelper::set_validate_code(const String &p_code, const String &p_path) {
++	functions.clear();
++	errors.clear();
++	GDScriptEditorLanguage *language = GDScriptEditorLanguage::get_singleton();
++	ERR_FAIL_NULL_V(language, false);
++	return language->validate(p_code, p_path, &errors, nullptr, &functions, nullptr);
++}
++
++bool GDScriptHelper::has_errors() const {
++	return !errors.is_empty();
++}
++
++TypedArray<Dictionary> GDScriptHelper::get_errors() const {
++	TypedArray<Dictionary> result;
++	for (const EditorLanguage::ScriptError &error_data : errors) {
++		Dictionary error;
++		error["line"] = error_data.start_line - 1;
++		error["column"] = error_data.start_column - 1;
++		error["message"] = error_data.message;
++		result.push_back(error);
++	}
++	return result;
++}
++
++bool GDScriptHelper::has_functions() const {
++	return !functions.is_empty();
++}
++
++Dictionary GDScriptHelper::get_functions() const {
++	Dictionary result;
++	for (const String &function : functions) {
++		result[function.get_slice(":", 0)] = function.get_slice(":", 1).to_int() - 1;
++	}
++	return result;
++}
++
++Error GDScriptHelper::set_completion_code(const String &p_code, const String &p_path, Object *p_owner) {
++	completion_options.clear();
++	completion_forced = false;
++	completion_hint.clear();
++
++	GDScriptEditorLanguage *language = GDScriptEditorLanguage::get_singleton();
++	ERR_FAIL_NULL_V(language, ERR_UNAVAILABLE);
++	const Error error = language->complete_code(p_code, p_path, p_owner, &completion_options, completion_forced, completion_hint);
++	completion_options.sort_custom<CompletionOptionComparator>();
++	return error;
++}
++
++bool GDScriptHelper::has_completion_options() const {
++	return !completion_options.is_empty();
++}
++
++TypedArray<Dictionary> GDScriptHelper::get_completion_options() const {
++	TypedArray<Dictionary> result;
++	for (const ScriptLanguage::CodeCompletionOption &completion_option : completion_options) {
++		Dictionary option;
++		option["type"] = completion_option.kind;
++		option["display_text"] = completion_option.display;
++		option["insert_text"] = completion_option.insert_text;
++		option["default_value"] = completion_option.default_value;
++		result.push_back(option);
++	}
++	return result;
++}
++
++bool GDScriptHelper::has_completion_hint() const {
++	return !completion_hint.is_empty();
++}
++
++String GDScriptHelper::get_completion_hint() const {
++	return completion_hint;
++}
++
++bool GDScriptHelper::is_completion_forced() const {
++	return completion_forced;
++}
++
++Dictionary GDScriptHelper::lookup_code(const String &p_code, const String &p_symbol, const String &p_path, Object *p_owner) {
++	Dictionary result;
++	GDScriptEditorLanguage *language = GDScriptEditorLanguage::get_singleton();
++	ERR_FAIL_NULL_V(language, result);
++
++	EditorLanguage::LookupResult lookup_result;
++	if (language->lookup_code(p_code, p_symbol, p_path, p_owner, lookup_result) != OK) {
++		return result;
++	}
++
++	Ref<Resource> script;
++	if (!lookup_result.script_path.is_empty() && ResourceLoader::exists(lookup_result.script_path)) {
++		script = ResourceLoader::load(lookup_result.script_path);
++	}
++	result["type"] = static_cast<int>(lookup_result.type);
++	result["script"] = script;
++	result["class_name"] = lookup_result.class_name;
++	result["class_member"] = lookup_result.class_member;
++	result["class_path"] = lookup_result.script_path;
++	result["location"] = lookup_result.location;
++	return result;
++}
++
++#endif // TOOLS_ENABLED
+diff --git a/modules/gdscript/gdscript_helper.h b/modules/gdscript/gdscript_helper.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..a948dd515dfae1a191180b383164907f630cdfc1
+--- /dev/null
++++ b/modules/gdscript/gdscript_helper.h
+@@ -0,0 +1,98 @@
++/**************************************************************************/
++/*  gdscript_helper.h                                                     */
++/**************************************************************************/
++/*                         This file is part of:                          */
++/*                             GODOT ENGINE                               */
++/*                        https://godotengine.org                         */
++/**************************************************************************/
++/* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
++/* Copyright (c) 2007-2014 Juan Linietsky, Ariel Manzur.                  */
++/*                                                                        */
++/* Permission is hereby granted, free of charge, to any person obtaining  */
++/* a copy of this software and associated documentation files (the        */
++/* "Software"), to deal in the Software without restriction, including    */
++/* without limitation the rights to use, copy, modify, merge, publish,    */
++/* distribute, sublicense, and/or sell copies of the Software, and to     */
++/* permit persons to whom the Software is furnished to do so, subject to  */
++/* the following conditions:                                              */
++/*                                                                        */
++/* The above copyright notice and this permission notice shall be         */
++/* included in all copies or substantial portions of the Software.        */
++/*                                                                        */
++/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,        */
++/* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF     */
++/* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. */
++/* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY   */
++/* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,   */
++/* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE      */
++/* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
++/**************************************************************************/
++
++#pragma once
++
++#ifdef TOOLS_ENABLED
++
++#include "core/object/editor_language.h"
++#include "core/object/ref_counted.h"
++
++class GDScriptHelper : public RefCounted {
++	GDCLASS(GDScriptHelper, RefCounted);
++
++	List<String> functions;
++	List<EditorLanguage::ScriptError> errors;
++	List<ScriptLanguage::CodeCompletionOption> completion_options;
++	String completion_hint;
++	bool completion_forced = false;
++
++	static int _get_completion_kind_priority(ScriptLanguage::CodeCompletionKind p_kind);
++
++	struct CompletionOptionComparator {
++		_FORCE_INLINE_ bool operator()(const ScriptLanguage::CodeCompletionOption &p_left, const ScriptLanguage::CodeCompletionOption &p_right) const {
++			if (p_left.location != p_right.location) {
++				return p_left.location < p_right.location;
++			}
++			if (p_left.kind != p_right.kind) {
++				return _get_completion_kind_priority(p_left.kind) < _get_completion_kind_priority(p_right.kind);
++			}
++			return p_left.display < p_right.display;
++		}
++	};
++
++protected:
++	static void _bind_methods();
++
++public:
++	enum LookupResultType {
++		LOOKUP_RESULT_SCRIPT_LOCATION,
++		LOOKUP_RESULT_CLASS,
++		LOOKUP_RESULT_CLASS_CONSTANT,
++		LOOKUP_RESULT_CLASS_PROPERTY,
++		LOOKUP_RESULT_CLASS_METHOD,
++		LOOKUP_RESULT_CLASS_SIGNAL,
++		LOOKUP_RESULT_CLASS_ENUM,
++		LOOKUP_RESULT_CLASS_TBD_GLOBALSCOPE,
++		LOOKUP_RESULT_CLASS_ANNOTATION,
++		LOOKUP_RESULT_LOCAL_CONSTANT,
++		LOOKUP_RESULT_LOCAL_VARIABLE,
++		LOOKUP_RESULT_MAX,
++	};
++
++	bool set_validate_code(const String &p_code, const String &p_path = String());
++	bool has_errors() const;
++	TypedArray<Dictionary> get_errors() const;
++	bool has_functions() const;
++	Dictionary get_functions() const;
++
++	Error set_completion_code(const String &p_code, const String &p_path = String(), Object *p_owner = nullptr);
++	bool has_completion_options() const;
++	TypedArray<Dictionary> get_completion_options() const;
++	bool has_completion_hint() const;
++	String get_completion_hint() const;
++	bool is_completion_forced() const;
++
++	Dictionary lookup_code(const String &p_code, const String &p_symbol, const String &p_path = String(), Object *p_owner = nullptr);
++};
++
++VARIANT_ENUM_CAST(GDScriptHelper::LookupResultType);
++
++#endif // TOOLS_ENABLED
+diff --git a/modules/gdscript/register_types.cpp b/modules/gdscript/register_types.cpp
+index c987d50dc0c90eeff134faf7404bd9d7999497e6..a08aca279e48d1d8789ba7773d7bc89620f266e2 100644
+--- a/modules/gdscript/register_types.cpp
++++ b/modules/gdscript/register_types.cpp
+@@ -38,6 +38,8 @@
+ #include "gdscript_utility_functions.h"
+ 
+ #ifdef TOOLS_ENABLED
++#include "gdscript_helper.h"
++
+ #include "editor/gdscript_editor_language.h"
+ #include "editor/gdscript_highlighter.h"
+ #include "editor/gdscript_translation_parser_plugin.h"
+@@ -152,6 +154,10 @@ void initialize_gdscript_module(ModuleInitializationLevel p_level) {
+ 		gdscript_cache = memnew(GDScriptCache);
+ 
+ 		GDScriptUtilityFunctions::register_functions();
++
++#ifdef TOOLS_ENABLED
++		GDREGISTER_CLASS(GDScriptHelper);
++#endif
+ 	}
+ 
+ #ifdef TOOLS_ENABLED
+
+base-commit: 5ec4857b340b6284a18b49b2eda462bd250f219a
+prerequisite-patch-id: b38459b409a3326aed65d2433e1341638171f884

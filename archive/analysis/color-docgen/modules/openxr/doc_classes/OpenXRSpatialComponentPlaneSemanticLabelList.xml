@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="OpenXRSpatialComponentPlaneSemanticLabelList" inherits="OpenXRSpatialComponentData" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_plane_semantic_label" qualifiers="const">
+			<return type="int" enum="OpenXRSpatialComponentPlaneSemanticLabelList.PlaneSemanticLabel" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="PLANE_SEMANTIC_LABEL_UNCATEGORIZED" value="1" enum="PlaneSemanticLabel">
+		</constant>
+		<constant name="PLANE_SEMANTIC_LABEL_FLOOR" value="2" enum="PlaneSemanticLabel">
+		</constant>
+		<constant name="PLANE_SEMANTIC_LABEL_WALL" value="3" enum="PlaneSemanticLabel">
+		</constant>
+		<constant name="PLANE_SEMANTIC_LABEL_CEILING" value="4" enum="PlaneSemanticLabel">
+		</constant>
+		<constant name="PLANE_SEMANTIC_LABEL_TABLE" value="5" enum="PlaneSemanticLabel">
+		</constant>
+	</constants>
+</class>

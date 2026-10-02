@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TriangleMesh" inherits="RefCounted" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="create_from_faces">
+			<return type="bool" />
+			<param index="0" name="faces" type="PackedVector3Array" />
+			<description>
+			</description>
+		</method>
+		<method name="get_faces" qualifiers="const">
+			<return type="PackedVector3Array" />
+			<description>
+			</description>
+		</method>
+		<method name="intersect_ray" qualifiers="const">
+			<return type="Dictionary" />
+			<param index="0" name="begin" type="Vector3" />
+			<param index="1" name="dir" type="Vector3" />
+			<description>
+			</description>
+		</method>
+		<method name="intersect_segment" qualifiers="const">
+			<return type="Dictionary" />
+			<param index="0" name="begin" type="Vector3" />
+			<param index="1" name="end" type="Vector3" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>

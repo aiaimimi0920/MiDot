@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="FuzzySearch" inherits="RefCounted" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="search" qualifiers="const">
+			<return type="FuzzySearchMatch" />
+			<param index="0" name="query" type="String" />
+			<param index="1" name="target" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="search_all" qualifiers="const">
+			<return type="FuzzySearchMatch[]" />
+			<param index="0" name="query" type="String" />
+			<param index="1" name="targets" type="PackedStringArray" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="case_sensitive" type="bool" setter="set_case_sensitive" getter="get_case_sensitive" default="false">
+		</member>
+		<member name="filter_cutoff" type="float" setter="set_filter_cutoff" getter="get_filter_cutoff" default="30.0">
+		</member>
+		<member name="filter_factor" type="float" setter="set_filter_factor" getter="get_filter_factor" default="0.1">
+		</member>
+		<member name="filter_low_scores" type="bool" setter="set_filter_low_scores" getter="get_filter_low_scores" default="true">
+		</member>
+		<member name="max_misses" type="int" setter="set_max_misses" getter="get_max_misses" default="2">
+		</member>
+		<member name="max_results" type="int" setter="set_max_results" getter="get_max_results" default="100">
+		</member>
+		<member name="start_offset" type="int" setter="set_start_offset" getter="get_start_offset" default="0">
+		</member>
+		<member name="use_exact_tokens" type="bool" setter="set_use_exact_tokens" getter="get_use_exact_tokens" default="false">
+		</member>
+	</members>
+</class>

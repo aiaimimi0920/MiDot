@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="AudioEffectHardLimiter" inherits="AudioEffect" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="ceiling_db" type="float" setter="set_ceiling_db" getter="get_ceiling_db" default="-0.3">
+		</member>
+		<member name="pre_gain_db" type="float" setter="set_pre_gain_db" getter="get_pre_gain_db" default="0.0">
+		</member>
+		<member name="release" type="float" setter="set_release" getter="get_release" default="0.1">
+		</member>
+	</members>
+</class>

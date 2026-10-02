@@ -1,0 +1,1337 @@
+From a5380d424f6e9c5ee6f9a8521d6770bd5707c5dc Mon Sep 17 00:00:00 2001
+From: aiaimimi0920 <153103332+aiaimimi0920@users.noreply.github.com>
+Date: Sun, 3 Mar 2024 05:12:10 +0800
+Subject: [PATCH] #delete color scheme
+
+---
+ core/variant/variant.cpp      |  10 -
+ core/variant/variant.h        |   5 -
+ scene/gui/control.cpp         | 205 --------------------
+ scene/gui/control.h           |  16 --
+ scene/resources/theme.cpp     | 356 ----------------------------------
+ scene/resources/theme.h       |  39 ----
+ scene/theme/default_theme.cpp |  19 +-
+ scene/theme/default_theme.h   |   4 +-
+ scene/theme/theme_db.cpp      |  27 +--
+ scene/theme/theme_db.h        |   5 -
+ scene/theme/theme_owner.cpp   |  30 ---
+ scene/theme/theme_owner.h     |   1 -
+ 12 files changed, 7 insertions(+), 710 deletions(-)
+
+diff --git a/core/variant/variant.cpp b/core/variant/variant.cpp
+index 2c17044ed90f5a5fbe99bd71e7644df980a92b7c..4c0212075b0d7e80c2a3e20bb71566f6ecae4701 100644
+--- a/core/variant/variant.cpp
++++ b/core/variant/variant.cpp
+@@ -2404,11 +2404,6 @@ Variant::operator Orientation() const {
+ 	return (Orientation) operator int();
+ }
+ 
+-
+-Variant::operator ColorRole() const {
+-	return (ColorRole) operator int();
+-}
+-
+ Variant::operator IPAddress() const {
+ 	if (type == PACKED_FLOAT32_ARRAY || type == PACKED_INT32_ARRAY || type == PACKED_FLOAT64_ARRAY || type == PACKED_INT64_ARRAY || type == PACKED_BYTE_ARRAY) {
+ 		Vector<int> addr = operator Vector<int>();
+@@ -2598,11 +2593,6 @@ Variant::Variant(const Color &p_color) {
+ 	memnew_placement(_data._mem, Color(p_color));
+ }
+ 
+-// Variant::Variant(const ColorRole &p_color_role) {
+-// 	type = COLOR;
+-// 	memnew_placement(_data._mem, ColorRole(p_color_role));
+-// }
+-
+ Variant::Variant(const NodePath &p_node_path) {
+ 	type = NODE_PATH;
+ 	memnew_placement(_data._mem, NodePath(p_node_path));
+diff --git a/core/variant/variant.h b/core/variant/variant.h
+index 9e6e01853abac80b7243f924e0bff85b071c8083..17e701cf663e335a462bc6a433ad241b76f73791 100644
+--- a/core/variant/variant.h
++++ b/core/variant/variant.h
+@@ -60,8 +60,6 @@
+ #include "core/variant/callable.h"
+ #include "core/variant/dictionary.h"
+ 
+-#include "modules/color_scheme/color_role.h"
+-
+ class Object;
+ 
+ struct PropertyInfo;
+@@ -394,7 +392,6 @@ public:
+ 	operator Projection() const;
+ 
+ 	operator Color() const;
+-	operator ColorRole() const;
+ 	operator NodePath() const;
+ 	operator ::RID() const;
+ 
+@@ -467,7 +464,6 @@ public:
+ 	Variant(const Transform3D &p_transform);
+ 	Variant(const Projection &p_projection);
+ 	Variant(const Color &p_color);
+-	// Variant(const ColorRole &p_color_role);
+ 	Variant(const NodePath &p_node_path);
+ 	Variant(const ::RID &p_rid);
+ 	Variant(const Object *p_object);
+@@ -507,7 +503,6 @@ public:
+ 	VARIANT_ENUM_CLASS_CONSTRUCTOR(Key)
+ 	VARIANT_ENUM_CLASS_CONSTRUCTOR(MIDIMessage)
+ 	VARIANT_ENUM_CLASS_CONSTRUCTOR(MouseButton)
+-	VARIANT_ENUM_CLASS_CONSTRUCTOR(ColorRole)
+ 
+ #undef VARIANT_ENUM_CLASS_CONSTRUCTOR
+ 
+diff --git a/scene/gui/control.cpp b/scene/gui/control.cpp
+index 3cac5f567e3dca2d5ed91757064226095e22d59f..ed54bd000cb245c9b184d82ce701f3bc5633c628 100644
+--- a/scene/gui/control.cpp
++++ b/scene/gui/control.cpp
+@@ -214,10 +214,6 @@ void Control::get_argument_options(const StringName &p_function, int p_idx, List
+ 			ThemeDB::get_singleton()->get_default_theme()->get_font_size_list(get_class(), &sn);
+ 		} else if (pf == "add_theme_constant_override" || pf == "has_theme_constant" || pf == "has_theme_constant_override" || pf == "get_theme_constant") {
+ 			ThemeDB::get_singleton()->get_default_theme()->get_constant_list(get_class(), &sn);
+-		} else if (pf == "add_theme_color_role_override" || pf == "has_theme_color_role" || pf == "has_theme_color_role_override" || pf == "get_theme_color_role") {
+-			ThemeDB::get_singleton()->get_default_theme()->get_color_role_list(get_class(), &sn);
+-		} else if (pf == "add_theme_color_scheme_override" || pf == "has_theme_color_scheme" || pf == "has_theme_color_scheme_override" || pf == "get_theme_color_scheme") {
+-			ThemeDB::get_singleton()->get_default_theme()->get_color_scheme_list(get_class(), &sn);
+ 		}
+ 
+ 		sn.sort_custom<StringName::AlphCompare>();
+@@ -305,14 +301,6 @@ bool Control::_set(const StringName &p_name, const Variant &p_value) {
+ 			String dname = name.get_slicec('/', 1);
+ 			data.theme_constant_override.erase(dname);
+ 			_notify_theme_override_changed();
+-		} else if (name.begins_with("theme_override_color_roles/")) {
+-			String dname = name.get_slicec('/', 1);
+-			data.theme_color_role_override.erase(dname);
+-			_notify_theme_override_changed();
+-		} else if (name.begins_with("theme_override_color_schemes/")) {
+-			String dname = name.get_slicec('/', 1);
+-			data.theme_color_scheme_override.erase(dname);
+-			_notify_theme_override_changed();
+ 		} else {
+ 			return false;
+ 		}
+@@ -336,12 +324,6 @@ bool Control::_set(const StringName &p_name, const Variant &p_value) {
+ 		} else if (name.begins_with("theme_override_constants/")) {
+ 			String dname = name.get_slicec('/', 1);
+ 			add_theme_constant_override(dname, p_value);
+-		} else if (name.begins_with("theme_override_color_roles/")) {
+-			String dname = name.get_slicec('/', 1);
+-			add_theme_color_role_override(dname, p_value);
+-		} else if (name.begins_with("theme_override_color_schemes/")) {
+-			String dname = name.get_slicec('/', 1);
+-			add_theme_color_scheme_override(dname, p_value);
+ 		} else {
+ 			return false;
+ 		}
+@@ -374,12 +356,6 @@ bool Control::_get(const StringName &p_name, Variant &r_ret) const {
+ 	} else if (sname.begins_with("theme_override_constants/")) {
+ 		String name = sname.get_slicec('/', 1);
+ 		r_ret = data.theme_constant_override.has(name) ? Variant(data.theme_constant_override[name]) : Variant();
+-	} else if (sname.begins_with("theme_override_color_roles/")) {
+-		String name = sname.get_slicec('/', 1);
+-		r_ret = data.theme_color_role_override.has(name) ? Variant(data.theme_color_role_override[name]) : Variant();
+-	} else if (sname.begins_with("theme_override_color_schemes/")) {
+-		String name = sname.get_slicec('/', 1);
+-		r_ret = data.theme_color_scheme_override.has(name) ? Variant(data.theme_color_scheme_override[name]) : Variant();
+ 	} else {
+ 		return false;
+ 	}
+@@ -465,33 +441,6 @@ void Control::_get_property_list(List<PropertyInfo> *p_list) const {
+ 			p_list->push_back(PropertyInfo(Variant::OBJECT, PNAME("theme_override_styles") + String("/") + E, PROPERTY_HINT_RESOURCE_TYPE, "StyleBox", usage));
+ 		}
+ 	}
+-	{
+-		List<StringName> names;
+-		default_theme->get_color_role_list(get_class_name(), &names);
+-
+-		String color_role_hint = "Primary Palette key,Secondary Palette key,Tertiary Palette key,Neutral Palette key,Neutral Variant Palette key,Background,On Background,Surface,Surface Dim,Surface Bright,Surface Container Lowest,Surface Container Low,Surface Container,Surface Container High,Surface Container Highest,On Surface,Surface Variant,On Surface Variant,Inverse Surface,Inverse On Surface,Outline,Outline Variant,Shadow,Scrim,Surface Tint,Primary,On Primary,Primary Container,On Primary Container,Inverse Primary,Secondary,On Secondary,Secondary Container,On Secondary Container,Tertiary,On Tertiary,Tertiary Container,On Tertiary Container,Error,On Error,Error Container,On Error Container,Primary Fixed,Primary Fixed Dim,On Primary Fixed,On Primary Fixed Variant,Secondary Fixed,Secondary Fixed Dim,On Secondary Fixed,On Secondary Fixed Variant,Tertiary Fixed,Tertiary Fixed Dim,On Tertiary Fixed,On Tertiary Fixed Variant";
+-
+-		for (const StringName &E : names) {
+-			uint32_t usage = PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_CHECKABLE;
+-			if (data.theme_color_role_override.has(E)) {
+-				usage |= PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED;
+-			}
+-
+-			p_list->push_back(PropertyInfo(Variant::INT, PNAME("theme_override_color_roles") + String("/") + E, PROPERTY_HINT_ENUM, color_role_hint, usage));
+-		}
+-	}
+-	{
+-		List<StringName> names;
+-		default_theme->get_color_scheme_list(get_class_name(), &names);
+-		for (const StringName &E : names) {
+-			uint32_t usage = PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_CHECKABLE;
+-			if (data.theme_color_override.has(E)) {
+-				usage |= PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED;
+-			}
+-
+-			p_list->push_back(PropertyInfo(Variant::OBJECT, PNAME("theme_override_color_schemes") + String("/") + E, PROPERTY_HINT_RESOURCE_TYPE, "ColorScheme", usage));
+-		}
+-	}
+ }
+ 
+ void Control::_validate_property(PropertyInfo &p_property) const {
+@@ -2510,8 +2459,6 @@ void Control::_invalidate_theme_cache() {
+ 	data.theme_font_size_cache.clear();
+ 	data.theme_color_cache.clear();
+ 	data.theme_constant_cache.clear();
+-	data.theme_color_role_cache.clear();
+-	data.theme_color_scheme_cache.clear();
+ }
+ 
+ void Control::_update_theme_item_cache() {
+@@ -2695,7 +2642,6 @@ Color Control::get_theme_color(const StringName &p_name, const StringName &p_the
+ 		WARN_PRINT_ONCE(vformat("Attempting to access theme items too early in %s; prefer NOTIFICATION_POSTINITIALIZE and NOTIFICATION_THEME_CHANGED", this->get_description()));
+ 	}
+ 
+-	// 优先使用主题覆盖中的颜色
+ 	if (p_theme_type == StringName() || p_theme_type == get_class_name() || p_theme_type == data.theme_type_variation) {
+ 		const Color *color = data.theme_color_override.getptr(p_name);
+ 		if (color) {
+@@ -2703,15 +2649,6 @@ Color Control::get_theme_color(const StringName &p_name, const StringName &p_the
+ 		}
+ 	}
+ 
+-	if (p_theme_type == StringName() || p_theme_type == get_class_name() || p_theme_type == data.theme_type_variation) {
+-		const ColorRole *color_role = data.theme_color_role_override.getptr(p_name);
+-		if (color_role) {
+-			const Ref<ColorScheme> color_scheme = get_theme_color_scheme(p_name, p_theme_type);
+-			const Color color = color_scheme->get_color(*color_role);
+-			return color;
+-		}
+-	}
+-
+ 	if (data.theme_color_cache.has(p_theme_type) && data.theme_color_cache[p_theme_type].has(p_name)) {
+ 		return data.theme_color_cache[p_theme_type][p_name];
+ 	}
+@@ -2747,55 +2684,6 @@ int Control::get_theme_constant(const StringName &p_name, const StringName &p_th
+ 	return constant;
+ }
+ 
+-ColorRole Control::get_theme_color_role(const StringName &p_name, const StringName &p_theme_type) const {
+-	ERR_READ_THREAD_GUARD_V(ColorRole());
+-	if (!data.initialized) {
+-		WARN_PRINT_ONCE(vformat("Attempting to access theme items too early in %s; prefer NOTIFICATION_POSTINITIALIZE and NOTIFICATION_THEME_CHANGED", this->get_description()));
+-	}
+-
+-	if (p_theme_type == StringName() || p_theme_type == get_class_name() || p_theme_type == data.theme_type_variation) {
+-		const ColorRole *color_role = data.theme_color_role_override.getptr(p_name);
+-		if (color_role) {
+-			return *color_role;
+-		}
+-	}
+-
+-	if (data.theme_color_role_cache.has(p_theme_type) && data.theme_color_role_cache[p_theme_type].has(p_name)) {
+-		return data.theme_color_role_cache[p_theme_type][p_name];
+-	}
+-
+-	List<StringName> theme_types;
+-	data.theme_owner->get_theme_type_dependencies(this, p_theme_type, &theme_types);
+-	ColorRole color_role = data.theme_owner->get_theme_item_in_types(Theme::DATA_TYPE_COLOR_ROLE, p_name, theme_types);
+-	data.theme_color_role_cache[p_theme_type][p_name] = color_role;
+-	return color_role;
+-}
+-
+-Ref<ColorScheme> Control::get_theme_color_scheme(const StringName &p_name, const StringName &p_theme_type) const {
+-	ERR_READ_THREAD_GUARD_V(Ref<ColorScheme>());
+-	if (!data.initialized) {
+-		WARN_PRINT_ONCE(vformat("Attempting to access theme items too early in %s; prefer NOTIFICATION_POSTINITIALIZE and NOTIFICATION_THEME_CHANGED", this->get_description()));
+-	}
+-
+-	if (p_theme_type == StringName() || p_theme_type == get_class_name() || p_theme_type == data.theme_type_variation) {
+-		const Ref<ColorScheme> *color_scheme = data.theme_color_scheme_override.getptr(p_name);
+-		if (color_scheme) {
+-			return *color_scheme;
+-		}
+-	}
+-
+-	if (data.theme_color_scheme_cache.has(p_theme_type) && data.theme_color_scheme_cache[p_theme_type].has(p_name)) {
+-		return data.theme_color_scheme_cache[p_theme_type][p_name];
+-	}
+-
+-	List<StringName> theme_types;
+-	data.theme_owner->get_theme_type_dependencies(this, p_theme_type, &theme_types);
+-	Ref<ColorScheme> color_scheme = data.theme_owner->get_theme_item_in_types(Theme::DATA_TYPE_COLOR_ROLE, p_name, theme_types);
+-	data.theme_color_scheme_cache[p_theme_type][p_name] = color_scheme;
+-	return color_scheme;
+-}
+-
+-
+ Variant Control::get_theme_item(Theme::DataType p_data_type, const StringName &p_name, const StringName &p_theme_type) const {
+ 	switch (p_data_type) {
+ 		case Theme::DATA_TYPE_COLOR:
+@@ -2810,10 +2698,6 @@ Variant Control::get_theme_item(Theme::DataType p_data_type, const StringName &p
+ 			return get_theme_icon(p_name, p_theme_type);
+ 		case Theme::DATA_TYPE_STYLEBOX:
+ 			return get_theme_stylebox(p_name, p_theme_type);
+-		case Theme::DATA_TYPE_COLOR_ROLE:
+-			return get_theme_color_role(p_name, p_theme_type);
+-		case Theme::DATA_TYPE_COLOR_SCHEME:
+-			return get_theme_color_scheme(p_name, p_theme_type);
+ 		case Theme::DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -2929,41 +2813,6 @@ bool Control::has_theme_constant(const StringName &p_name, const StringName &p_t
+ 	return data.theme_owner->has_theme_item_in_types(Theme::DATA_TYPE_CONSTANT, p_name, theme_types);
+ }
+ 
+-bool Control::has_theme_color_role(const StringName &p_name, const StringName &p_theme_type) const {
+-	ERR_READ_THREAD_GUARD_V(false);
+-	if (!data.initialized) {
+-		WARN_PRINT_ONCE(vformat("Attempting to access theme items too early in %s; prefer NOTIFICATION_POSTINITIALIZE and NOTIFICATION_THEME_CHANGED", this->get_description()));
+-	}
+-
+-	if (p_theme_type == StringName() || p_theme_type == get_class_name() || p_theme_type == data.theme_type_variation) {
+-		if (has_theme_color_role_override(p_name)) {
+-			return true;
+-		}
+-	}
+-
+-	List<StringName> theme_types;
+-	data.theme_owner->get_theme_type_dependencies(this, p_theme_type, &theme_types);
+-	return data.theme_owner->has_theme_item_in_types(Theme::DATA_TYPE_COLOR_ROLE, p_name, theme_types);
+-}
+-
+-bool Control::has_theme_color_scheme(const StringName &p_name, const StringName &p_theme_type) const {
+-	ERR_READ_THREAD_GUARD_V(false);
+-	if (!data.initialized) {
+-		WARN_PRINT_ONCE(vformat("Attempting to access theme items too early in %s; prefer NOTIFICATION_POSTINITIALIZE and NOTIFICATION_THEME_CHANGED", this->get_description()));
+-	}
+-
+-	if (p_theme_type == StringName() || p_theme_type == get_class_name() || p_theme_type == data.theme_type_variation) {
+-		if (has_theme_color_scheme_override(p_name)) {
+-			return true;
+-		}
+-	}
+-
+-	List<StringName> theme_types;
+-	data.theme_owner->get_theme_type_dependencies(this, p_theme_type, &theme_types);
+-	return data.theme_owner->has_theme_item_in_types(Theme::DATA_TYPE_COLOR_SCHEME, p_name, theme_types);
+-}
+-
+-
+ /// Local property overrides.
+ 
+ void Control::add_theme_icon_override(const StringName &p_name, const Ref<Texture2D> &p_icon) {
+@@ -3023,18 +2872,6 @@ void Control::add_theme_constant_override(const StringName &p_name, int p_consta
+ 	_notify_theme_override_changed();
+ }
+ 
+-void Control::add_theme_color_role_override(const StringName &p_name, const ColorRole p_color_role) {
+-	ERR_MAIN_THREAD_GUARD;
+-	data.theme_color_role_override[p_name] = p_color_role;
+-	_notify_theme_override_changed();
+-}
+-
+-void Control::add_theme_color_scheme_override(const StringName &p_name, const Ref<ColorScheme> &p_color_scheme) {
+-	ERR_MAIN_THREAD_GUARD;
+-	data.theme_color_scheme_override[p_name] = p_color_scheme;
+-	_notify_theme_override_changed();
+-}
+-
+ void Control::remove_theme_icon_override(const StringName &p_name) {
+ 	ERR_MAIN_THREAD_GUARD;
+ 	if (data.theme_icon_override.has(p_name)) {
+@@ -3083,18 +2920,6 @@ void Control::remove_theme_constant_override(const StringName &p_name) {
+ 	_notify_theme_override_changed();
+ }
+ 
+-void Control::remove_theme_color_role_override(const StringName &p_name) {
+-	ERR_MAIN_THREAD_GUARD;
+-	data.theme_color_role_override.erase(p_name);
+-	_notify_theme_override_changed();
+-}
+-
+-void Control::remove_theme_color_scheme_override(const StringName &p_name) {
+-	ERR_MAIN_THREAD_GUARD;
+-	data.theme_color_scheme_override.erase(p_name);
+-	_notify_theme_override_changed();
+-}
+-
+ bool Control::has_theme_icon_override(const StringName &p_name) const {
+ 	ERR_READ_THREAD_GUARD_V(false);
+ 	const Ref<Texture2D> *tex = data.theme_icon_override.getptr(p_name);
+@@ -3131,18 +2956,6 @@ bool Control::has_theme_constant_override(const StringName &p_name) const {
+ 	return constant != nullptr;
+ }
+ 
+-bool Control::has_theme_color_role_override(const StringName &p_name) const {
+-	ERR_READ_THREAD_GUARD_V(false);
+-	const ColorRole *color_role = data.theme_color_role_override.getptr(p_name);
+-	return color_role != nullptr;
+-}
+-
+-bool Control::has_theme_color_scheme_override(const StringName &p_name) const {
+-	ERR_READ_THREAD_GUARD_V(false);
+-	const Ref<ColorScheme> *color_scheme = data.theme_color_scheme_override.getptr(p_name);
+-	return color_scheme != nullptr;
+-}
+-
+ /// Default theme properties.
+ 
+ float Control::get_theme_default_base_scale() const {
+@@ -3160,11 +2973,6 @@ int Control::get_theme_default_font_size() const {
+ 	return data.theme_owner->get_theme_default_font_size();
+ }
+ 
+-Ref<ColorScheme> Control::get_theme_default_color_scheme() const {
+-	ERR_READ_THREAD_GUARD_V(Ref<ColorScheme>());
+-	return data.theme_owner->get_theme_default_color_scheme();
+-}
+-
+ /// Bulk actions.
+ 
+ void Control::begin_bulk_theme_override() {
+@@ -3598,8 +3406,6 @@ void Control::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("add_theme_font_size_override", "name", "font_size"), &Control::add_theme_font_size_override);
+ 	ClassDB::bind_method(D_METHOD("add_theme_color_override", "name", "color"), &Control::add_theme_color_override);
+ 	ClassDB::bind_method(D_METHOD("add_theme_constant_override", "name", "constant"), &Control::add_theme_constant_override);
+-	ClassDB::bind_method(D_METHOD("add_theme_color_role_override", "name", "color_role"), &Control::add_theme_color_role_override);
+-	ClassDB::bind_method(D_METHOD("add_theme_color_scheme_override", "name", "color_scheme"), &Control::add_theme_color_scheme_override);
+ 
+ 	ClassDB::bind_method(D_METHOD("remove_theme_icon_override", "name"), &Control::remove_theme_icon_override);
+ 	ClassDB::bind_method(D_METHOD("remove_theme_stylebox_override", "name"), &Control::remove_theme_style_override);
+@@ -3607,8 +3413,6 @@ void Control::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("remove_theme_font_size_override", "name"), &Control::remove_theme_font_size_override);
+ 	ClassDB::bind_method(D_METHOD("remove_theme_color_override", "name"), &Control::remove_theme_color_override);
+ 	ClassDB::bind_method(D_METHOD("remove_theme_constant_override", "name"), &Control::remove_theme_constant_override);
+-	ClassDB::bind_method(D_METHOD("remove_theme_color_role_override", "name"), &Control::remove_theme_color_role_override);
+-	ClassDB::bind_method(D_METHOD("remove_theme_color_scheme_override", "name"), &Control::remove_theme_color_scheme_override);
+ 
+ 	ClassDB::bind_method(D_METHOD("get_theme_icon", "name", "theme_type"), &Control::get_theme_icon, DEFVAL(""));
+ 	ClassDB::bind_method(D_METHOD("get_theme_stylebox", "name", "theme_type"), &Control::get_theme_stylebox, DEFVAL(""));
+@@ -3616,8 +3420,6 @@ void Control::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("get_theme_font_size", "name", "theme_type"), &Control::get_theme_font_size, DEFVAL(""));
+ 	ClassDB::bind_method(D_METHOD("get_theme_color", "name", "theme_type"), &Control::get_theme_color, DEFVAL(""));
+ 	ClassDB::bind_method(D_METHOD("get_theme_constant", "name", "theme_type"), &Control::get_theme_constant, DEFVAL(""));
+-	ClassDB::bind_method(D_METHOD("get_theme_color_role", "name", "theme_type"), &Control::get_theme_color_role, DEFVAL(""));
+-	ClassDB::bind_method(D_METHOD("get_theme_color_scheme", "name", "theme_type"), &Control::get_theme_color_scheme, DEFVAL(""));
+ 
+ 	ClassDB::bind_method(D_METHOD("has_theme_icon_override", "name"), &Control::has_theme_icon_override);
+ 	ClassDB::bind_method(D_METHOD("has_theme_stylebox_override", "name"), &Control::has_theme_stylebox_override);
+@@ -3625,8 +3427,6 @@ void Control::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("has_theme_font_size_override", "name"), &Control::has_theme_font_size_override);
+ 	ClassDB::bind_method(D_METHOD("has_theme_color_override", "name"), &Control::has_theme_color_override);
+ 	ClassDB::bind_method(D_METHOD("has_theme_constant_override", "name"), &Control::has_theme_constant_override);
+-	ClassDB::bind_method(D_METHOD("has_theme_color_role_override", "name"), &Control::has_theme_color_role_override);
+-	ClassDB::bind_method(D_METHOD("has_theme_color_scheme_override", "name"), &Control::has_theme_color_scheme_override);
+ 
+ 	ClassDB::bind_method(D_METHOD("has_theme_icon", "name", "theme_type"), &Control::has_theme_icon, DEFVAL(""));
+ 	ClassDB::bind_method(D_METHOD("has_theme_stylebox", "name", "theme_type"), &Control::has_theme_stylebox, DEFVAL(""));
+@@ -3634,13 +3434,10 @@ void Control::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("has_theme_font_size", "name", "theme_type"), &Control::has_theme_font_size, DEFVAL(""));
+ 	ClassDB::bind_method(D_METHOD("has_theme_color", "name", "theme_type"), &Control::has_theme_color, DEFVAL(""));
+ 	ClassDB::bind_method(D_METHOD("has_theme_constant", "name", "theme_type"), &Control::has_theme_constant, DEFVAL(""));
+-	ClassDB::bind_method(D_METHOD("has_theme_color_role", "name", "theme_type"), &Control::has_theme_color_role, DEFVAL(""));
+-	ClassDB::bind_method(D_METHOD("has_theme_color_scheme", "name", "theme_type"), &Control::has_theme_color_scheme, DEFVAL(""));
+ 
+ 	ClassDB::bind_method(D_METHOD("get_theme_default_base_scale"), &Control::get_theme_default_base_scale);
+ 	ClassDB::bind_method(D_METHOD("get_theme_default_font"), &Control::get_theme_default_font);
+ 	ClassDB::bind_method(D_METHOD("get_theme_default_font_size"), &Control::get_theme_default_font_size);
+-	ClassDB::bind_method(D_METHOD("get_theme_default_color_scheme"), &Control::get_theme_default_color_scheme);
+ 
+ 	ClassDB::bind_method(D_METHOD("get_parent_control"), &Control::get_parent_control);
+ 
+@@ -3906,6 +3703,4 @@ Control::~Control() {
+ 	data.theme_font_size_override.clear();
+ 	data.theme_color_override.clear();
+ 	data.theme_constant_override.clear();
+-	data.theme_color_role_override.clear();
+-	data.theme_color_scheme_override.clear();
+ }
+diff --git a/scene/gui/control.h b/scene/gui/control.h
+index 67717310399c8207943f4322f301d25c4cfb1209..db1bd3a346a641d6d106e0d6a3652eeb4c471bd3 100644
+--- a/scene/gui/control.h
++++ b/scene/gui/control.h
+@@ -239,8 +239,6 @@ private:
+ 		Theme::ThemeFontSizeMap theme_font_size_override;
+ 		Theme::ThemeColorMap theme_color_override;
+ 		Theme::ThemeConstantMap theme_constant_override;
+-		Theme::ThemeColorRoleMap theme_color_role_override;
+-		Theme::ThemeColorSchemeMap theme_color_scheme_override;
+ 
+ 		mutable HashMap<StringName, Theme::ThemeIconMap> theme_icon_cache;
+ 		mutable HashMap<StringName, Theme::ThemeStyleMap> theme_style_cache;
+@@ -248,8 +246,6 @@ private:
+ 		mutable HashMap<StringName, Theme::ThemeFontSizeMap> theme_font_size_cache;
+ 		mutable HashMap<StringName, Theme::ThemeColorMap> theme_color_cache;
+ 		mutable HashMap<StringName, Theme::ThemeConstantMap> theme_constant_cache;
+-		mutable HashMap<StringName, Theme::ThemeColorRoleMap> theme_color_role_cache;
+-		mutable HashMap<StringName, Theme::ThemeColorSchemeMap> theme_color_scheme_cache;
+ 
+ 		// Internationalization.
+ 
+@@ -578,8 +574,6 @@ public:
+ 	void add_theme_font_size_override(const StringName &p_name, int p_font_size);
+ 	void add_theme_color_override(const StringName &p_name, const Color &p_color);
+ 	void add_theme_constant_override(const StringName &p_name, int p_constant);
+-	void add_theme_color_role_override(const StringName &p_name, const ColorRole p_color_role);
+-	void add_theme_color_scheme_override(const StringName &p_name, const Ref<ColorScheme> &p_color_scheme);
+ 
+ 	void remove_theme_icon_override(const StringName &p_name);
+ 	void remove_theme_style_override(const StringName &p_name);
+@@ -587,8 +581,6 @@ public:
+ 	void remove_theme_font_size_override(const StringName &p_name);
+ 	void remove_theme_color_override(const StringName &p_name);
+ 	void remove_theme_constant_override(const StringName &p_name);
+-	void remove_theme_color_role_override(const StringName &p_name);
+-	void remove_theme_color_scheme_override(const StringName &p_name);
+ 
+ 	Ref<Texture2D> get_theme_icon(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+ 	Ref<StyleBox> get_theme_stylebox(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+@@ -596,9 +588,6 @@ public:
+ 	int get_theme_font_size(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+ 	Color get_theme_color(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+ 	int get_theme_constant(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+-	ColorRole get_theme_color_role(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+-	Ref<ColorScheme> get_theme_color_scheme(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+-	
+ 	Variant get_theme_item(Theme::DataType p_data_type, const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+ #ifdef TOOLS_ENABLED
+ 	Ref<Texture2D> get_editor_theme_icon(const StringName &p_name) const;
+@@ -610,8 +599,6 @@ public:
+ 	bool has_theme_font_size_override(const StringName &p_name) const;
+ 	bool has_theme_color_override(const StringName &p_name) const;
+ 	bool has_theme_constant_override(const StringName &p_name) const;
+-	bool has_theme_color_role_override(const StringName &p_name) const;
+-	bool has_theme_color_scheme_override(const StringName &p_name) const;
+ 
+ 	bool has_theme_icon(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+ 	bool has_theme_stylebox(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+@@ -619,13 +606,10 @@ public:
+ 	bool has_theme_font_size(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+ 	bool has_theme_color(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+ 	bool has_theme_constant(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+-	bool has_theme_color_role(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+-	bool has_theme_color_scheme(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+ 
+ 	float get_theme_default_base_scale() const;
+ 	Ref<Font> get_theme_default_font() const;
+ 	int get_theme_default_font_size() const;
+-	Ref<ColorScheme> get_theme_default_color_scheme() const;
+ 
+ 	// Internationalization.
+ 
+diff --git a/scene/resources/theme.cpp b/scene/resources/theme.cpp
+index 607f1e4381cb58ab85e21ac057ee6b59544cb19c..d57a0f6b387925fde4d53d3790a087d19be28aa6 100644
+--- a/scene/resources/theme.cpp
++++ b/scene/resources/theme.cpp
+@@ -260,31 +260,6 @@ bool Theme::has_default_font_size() const {
+ 	return default_font_size > 0;
+ }
+ 
+-void Theme::set_default_color_scheme(const Ref<ColorScheme> &p_color_scheme) {
+-	if (default_color_scheme == p_color_scheme) {
+-		return;
+-	}
+-	if(default_color_scheme.is_valid()){
+-		default_color_scheme->disconnect_changed(callable_mp(this, &Theme::_emit_theme_changed));
+-	}
+-
+-	default_color_scheme = p_color_scheme;
+-
+-	if (default_color_scheme.is_valid()) {
+-		default_color_scheme->connect_changed(callable_mp(this, &Theme::_emit_theme_changed).bind(false), CONNECT_REFERENCE_COUNTED);
+-	}
+-
+-	_emit_theme_changed();
+-}
+-
+-Ref<ColorScheme> Theme::get_default_color_scheme() const {
+-	return default_color_scheme;
+-}
+-
+-bool Theme::has_default_color_scheme() const {
+-	return default_color_scheme.is_valid();
+-}
+-
+ // Icons.
+ void Theme::set_icon(const StringName &p_name, const StringName &p_theme_type, const Ref<Texture2D> &p_icon) {
+ 	ERR_FAIL_COND_MSG(!is_valid_item_name(p_name), vformat("Invalid item name: '%s'", p_name));
+@@ -877,183 +852,6 @@ void Theme::get_constant_type_list(List<StringName> *p_list) const {
+ 	}
+ }
+ 
+-
+-// Color role.
+-void Theme::set_color_role(const StringName &p_name, const StringName &p_theme_type, const ColorRole p_color_role) {
+-	ERR_FAIL_COND_MSG(!is_valid_item_name(p_name), vformat("Invalid item name: '%s'", p_name));
+-	ERR_FAIL_COND_MSG(!is_valid_type_name(p_theme_type), vformat("Invalid type name: '%s'", p_theme_type));
+-
+-	bool existing = has_color_role_nocheck(p_name, p_theme_type);
+-	color_role_map[p_theme_type][p_name] = p_color_role;
+-
+-	_emit_theme_changed(!existing);
+-}
+-
+-ColorRole Theme::get_color_role(const StringName &p_name, const StringName &p_theme_type) const {
+-	if (color_role_map.has(p_theme_type) && color_role_map[p_theme_type].has(p_name)) {
+-		return color_role_map[p_theme_type][p_name];
+-	} else {
+-		return ColorRole();
+-	}
+-}
+-
+-bool Theme::has_color_role(const StringName &p_name, const StringName &p_theme_type) const {
+-	return (color_role_map.has(p_theme_type) && color_role_map[p_theme_type].has(p_name));
+-}
+-
+-bool Theme::has_color_role_nocheck(const StringName &p_name, const StringName &p_theme_type) const {
+-	return (color_role_map.has(p_theme_type) && color_role_map[p_theme_type].has(p_name));
+-}
+-
+-void Theme::rename_color_role(const StringName &p_old_name, const StringName &p_name, const StringName &p_theme_type) {
+-	ERR_FAIL_COND_MSG(!is_valid_item_name(p_name), vformat("Invalid item name: '%s'", p_name));
+-	ERR_FAIL_COND_MSG(!is_valid_type_name(p_theme_type), vformat("Invalid type name: '%s'", p_theme_type));
+-	ERR_FAIL_COND_MSG(!color_role_map.has(p_theme_type), "Cannot rename the color role '" + String(p_old_name) + "' because the node type '" + String(p_theme_type) + "' does not exist.");
+-	ERR_FAIL_COND_MSG(color_role_map[p_theme_type].has(p_name), "Cannot rename the color role '" + String(p_old_name) + "' because the new name '" + String(p_name) + "' already exists.");
+-	ERR_FAIL_COND_MSG(!color_role_map[p_theme_type].has(p_old_name), "Cannot rename the color role '" + String(p_old_name) + "' because it does not exist.");
+-
+-	color_role_map[p_theme_type][p_name] = color_role_map[p_theme_type][p_old_name];
+-	color_role_map[p_theme_type].erase(p_old_name);
+-
+-	_emit_theme_changed(true);
+-}
+-
+-void Theme::clear_color_role(const StringName &p_name, const StringName &p_theme_type) {
+-	ERR_FAIL_COND_MSG(!color_role_map.has(p_theme_type), "Cannot clear the color '" + String(p_name) + "' because the node type '" + String(p_theme_type) + "' does not exist.");
+-	ERR_FAIL_COND_MSG(!color_role_map[p_theme_type].has(p_name), "Cannot clear the color '" + String(p_name) + "' because it does not exist.");
+-
+-	color_role_map[p_theme_type].erase(p_name);
+-
+-	_emit_theme_changed(true);
+-}
+-
+-
+-void Theme::get_color_role_list(StringName p_theme_type, List<StringName> *p_list) const {
+-	ERR_FAIL_NULL(p_list);
+-
+-	if (!color_role_map.has(p_theme_type)) {
+-		return;
+-	}
+-
+-	for (const KeyValue<StringName, ColorRole> &E : color_role_map[p_theme_type]) {
+-		p_list->push_back(E.key);
+-	}
+-}
+-
+-void Theme::add_color_role_type(const StringName &p_theme_type) {
+-	ERR_FAIL_COND_MSG(!is_valid_type_name(p_theme_type), vformat("Invalid type name: '%s'", p_theme_type));
+-
+-	if (color_role_map.has(p_theme_type)) {
+-		return;
+-	}
+-	color_role_map[p_theme_type] = ThemeColorRoleMap();
+-}
+-
+-void Theme::remove_color_role_type(const StringName &p_theme_type) {
+-	if (!color_role_map.has(p_theme_type)) {
+-		return;
+-	}
+-
+-	color_role_map.erase(p_theme_type);
+-}
+-
+-void Theme::get_color_role_type_list(List<StringName> *p_list) const {
+-	ERR_FAIL_NULL(p_list);
+-
+-	for (const KeyValue<StringName, ThemeColorRoleMap> &E : color_role_map) {
+-		p_list->push_back(E.key);
+-	}
+-}
+-
+-// Color scheme.
+-void Theme::set_color_scheme(const StringName &p_name, const StringName &p_theme_type, const Ref<ColorScheme> &p_color_scheme) {
+-	ERR_FAIL_COND_MSG(!is_valid_item_name(p_name), vformat("Invalid item name: '%s'", p_name));
+-	ERR_FAIL_COND_MSG(!is_valid_type_name(p_theme_type), vformat("Invalid type name: '%s'", p_theme_type));
+-
+-	bool existing = has_color_scheme_nocheck(p_name, p_theme_type);
+-	color_scheme_map[p_theme_type][p_name] = p_color_scheme;
+-
+-	_emit_theme_changed(!existing);
+-}
+-
+-Ref<ColorScheme> Theme::get_color_scheme(const StringName &p_name, const StringName &p_theme_type) const {
+-	if (color_scheme_map.has(p_theme_type) && color_scheme_map[p_theme_type].has(p_name)) {
+-		return color_scheme_map[p_theme_type][p_name];
+-	} else if (has_default_color_scheme()) {
+-		return default_color_scheme;
+-	} else {
+-		return ThemeDB::get_singleton()->get_fallback_color_scheme();
+-	}
+-}
+-
+-bool Theme::has_color_scheme(const StringName &p_name, const StringName &p_theme_type) const {
+-	return (color_scheme_map.has(p_theme_type) && color_scheme_map[p_theme_type].has(p_name) && color_scheme_map[p_theme_type][p_name].is_valid()) || has_default_color_scheme();
+-}
+-
+-bool Theme::has_color_scheme_nocheck(const StringName &p_name, const StringName &p_theme_type) const {
+-	return (color_scheme_map.has(p_theme_type) && color_scheme_map[p_theme_type].has(p_name));
+-}
+-
+-void Theme::rename_color_scheme(const StringName &p_old_name, const StringName &p_name, const StringName &p_theme_type) {
+-	ERR_FAIL_COND_MSG(!is_valid_item_name(p_name), vformat("Invalid item name: '%s'", p_name));
+-	ERR_FAIL_COND_MSG(!is_valid_type_name(p_theme_type), vformat("Invalid type name: '%s'", p_theme_type));
+-	ERR_FAIL_COND_MSG(!color_scheme_map.has(p_theme_type), "Cannot rename the color scheme '" + String(p_old_name) + "' because the node type '" + String(p_theme_type) + "' does not exist.");
+-	ERR_FAIL_COND_MSG(color_scheme_map[p_theme_type].has(p_name), "Cannot rename the color scheme '" + String(p_old_name) + "' because the new name '" + String(p_name) + "' already exists.");
+-	ERR_FAIL_COND_MSG(!color_scheme_map[p_theme_type].has(p_old_name), "Cannot rename the color scheme '" + String(p_old_name) + "' because it does not exist.");
+-
+-	color_scheme_map[p_theme_type][p_name] = color_scheme_map[p_theme_type][p_old_name];
+-	color_scheme_map[p_theme_type].erase(p_old_name);
+-
+-	_emit_theme_changed(true);
+-}
+-
+-void Theme::clear_color_scheme(const StringName &p_name, const StringName &p_theme_type) {
+-	ERR_FAIL_COND_MSG(!color_scheme_map.has(p_theme_type), "Cannot clear the color '" + String(p_name) + "' because the node type '" + String(p_theme_type) + "' does not exist.");
+-	ERR_FAIL_COND_MSG(!color_scheme_map[p_theme_type].has(p_name), "Cannot clear the color '" + String(p_name) + "' because it does not exist.");
+-
+-	color_scheme_map[p_theme_type].erase(p_name);
+-
+-	_emit_theme_changed(true);
+-}
+-
+-void Theme::get_color_scheme_list(StringName p_theme_type, List<StringName> *p_list) const {
+-	ERR_FAIL_NULL(p_list);
+-
+-	if (!color_scheme_map.has(p_theme_type)) {
+-		return;
+-	}
+-
+-	for (const KeyValue<StringName, Ref<ColorScheme>> &E : color_scheme_map[p_theme_type]) {
+-		p_list->push_back(E.key);
+-	}
+-}
+-
+-void Theme::add_color_scheme_type(const StringName &p_theme_type) {
+-	ERR_FAIL_COND_MSG(!is_valid_type_name(p_theme_type), vformat("Invalid type name: '%s'", p_theme_type));
+-
+-	if (color_scheme_map.has(p_theme_type)) {
+-		return;
+-	}
+-	color_scheme_map[p_theme_type] = ThemeColorSchemeMap();
+-}
+-
+-void Theme::remove_color_scheme_type(const StringName &p_theme_type) {
+-	if (!color_scheme_map.has(p_theme_type)) {
+-		return;
+-	}
+-
+-	color_scheme_map.erase(p_theme_type);
+-}
+-
+-void Theme::get_color_scheme_type_list(List<StringName> *p_list) const {
+-	ERR_FAIL_NULL(p_list);
+-
+-	for (const KeyValue<StringName, ThemeColorSchemeMap> &E : color_scheme_map) {
+-		p_list->push_back(E.key);
+-	}
+-}
+-
+-
+ // Generic methods for managing theme items.
+ void Theme::set_theme_item(DataType p_data_type, const StringName &p_name, const StringName &p_theme_type, const Variant &p_value) {
+ 	switch (p_data_type) {
+@@ -1093,18 +891,6 @@ void Theme::set_theme_item(DataType p_data_type, const StringName &p_name, const
+ 			Ref<StyleBox> stylebox_value = Object::cast_to<StyleBox>(p_value.get_validated_object());
+ 			set_stylebox(p_name, p_theme_type, stylebox_value);
+ 		} break;
+-		case DATA_TYPE_COLOR_ROLE: {
+-			ERR_FAIL_COND_MSG(p_value.get_type() != Variant::INT, "Theme item's data type (int) does not match Variant's type (" + Variant::get_type_name(p_value.get_type()) + ").");
+-
+-			ColorRole color_role_value = p_value;
+-			set_color_role(p_name, p_theme_type, color_role_value);
+-		} break;
+-		case DATA_TYPE_COLOR_SCHEME: {
+-			ERR_FAIL_COND_MSG(p_value.get_type() != Variant::OBJECT, "Theme item's data type (Object) does not match Variant's type (" + Variant::get_type_name(p_value.get_type()) + ").");
+-
+-			Ref<ColorScheme> color_scheme_value = Object::cast_to<ColorScheme>(p_value.get_validated_object());
+-			set_color_scheme(p_name, p_theme_type, color_scheme_value);
+-		} break;
+ 		case DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -1124,10 +910,6 @@ Variant Theme::get_theme_item(DataType p_data_type, const StringName &p_name, co
+ 			return get_icon(p_name, p_theme_type);
+ 		case DATA_TYPE_STYLEBOX:
+ 			return get_stylebox(p_name, p_theme_type);
+-		case DATA_TYPE_COLOR_ROLE:
+-			return get_color_role(p_name, p_theme_type);
+-		case DATA_TYPE_COLOR_SCHEME:
+-			return get_color_scheme(p_name, p_theme_type);
+ 		case DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -1149,10 +931,6 @@ bool Theme::has_theme_item(DataType p_data_type, const StringName &p_name, const
+ 			return has_icon(p_name, p_theme_type);
+ 		case DATA_TYPE_STYLEBOX:
+ 			return has_stylebox(p_name, p_theme_type);
+-		case DATA_TYPE_COLOR_ROLE:
+-			return has_color_role(p_name, p_theme_type);
+-		case DATA_TYPE_COLOR_SCHEME:
+-			return has_color_scheme(p_name, p_theme_type);
+ 		case DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -1174,10 +952,6 @@ bool Theme::has_theme_item_nocheck(DataType p_data_type, const StringName &p_nam
+ 			return has_icon_nocheck(p_name, p_theme_type);
+ 		case DATA_TYPE_STYLEBOX:
+ 			return has_stylebox_nocheck(p_name, p_theme_type);
+-		case DATA_TYPE_COLOR_ROLE:
+-			return has_color_role_nocheck(p_name, p_theme_type);
+-		case DATA_TYPE_COLOR_SCHEME:
+-			return has_color_scheme_nocheck(p_name, p_theme_type);
+ 		case DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -1205,12 +979,6 @@ void Theme::rename_theme_item(DataType p_data_type, const StringName &p_old_name
+ 		case DATA_TYPE_STYLEBOX:
+ 			rename_stylebox(p_old_name, p_name, p_theme_type);
+ 			break;
+-		case DATA_TYPE_COLOR_ROLE:
+-			rename_color_role(p_old_name, p_name, p_theme_type);
+-			break;
+-		case DATA_TYPE_COLOR_SCHEME:
+-			rename_color_scheme(p_old_name, p_name, p_theme_type);
+-			break;
+ 		case DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -1236,12 +1004,6 @@ void Theme::clear_theme_item(DataType p_data_type, const StringName &p_name, con
+ 		case DATA_TYPE_STYLEBOX:
+ 			clear_stylebox(p_name, p_theme_type);
+ 			break;
+-		case DATA_TYPE_COLOR_ROLE:
+-			clear_color_role(p_name, p_theme_type);
+-			break;
+-		case DATA_TYPE_COLOR_SCHEME:
+-			clear_color_scheme(p_name, p_theme_type);
+-			break;
+ 		case DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -1267,12 +1029,6 @@ void Theme::get_theme_item_list(DataType p_data_type, StringName p_theme_type, L
+ 		case DATA_TYPE_STYLEBOX:
+ 			get_stylebox_list(p_theme_type, p_list);
+ 			break;
+-		case DATA_TYPE_COLOR_ROLE:
+-			get_color_role_list(p_theme_type, p_list);
+-			break;
+-		case DATA_TYPE_COLOR_SCHEME:
+-			get_color_scheme_list(p_theme_type, p_list);
+-			break;
+ 		case DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -1298,12 +1054,6 @@ void Theme::add_theme_item_type(DataType p_data_type, const StringName &p_theme_
+ 		case DATA_TYPE_STYLEBOX:
+ 			add_stylebox_type(p_theme_type);
+ 			break;
+-		case DATA_TYPE_COLOR_ROLE:
+-			add_color_role_type(p_theme_type);
+-			break;
+-		case DATA_TYPE_COLOR_SCHEME:
+-			add_color_scheme_type(p_theme_type);
+-			break;
+ 		case DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -1329,12 +1079,6 @@ void Theme::remove_theme_item_type(DataType p_data_type, const StringName &p_the
+ 		case DATA_TYPE_STYLEBOX:
+ 			remove_stylebox_type(p_theme_type);
+ 			break;
+-		case DATA_TYPE_COLOR_ROLE:
+-			remove_color_role_type(p_theme_type);
+-			break;
+-		case DATA_TYPE_COLOR_SCHEME:
+-			remove_color_scheme_type(p_theme_type);
+-			break;
+ 		case DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -1360,12 +1104,6 @@ void Theme::get_theme_item_type_list(DataType p_data_type, List<StringName> *p_l
+ 		case DATA_TYPE_STYLEBOX:
+ 			get_stylebox_type_list(p_list);
+ 			break;
+-		case DATA_TYPE_COLOR_ROLE:
+-			get_color_role_type_list(p_list);
+-			break;
+-		case DATA_TYPE_COLOR_SCHEME:
+-			get_color_scheme_type_list(p_list);
+-			break;
+ 		case DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -1714,68 +1452,6 @@ Vector<String> Theme::_get_constant_type_list() const {
+ 	return ilret;
+ }
+ 
+-Vector<String> Theme::_get_color_role_list(const String &p_theme_type) const {
+-	Vector<String> ilret;
+-	List<StringName> il;
+-
+-	get_color_role_list(p_theme_type, &il);
+-	ilret.resize(il.size());
+-
+-	int i = 0;
+-	String *w = ilret.ptrw();
+-	for (List<StringName>::Element *E = il.front(); E; E = E->next(), i++) {
+-		w[i] = E->get();
+-	}
+-	return ilret;
+-}
+-
+-Vector<String> Theme::_get_color_role_type_list() const {
+-	Vector<String> ilret;
+-	List<StringName> il;
+-
+-	get_color_role_type_list(&il);
+-	ilret.resize(il.size());
+-
+-	int i = 0;
+-	String *w = ilret.ptrw();
+-	for (List<StringName>::Element *E = il.front(); E; E = E->next(), i++) {
+-		w[i] = E->get();
+-	}
+-	return ilret;
+-}
+-
+-Vector<String> Theme::_get_color_scheme_list(const String &p_theme_type) const {
+-	Vector<String> ilret;
+-	List<StringName> il;
+-
+-	get_color_scheme_list(p_theme_type, &il);
+-	ilret.resize(il.size());
+-
+-	int i = 0;
+-	String *w = ilret.ptrw();
+-	for (List<StringName>::Element *E = il.front(); E; E = E->next(), i++) {
+-		w[i] = E->get();
+-	}
+-	return ilret;
+-}
+-
+-Vector<String> Theme::_get_color_scheme_type_list() const {
+-	Vector<String> ilret;
+-	List<StringName> il;
+-
+-	get_color_scheme_type_list(&il);
+-	ilret.resize(il.size());
+-
+-	int i = 0;
+-	String *w = ilret.ptrw();
+-	for (List<StringName>::Element *E = il.front(); E; E = E->next(), i++) {
+-		w[i] = E->get();
+-	}
+-	return ilret;
+-}
+-
+-
+-
+ Vector<String> Theme::_get_theme_item_list(DataType p_data_type, const String &p_theme_type) const {
+ 	switch (p_data_type) {
+ 		case DATA_TYPE_COLOR:
+@@ -1790,10 +1466,6 @@ Vector<String> Theme::_get_theme_item_list(DataType p_data_type, const String &p
+ 			return _get_icon_list(p_theme_type);
+ 		case DATA_TYPE_STYLEBOX:
+ 			return _get_stylebox_list(p_theme_type);
+-		case DATA_TYPE_COLOR_ROLE:
+-			return _get_color_role_list(p_theme_type);
+-		case DATA_TYPE_COLOR_SCHEME:
+-			return _get_color_scheme_list(p_theme_type);
+ 		case DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -1815,10 +1487,6 @@ Vector<String> Theme::_get_theme_item_type_list(DataType p_data_type) const {
+ 			return _get_icon_type_list();
+ 		case DATA_TYPE_STYLEBOX:
+ 			return _get_stylebox_type_list();
+-		case DATA_TYPE_COLOR_ROLE:
+-			return _get_color_role_type_list();
+-		case DATA_TYPE_COLOR_SCHEME:
+-			return _get_color_scheme_type_list();
+ 		case DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -2049,23 +1717,6 @@ void Theme::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("get_constant_list", "theme_type"), &Theme::_get_constant_list);
+ 	ClassDB::bind_method(D_METHOD("get_constant_type_list"), &Theme::_get_constant_type_list);
+ 
+-	ClassDB::bind_method(D_METHOD("set_color_role", "name", "theme_type", "constant"), &Theme::set_color_role);
+-	ClassDB::bind_method(D_METHOD("get_color_role", "name", "theme_type"), &Theme::get_color_role);
+-	ClassDB::bind_method(D_METHOD("has_color_role", "name", "theme_type"), &Theme::has_color_role);
+-	ClassDB::bind_method(D_METHOD("rename_color_role", "old_name", "name", "theme_type"), &Theme::rename_color_role);
+-	ClassDB::bind_method(D_METHOD("clear_color_role", "name", "theme_type"), &Theme::clear_color_role);
+-	ClassDB::bind_method(D_METHOD("get_color_role_list", "theme_type"), &Theme::_get_color_role_list);
+-	ClassDB::bind_method(D_METHOD("get_color_role_type_list"), &Theme::_get_color_role_type_list);
+-
+-	ClassDB::bind_method(D_METHOD("set_color_scheme", "name", "theme_type", "constant"), &Theme::set_color_scheme);
+-	ClassDB::bind_method(D_METHOD("get_color_scheme", "name", "theme_type"), &Theme::get_color_scheme);
+-	ClassDB::bind_method(D_METHOD("has_color_scheme", "name", "theme_type"), &Theme::has_color_scheme);
+-	ClassDB::bind_method(D_METHOD("rename_color_scheme", "old_name", "name", "theme_type"), &Theme::rename_color_scheme);
+-	ClassDB::bind_method(D_METHOD("clear_color_scheme", "name", "theme_type"), &Theme::clear_color_scheme);
+-	ClassDB::bind_method(D_METHOD("get_color_scheme_list", "theme_type"), &Theme::_get_color_scheme_list);
+-	ClassDB::bind_method(D_METHOD("get_color_scheme_type_list"), &Theme::_get_color_scheme_type_list);
+-
+-
+ 	ClassDB::bind_method(D_METHOD("set_default_base_scale", "base_scale"), &Theme::set_default_base_scale);
+ 	ClassDB::bind_method(D_METHOD("get_default_base_scale"), &Theme::get_default_base_scale);
+ 	ClassDB::bind_method(D_METHOD("has_default_base_scale"), &Theme::has_default_base_scale);
+@@ -2078,10 +1729,6 @@ void Theme::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("get_default_font_size"), &Theme::get_default_font_size);
+ 	ClassDB::bind_method(D_METHOD("has_default_font_size"), &Theme::has_default_font_size);
+ 
+-	ClassDB::bind_method(D_METHOD("set_default_color_scheme", "color_scheme"), &Theme::set_default_color_scheme);
+-	ClassDB::bind_method(D_METHOD("get_default_color_scheme"), &Theme::get_default_color_scheme);
+-	ClassDB::bind_method(D_METHOD("has_default_color_scheme"), &Theme::has_default_color_scheme);
+-
+ 	ClassDB::bind_method(D_METHOD("set_theme_item", "data_type", "name", "theme_type", "value"), &Theme::set_theme_item);
+ 	ClassDB::bind_method(D_METHOD("get_theme_item", "data_type", "name", "theme_type"), &Theme::get_theme_item);
+ 	ClassDB::bind_method(D_METHOD("has_theme_item", "data_type", "name", "theme_type"), &Theme::has_theme_item);
+@@ -2106,7 +1753,6 @@ void Theme::_bind_methods() {
+ 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "default_base_scale", PROPERTY_HINT_RANGE, "0.0,2.0,0.01,or_greater"), "set_default_base_scale", "get_default_base_scale");
+ 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "default_font", PROPERTY_HINT_RESOURCE_TYPE, "Font"), "set_default_font", "get_default_font");
+ 	ADD_PROPERTY(PropertyInfo(Variant::INT, "default_font_size", PROPERTY_HINT_RANGE, "0,256,1,or_greater,suffix:px"), "set_default_font_size", "get_default_font_size");
+-	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "default_color_scheme", PROPERTY_HINT_RESOURCE_TYPE, "ColorScheme"), "set_default_color_scheme", "get_default_color_scheme");
+ 
+ 	BIND_ENUM_CONSTANT(DATA_TYPE_COLOR);
+ 	BIND_ENUM_CONSTANT(DATA_TYPE_CONSTANT);
+@@ -2114,8 +1760,6 @@ void Theme::_bind_methods() {
+ 	BIND_ENUM_CONSTANT(DATA_TYPE_FONT_SIZE);
+ 	BIND_ENUM_CONSTANT(DATA_TYPE_ICON);
+ 	BIND_ENUM_CONSTANT(DATA_TYPE_STYLEBOX);
+-	BIND_ENUM_CONSTANT(DATA_TYPE_COLOR_ROLE);
+-	BIND_ENUM_CONSTANT(DATA_TYPE_COLOR_SCHEME);
+ 	BIND_ENUM_CONSTANT(DATA_TYPE_MAX);
+ }
+ 
+diff --git a/scene/resources/theme.h b/scene/resources/theme.h
+index 3c5235277c095b3d2e5f9fab528d7f07537e0f14..b26b5b5e8416987e5d772b9e93478fce23f96610 100644
+--- a/scene/resources/theme.h
++++ b/scene/resources/theme.h
+@@ -35,7 +35,6 @@
+ #include "scene/resources/font.h"
+ #include "scene/resources/style_box.h"
+ #include "scene/resources/texture.h"
+-#include "modules/color_scheme/color_scheme.h"
+ 
+ class Theme : public Resource {
+ 	GDCLASS(Theme, Resource);
+@@ -54,9 +53,6 @@ public:
+ 	using ThemeFontSizeMap = HashMap<StringName, int>;
+ 	using ThemeColorMap = HashMap<StringName, Color>;
+ 	using ThemeConstantMap = HashMap<StringName, int>;
+-	using ThemeColorRoleMap = HashMap<StringName, ColorRole>;
+-	using ThemeColorSchemeMap = HashMap<StringName, Ref<ColorScheme>>;
+-	
+ 
+ 	enum DataType {
+ 		DATA_TYPE_COLOR,
+@@ -65,8 +61,6 @@ public:
+ 		DATA_TYPE_FONT_SIZE,
+ 		DATA_TYPE_ICON,
+ 		DATA_TYPE_STYLEBOX,
+-		DATA_TYPE_COLOR_ROLE,
+-		DATA_TYPE_COLOR_SCHEME,
+ 		DATA_TYPE_MAX
+ 	};
+ 
+@@ -87,10 +81,6 @@ private:
+ 	Vector<String> _get_color_type_list() const;
+ 	Vector<String> _get_constant_list(const String &p_theme_type) const;
+ 	Vector<String> _get_constant_type_list() const;
+-	Vector<String> _get_color_role_list(const String &p_theme_type) const;
+-	Vector<String> _get_color_role_type_list() const;
+-	Vector<String> _get_color_scheme_list(const String &p_theme_type) const;
+-	Vector<String> _get_color_scheme_type_list() const;
+ 
+ 	Vector<String> _get_theme_item_list(DataType p_data_type, const String &p_theme_type) const;
+ 	Vector<String> _get_theme_item_type_list(DataType p_data_type) const;
+@@ -107,7 +97,6 @@ protected:
+ 	float default_base_scale = 0.0;
+ 	Ref<Font> default_font;
+ 	int default_font_size = -1;
+-	Ref<ColorScheme> default_color_scheme;
+ 
+ 	HashMap<StringName, ThemeIconMap> icon_map;
+ 	HashMap<StringName, ThemeStyleMap> style_map;
+@@ -117,8 +106,6 @@ protected:
+ 	HashMap<StringName, ThemeConstantMap> constant_map;
+ 	HashMap<StringName, StringName> variation_map;
+ 	HashMap<StringName, List<StringName>> variation_base_map;
+-	HashMap<StringName, ThemeColorRoleMap> color_role_map;
+-	HashMap<StringName, ThemeColorSchemeMap> color_scheme_map;
+ 
+ 	static void _bind_methods();
+ 
+@@ -143,10 +130,6 @@ public:
+ 	int get_default_font_size() const;
+ 	bool has_default_font_size() const;
+ 
+-	void set_default_color_scheme(const Ref<ColorScheme> &p_default_color_scheme);
+-	Ref<ColorScheme> get_default_color_scheme() const;
+-	bool has_default_color_scheme() const;
+-
+ 	void set_icon(const StringName &p_name, const StringName &p_theme_type, const Ref<Texture2D> &p_icon);
+ 	virtual Ref<Texture2D> get_icon(const StringName &p_name, const StringName &p_theme_type) const;
+ 	bool has_icon(const StringName &p_name, const StringName &p_theme_type) const;
+@@ -213,28 +196,6 @@ public:
+ 	void remove_constant_type(const StringName &p_theme_type);
+ 	void get_constant_type_list(List<StringName> *p_list) const;
+ 
+-	void set_color_role(const StringName &p_name, const StringName &p_theme_type, const ColorRole p_color_role);
+-	virtual ColorRole get_color_role(const StringName &p_name, const StringName &p_theme_type) const;
+-	bool has_color_role(const StringName &p_name, const StringName &p_theme_type) const;
+-	bool has_color_role_nocheck(const StringName &p_name, const StringName &p_theme_type) const;
+-	void rename_color_role(const StringName &p_old_name, const StringName &p_name, const StringName &p_theme_type);
+-	void clear_color_role(const StringName &p_name, const StringName &p_theme_type);
+-	void get_color_role_list(StringName p_theme_type, List<StringName> *p_list) const;
+-	void add_color_role_type(const StringName &p_theme_type);
+-	void remove_color_role_type(const StringName &p_theme_type);
+-	void get_color_role_type_list(List<StringName> *p_list) const;
+-
+-	void set_color_scheme(const StringName &p_name, const StringName &p_theme_type, const Ref<ColorScheme> &p_color_scheme);
+-	virtual Ref<ColorScheme> get_color_scheme(const StringName &p_name, const StringName &p_theme_type) const;
+-	bool has_color_scheme(const StringName &p_name, const StringName &p_theme_type) const;
+-	bool has_color_scheme_nocheck(const StringName &p_name, const StringName &p_theme_type) const;
+-	void rename_color_scheme(const StringName &p_old_name, const StringName &p_name, const StringName &p_theme_type);
+-	void clear_color_scheme(const StringName &p_name, const StringName &p_theme_type);
+-	void get_color_scheme_list(StringName p_theme_type, List<StringName> *p_list) const;
+-	void add_color_scheme_type(const StringName &p_theme_type);
+-	void remove_color_scheme_type(const StringName &p_theme_type);
+-	void get_color_scheme_type_list(List<StringName> *p_list) const;
+-
+ 	void set_theme_item(DataType p_data_type, const StringName &p_name, const StringName &p_theme_type, const Variant &p_value);
+ 	Variant get_theme_item(DataType p_data_type, const StringName &p_name, const StringName &p_theme_type) const;
+ 	bool has_theme_item(DataType p_data_type, const StringName &p_name, const StringName &p_theme_type) const;
+diff --git a/scene/theme/default_theme.cpp b/scene/theme/default_theme.cpp
+index fb6fb6f7cc344c9388f26f3ac9190259618a4ed9..a825bd3efdbaa4fa8bf1dbeaf8964f9df94fc2c2 100644
+--- a/scene/theme/default_theme.cpp
++++ b/scene/theme/default_theme.cpp
+@@ -105,17 +105,14 @@ static Ref<StyleBox> make_empty_stylebox(float p_margin_left = -1, float p_margi
+ 	return style;
+ }
+ 
+-void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const Ref<Font> &bold_font, const Ref<Font> &bold_italics_font, const Ref<Font> &italics_font, Ref<Texture2D> &default_icon, Ref<StyleBox> &default_style, float p_scale, const Ref<ColorScheme> &default_color_scheme) {
++void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const Ref<Font> &bold_font, const Ref<Font> &bold_italics_font, const Ref<Font> &italics_font, Ref<Texture2D> &default_icon, Ref<StyleBox> &default_style, float p_scale) {
+ 	scale = p_scale;
+ 
+-	theme->set_default_color_scheme(default_color_scheme);
+-
+ 	// Default theme properties.
+ 	theme->set_default_font(default_font);
+ 	theme->set_default_font_size(Math::round(default_font_size * scale));
+ 	theme->set_default_base_scale(scale);
+ 	
+-
+ 	// Font colors
+ 	const Color control_font_color = Color(0.875, 0.875, 0.875);
+ 	const Color control_font_low_color = Color(0.7, 0.7, 0.7);
+@@ -1182,8 +1179,7 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 	default_style = make_flat_stylebox(Color(1, 0.365, 0.365), 4, 4, 4, 4, 0, false, 2);
+ }
+ 
+-
+-void make_default_theme(float p_scale, Ref<Font> p_font, Ref<ColorScheme> p_color_scheme, TextServer::SubpixelPositioning p_font_subpixel, TextServer::Hinting p_font_hinting, TextServer::FontAntialiasing p_font_antialiasing, bool p_font_msdf, bool p_font_generate_mipmaps) {
++void make_default_theme(float p_scale, Ref<Font> p_font, TextServer::SubpixelPositioning p_font_subpixel, TextServer::Hinting p_font_hinting, TextServer::FontAntialiasing p_font_antialiasing, bool p_font_msdf, bool p_font_generate_mipmaps) {
+ 	Ref<Theme> t;
+ 	t.instantiate();
+ 
+@@ -1194,13 +1190,6 @@ void make_default_theme(float p_scale, Ref<Font> p_font, Ref<ColorScheme> p_colo
+ 	Ref<FontVariation> bold_italics_font;
+ 	Ref<FontVariation> italics_font;
+ 	float default_scale = CLAMP(p_scale, 0.5, 8.0);
+-	Ref<ColorScheme> default_color_scheme;
+-	if (p_color_scheme.is_valid()) {
+-		default_color_scheme = p_color_scheme;
+-	} else {
+-		default_color_scheme.instantiate();
+-		default_color_scheme->set_source_color(Color("#6750A4"));
+-	}
+ 
+ 	if (p_font.is_valid()) {
+ 		// Use the custom font defined in the Project Settings.
+@@ -1236,7 +1225,7 @@ void make_default_theme(float p_scale, Ref<Font> p_font, Ref<ColorScheme> p_colo
+ 		italics_font->set_variation_transform(Transform2D(1.0, 0.2, 0.0, 1.0, 0.0, 0.0));
+ 	}
+ 
+-	fill_default_theme(t, default_font, bold_font, bold_italics_font, italics_font, default_icon, default_style, default_scale, default_color_scheme);
++	fill_default_theme(t, default_font, bold_font, bold_italics_font, italics_font, default_icon, default_style, default_scale);
+ 
+ 	ThemeDB::get_singleton()->set_default_theme(t);
+ 
+@@ -1245,6 +1234,4 @@ void make_default_theme(float p_scale, Ref<Font> p_font, Ref<ColorScheme> p_colo
+ 	ThemeDB::get_singleton()->set_fallback_stylebox(default_style);
+ 	ThemeDB::get_singleton()->set_fallback_font(default_font);
+ 	ThemeDB::get_singleton()->set_fallback_font_size(default_font_size * default_scale);
+-
+-	ThemeDB::get_singleton()->set_fallback_color_scheme(default_color_scheme);
+ }
+diff --git a/scene/theme/default_theme.h b/scene/theme/default_theme.h
+index 521989ef67cbd9eac24f2e0c56343e9e2fc75f2b..55fc32a3d3f1ed9a283fada139e9057f034ae216 100644
+--- a/scene/theme/default_theme.h
++++ b/scene/theme/default_theme.h
+@@ -33,7 +33,7 @@
+ 
+ #include "scene/resources/theme.h"
+ 
+-void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const Ref<Font> &bold_font, const Ref<Font> &bold_italics_font, const Ref<Font> &italics_font, Ref<Texture2D> &default_icon, Ref<StyleBox> &default_style, float p_scale, const Ref<ColorScheme> &default_color_scheme);
+-void make_default_theme(float p_scale, Ref<Font> p_font, Ref<ColorScheme> p_color_scheme, TextServer::SubpixelPositioning p_font_subpixel = TextServer::SUBPIXEL_POSITIONING_AUTO, TextServer::Hinting p_font_hinting = TextServer::HINTING_LIGHT, TextServer::FontAntialiasing p_font_antialiased = TextServer::FONT_ANTIALIASING_GRAY, bool p_font_msdf = false, bool p_font_generate_mipmaps = false);
++void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const Ref<Font> &bold_font, const Ref<Font> &bold_italics_font, const Ref<Font> &italics_font, Ref<Texture2D> &default_icon, Ref<StyleBox> &default_style, float p_scale);
++void make_default_theme(float p_scale, Ref<Font> p_font, TextServer::SubpixelPositioning p_font_subpixel = TextServer::SUBPIXEL_POSITIONING_AUTO, TextServer::Hinting p_font_hinting = TextServer::HINTING_LIGHT, TextServer::FontAntialiasing p_font_antialiased = TextServer::FONT_ANTIALIASING_GRAY, bool p_font_msdf = false, bool p_font_generate_mipmaps = false);
+ 
+ #endif // DEFAULT_THEME_H
+diff --git a/scene/theme/theme_db.cpp b/scene/theme/theme_db.cpp
+index 61ad4313d5bb1e6c0a660e23fe8ff256b14cbed0..8dc9d288e2c66d467c615317ed068fd6d7515903 100644
+--- a/scene/theme/theme_db.cpp
++++ b/scene/theme/theme_db.cpp
+@@ -52,8 +52,6 @@ void ThemeDB::initialize_theme() {
+ 	String project_theme_path = GLOBAL_DEF_RST(PropertyInfo(Variant::STRING, "gui/theme/custom", PROPERTY_HINT_FILE, "*.tres,*.res,*.theme", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_RESTART_IF_CHANGED), "");
+ 	String project_font_path = GLOBAL_DEF_RST(PropertyInfo(Variant::STRING, "gui/theme/custom_font", PROPERTY_HINT_FILE, "*.tres,*.res,*.otf,*.ttf,*.woff,*.woff2,*.fnt,*.font,*.pfb,*.pfm", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_RESTART_IF_CHANGED), "");
+ 
+-	Color project_color_scheme_source_color = GLOBAL_DEF_RST(PropertyInfo(Variant::COLOR, "gui/theme/custom_color_scheme_source_color", PROPERTY_HINT_COLOR_NO_ALPHA, "", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_RESTART_IF_CHANGED), Color("#6750A4"));
+-
+ 	TextServer::FontAntialiasing font_antialiasing = (TextServer::FontAntialiasing)(int)GLOBAL_DEF_RST(PropertyInfo(Variant::INT, "gui/theme/default_font_antialiasing", PROPERTY_HINT_ENUM, "None,Grayscale,LCD Subpixel", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_RESTART_IF_CHANGED), 1);
+ 	TextServer::Hinting font_hinting = (TextServer::Hinting)(int)GLOBAL_DEF_RST(PropertyInfo(Variant::INT, "gui/theme/default_font_hinting", PROPERTY_HINT_ENUM, "None,Light,Normal", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_RESTART_IF_CHANGED), TextServer::HINTING_LIGHT);
+ 	TextServer::SubpixelPositioning font_subpixel_positioning = (TextServer::SubpixelPositioning)(int)GLOBAL_DEF_RST(PropertyInfo(Variant::INT, "gui/theme/default_font_subpixel_positioning", PROPERTY_HINT_ENUM, "Disabled,Auto,One Half of a Pixel,One Quarter of a Pixel", PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_RESTART_IF_CHANGED), TextServer::SUBPIXEL_POSITIONING_AUTO);
+@@ -85,14 +83,10 @@ void ThemeDB::initialize_theme() {
+ 		}
+ 	}
+ 
+-	Ref<ColorScheme> project_color_scheme;
+-	project_color_scheme.instantiate();
+-	project_color_scheme->set_source_color(project_color_scheme_source_color);
+-	set_fallback_color_scheme(project_color_scheme);
+ 	// Always generate the default theme to serve as a fallback for all required theme definitions.
+ 
+ 	if (RenderingServer::get_singleton()) {
+-		make_default_theme(default_theme_scale, project_font, project_color_scheme, font_subpixel_positioning, font_hinting, font_antialiasing, font_msdf, font_generate_mipmaps);
++		make_default_theme(default_theme_scale, project_font, font_subpixel_positioning, font_hinting, font_antialiasing, font_msdf, font_generate_mipmaps);
+ 	}
+ 
+ 	_init_default_theme_context();
+@@ -100,8 +94,7 @@ void ThemeDB::initialize_theme() {
+ 
+ void ThemeDB::initialize_theme_noproject() {
+ 	if (RenderingServer::get_singleton()) {
+-		Ref<ColorScheme> cur_color_scheme = Ref<ColorScheme>();
+-		make_default_theme(1.0, Ref<Font>(), cur_color_scheme);
++		make_default_theme(1.0, Ref<Font>());
+ 	}
+ 
+ 	_init_default_theme_context();
+@@ -179,19 +172,6 @@ int ThemeDB::get_fallback_font_size() {
+ 	return fallback_font_size;
+ }
+ 
+-void ThemeDB::set_fallback_color_scheme(Ref<ColorScheme> p_color_scheme) {
+-	if (fallback_color_scheme == p_color_scheme) {
+-		return;
+-	}
+-
+-	fallback_color_scheme = p_color_scheme;
+-	emit_signal(SNAME("fallback_changed"));
+-}
+-
+-Ref<ColorScheme> ThemeDB::get_fallback_color_scheme() {
+-	return fallback_color_scheme;
+-}
+-
+ void ThemeDB::set_fallback_icon(const Ref<Texture2D> &p_icon) {
+ 	if (fallback_icon == p_icon) {
+ 		return;
+@@ -430,8 +410,6 @@ void ThemeDB::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("get_fallback_font"), &ThemeDB::get_fallback_font);
+ 	ClassDB::bind_method(D_METHOD("set_fallback_font_size", "font_size"), &ThemeDB::set_fallback_font_size);
+ 	ClassDB::bind_method(D_METHOD("get_fallback_font_size"), &ThemeDB::get_fallback_font_size);
+-	ClassDB::bind_method(D_METHOD("set_fallback_color_scheme", "color_scheme"), &ThemeDB::set_fallback_color_scheme);
+-	ClassDB::bind_method(D_METHOD("get_fallback_color_scheme"), &ThemeDB::get_fallback_color_scheme);
+ 	ClassDB::bind_method(D_METHOD("set_fallback_icon", "icon"), &ThemeDB::set_fallback_icon);
+ 	ClassDB::bind_method(D_METHOD("get_fallback_icon"), &ThemeDB::get_fallback_icon);
+ 	ClassDB::bind_method(D_METHOD("set_fallback_stylebox", "stylebox"), &ThemeDB::set_fallback_stylebox);
+@@ -441,7 +419,6 @@ void ThemeDB::_bind_methods() {
+ 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "fallback_base_scale", PROPERTY_HINT_RANGE, "0.0,2.0,0.01,or_greater"), "set_fallback_base_scale", "get_fallback_base_scale");
+ 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "fallback_font", PROPERTY_HINT_RESOURCE_TYPE, "Font", PROPERTY_USAGE_NONE), "set_fallback_font", "get_fallback_font");
+ 	ADD_PROPERTY(PropertyInfo(Variant::INT, "fallback_font_size", PROPERTY_HINT_RANGE, "0,256,1,or_greater,suffix:px"), "set_fallback_font_size", "get_fallback_font_size");
+-	ADD_PROPERTY(PropertyInfo(Variant::INT, "fallback_color_scheme", PROPERTY_HINT_RESOURCE_TYPE, "ColorScheme"), "set_fallback_color_scheme", "get_fallback_color_scheme");
+ 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "fallback_icon", PROPERTY_HINT_RESOURCE_TYPE, "Texture2D", PROPERTY_USAGE_NONE), "set_fallback_icon", "get_fallback_icon");
+ 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "fallback_stylebox", PROPERTY_HINT_RESOURCE_TYPE, "StyleBox", PROPERTY_USAGE_NONE), "set_fallback_stylebox", "get_fallback_stylebox");
+ 
+diff --git a/scene/theme/theme_db.h b/scene/theme/theme_db.h
+index 7186cc06c1997ea4afba987bb97618dca64136f9..e472f4e93569d27c125af42c0de403643cf25281 100644
+--- a/scene/theme/theme_db.h
++++ b/scene/theme/theme_db.h
+@@ -84,7 +84,6 @@ class ThemeDB : public Object {
+ 	int fallback_font_size = 16;
+ 	Ref<Texture2D> fallback_icon;
+ 	Ref<StyleBox> fallback_stylebox;
+-	Ref<ColorScheme> fallback_color_scheme;
+ 
+ 	// Global theme contexts used to scope global Theme resources.
+ 
+@@ -140,10 +139,6 @@ public:
+ 	void set_fallback_font_size(int p_font_size);
+ 	int get_fallback_font_size();
+ 
+-	void set_fallback_color_scheme(Ref<ColorScheme> p_color_scheme);
+-	Ref<ColorScheme> get_fallback_color_scheme();
+-
+-
+ 	void set_fallback_icon(const Ref<Texture2D> &p_icon);
+ 	Ref<Texture2D> get_fallback_icon();
+ 
+diff --git a/scene/theme/theme_owner.cpp b/scene/theme/theme_owner.cpp
+index af1a90c5352891e5d7606a47144bf890469b78ce..2852a64e39f7cd9399de85377c5402d5045b86b3 100644
+--- a/scene/theme/theme_owner.cpp
++++ b/scene/theme/theme_owner.cpp
+@@ -411,36 +411,6 @@ int ThemeOwner::get_theme_default_font_size() {
+ 	return ThemeDB::get_singleton()->get_fallback_font_size();
+ }
+ 
+-Ref<ColorScheme> ThemeOwner::get_theme_default_color_scheme() {
+-	// First, look through each control or window node in the branch, until no valid parent can be found.
+-	// Only nodes with a theme resource attached are considered.
+-	// For each theme resource see if their assigned theme has the default value defined and valid.
+-	Node *owner_node = get_owner_node();
+-
+-	while (owner_node) {
+-		Ref<Theme> owner_theme = _get_owner_node_theme(owner_node);
+-
+-		if (owner_theme.is_valid() && owner_theme->has_default_color_scheme()) {
+-			return owner_theme->get_default_color_scheme();
+-		}
+-
+-		owner_node = _get_next_owner_node(owner_node);
+-	}
+-
+-	// Second, check global themes from the appropriate context.
+-	ThemeContext *global_context = _get_active_owner_context();
+-	for (const Ref<Theme> &theme : global_context->get_themes()) {
+-		if (theme.is_valid()) {
+-			if (theme->has_default_color_scheme()) {
+-				return theme->get_default_color_scheme();
+-			}
+-		}
+-	}
+-
+-	// Finally, if no match exists, return the universal default.
+-	return ThemeDB::get_singleton()->get_fallback_color_scheme();
+-}
+-
+ Ref<Theme> ThemeOwner::_get_owner_node_theme(Node *p_owner_node) const {
+ 	const Control *owner_c = Object::cast_to<Control>(p_owner_node);
+ 	if (owner_c) {
+diff --git a/scene/theme/theme_owner.h b/scene/theme/theme_owner.h
+index 50587355f99089bccabcbc7ef8f7f439e7aeba16..4923ccb00b73161ad472addeff033d23662b9225 100644
+--- a/scene/theme/theme_owner.h
++++ b/scene/theme/theme_owner.h
+@@ -77,7 +77,6 @@ public:
+ 	float get_theme_default_base_scale();
+ 	Ref<Font> get_theme_default_font();
+ 	int get_theme_default_font_size();
+-	Ref<ColorScheme> get_theme_default_color_scheme();
+ 
+ 	ThemeOwner(Node *p_holder) { holder = p_holder; }
+ 	~ThemeOwner() {}

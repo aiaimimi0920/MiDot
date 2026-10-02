@@ -1,0 +1,602 @@
+From 36e4dcfbaba3d5f2ae3fd7ca0628913323e1899b Mon Sep 17 00:00:00 2001
+From: aiaimimi0920 <153103332+aiaimimi0920@users.noreply.github.com>
+Date: Sun, 3 Mar 2024 06:10:28 +0800
+Subject: [PATCH] #cache code 2
+
+---
+ scene/resources/theme.cpp | 356 ++++++++++++++++++++++++++++++++++++++
+ scene/resources/theme.h   |  39 +++++
+ 2 files changed, 395 insertions(+)
+
+diff --git a/scene/resources/theme.cpp b/scene/resources/theme.cpp
+index d57a0f6b387925fde4d53d3790a087d19be28aa6..607f1e4381cb58ab85e21ac057ee6b59544cb19c 100644
+--- a/scene/resources/theme.cpp
++++ b/scene/resources/theme.cpp
+@@ -260,6 +260,31 @@ bool Theme::has_default_font_size() const {
+ 	return default_font_size > 0;
+ }
+ 
++void Theme::set_default_color_scheme(const Ref<ColorScheme> &p_color_scheme) {
++	if (default_color_scheme == p_color_scheme) {
++		return;
++	}
++	if(default_color_scheme.is_valid()){
++		default_color_scheme->disconnect_changed(callable_mp(this, &Theme::_emit_theme_changed));
++	}
++
++	default_color_scheme = p_color_scheme;
++
++	if (default_color_scheme.is_valid()) {
++		default_color_scheme->connect_changed(callable_mp(this, &Theme::_emit_theme_changed).bind(false), CONNECT_REFERENCE_COUNTED);
++	}
++
++	_emit_theme_changed();
++}
++
++Ref<ColorScheme> Theme::get_default_color_scheme() const {
++	return default_color_scheme;
++}
++
++bool Theme::has_default_color_scheme() const {
++	return default_color_scheme.is_valid();
++}
++
+ // Icons.
+ void Theme::set_icon(const StringName &p_name, const StringName &p_theme_type, const Ref<Texture2D> &p_icon) {
+ 	ERR_FAIL_COND_MSG(!is_valid_item_name(p_name), vformat("Invalid item name: '%s'", p_name));
+@@ -852,6 +877,183 @@ void Theme::get_constant_type_list(List<StringName> *p_list) const {
+ 	}
+ }
+ 
++
++// Color role.
++void Theme::set_color_role(const StringName &p_name, const StringName &p_theme_type, const ColorRole p_color_role) {
++	ERR_FAIL_COND_MSG(!is_valid_item_name(p_name), vformat("Invalid item name: '%s'", p_name));
++	ERR_FAIL_COND_MSG(!is_valid_type_name(p_theme_type), vformat("Invalid type name: '%s'", p_theme_type));
++
++	bool existing = has_color_role_nocheck(p_name, p_theme_type);
++	color_role_map[p_theme_type][p_name] = p_color_role;
++
++	_emit_theme_changed(!existing);
++}
++
++ColorRole Theme::get_color_role(const StringName &p_name, const StringName &p_theme_type) const {
++	if (color_role_map.has(p_theme_type) && color_role_map[p_theme_type].has(p_name)) {
++		return color_role_map[p_theme_type][p_name];
++	} else {
++		return ColorRole();
++	}
++}
++
++bool Theme::has_color_role(const StringName &p_name, const StringName &p_theme_type) const {
++	return (color_role_map.has(p_theme_type) && color_role_map[p_theme_type].has(p_name));
++}
++
++bool Theme::has_color_role_nocheck(const StringName &p_name, const StringName &p_theme_type) const {
++	return (color_role_map.has(p_theme_type) && color_role_map[p_theme_type].has(p_name));
++}
++
++void Theme::rename_color_role(const StringName &p_old_name, const StringName &p_name, const StringName &p_theme_type) {
++	ERR_FAIL_COND_MSG(!is_valid_item_name(p_name), vformat("Invalid item name: '%s'", p_name));
++	ERR_FAIL_COND_MSG(!is_valid_type_name(p_theme_type), vformat("Invalid type name: '%s'", p_theme_type));
++	ERR_FAIL_COND_MSG(!color_role_map.has(p_theme_type), "Cannot rename the color role '" + String(p_old_name) + "' because the node type '" + String(p_theme_type) + "' does not exist.");
++	ERR_FAIL_COND_MSG(color_role_map[p_theme_type].has(p_name), "Cannot rename the color role '" + String(p_old_name) + "' because the new name '" + String(p_name) + "' already exists.");
++	ERR_FAIL_COND_MSG(!color_role_map[p_theme_type].has(p_old_name), "Cannot rename the color role '" + String(p_old_name) + "' because it does not exist.");
++
++	color_role_map[p_theme_type][p_name] = color_role_map[p_theme_type][p_old_name];
++	color_role_map[p_theme_type].erase(p_old_name);
++
++	_emit_theme_changed(true);
++}
++
++void Theme::clear_color_role(const StringName &p_name, const StringName &p_theme_type) {
++	ERR_FAIL_COND_MSG(!color_role_map.has(p_theme_type), "Cannot clear the color '" + String(p_name) + "' because the node type '" + String(p_theme_type) + "' does not exist.");
++	ERR_FAIL_COND_MSG(!color_role_map[p_theme_type].has(p_name), "Cannot clear the color '" + String(p_name) + "' because it does not exist.");
++
++	color_role_map[p_theme_type].erase(p_name);
++
++	_emit_theme_changed(true);
++}
++
++
++void Theme::get_color_role_list(StringName p_theme_type, List<StringName> *p_list) const {
++	ERR_FAIL_NULL(p_list);
++
++	if (!color_role_map.has(p_theme_type)) {
++		return;
++	}
++
++	for (const KeyValue<StringName, ColorRole> &E : color_role_map[p_theme_type]) {
++		p_list->push_back(E.key);
++	}
++}
++
++void Theme::add_color_role_type(const StringName &p_theme_type) {
++	ERR_FAIL_COND_MSG(!is_valid_type_name(p_theme_type), vformat("Invalid type name: '%s'", p_theme_type));
++
++	if (color_role_map.has(p_theme_type)) {
++		return;
++	}
++	color_role_map[p_theme_type] = ThemeColorRoleMap();
++}
++
++void Theme::remove_color_role_type(const StringName &p_theme_type) {
++	if (!color_role_map.has(p_theme_type)) {
++		return;
++	}
++
++	color_role_map.erase(p_theme_type);
++}
++
++void Theme::get_color_role_type_list(List<StringName> *p_list) const {
++	ERR_FAIL_NULL(p_list);
++
++	for (const KeyValue<StringName, ThemeColorRoleMap> &E : color_role_map) {
++		p_list->push_back(E.key);
++	}
++}
++
++// Color scheme.
++void Theme::set_color_scheme(const StringName &p_name, const StringName &p_theme_type, const Ref<ColorScheme> &p_color_scheme) {
++	ERR_FAIL_COND_MSG(!is_valid_item_name(p_name), vformat("Invalid item name: '%s'", p_name));
++	ERR_FAIL_COND_MSG(!is_valid_type_name(p_theme_type), vformat("Invalid type name: '%s'", p_theme_type));
++
++	bool existing = has_color_scheme_nocheck(p_name, p_theme_type);
++	color_scheme_map[p_theme_type][p_name] = p_color_scheme;
++
++	_emit_theme_changed(!existing);
++}
++
++Ref<ColorScheme> Theme::get_color_scheme(const StringName &p_name, const StringName &p_theme_type) const {
++	if (color_scheme_map.has(p_theme_type) && color_scheme_map[p_theme_type].has(p_name)) {
++		return color_scheme_map[p_theme_type][p_name];
++	} else if (has_default_color_scheme()) {
++		return default_color_scheme;
++	} else {
++		return ThemeDB::get_singleton()->get_fallback_color_scheme();
++	}
++}
++
++bool Theme::has_color_scheme(const StringName &p_name, const StringName &p_theme_type) const {
++	return (color_scheme_map.has(p_theme_type) && color_scheme_map[p_theme_type].has(p_name) && color_scheme_map[p_theme_type][p_name].is_valid()) || has_default_color_scheme();
++}
++
++bool Theme::has_color_scheme_nocheck(const StringName &p_name, const StringName &p_theme_type) const {
++	return (color_scheme_map.has(p_theme_type) && color_scheme_map[p_theme_type].has(p_name));
++}
++
++void Theme::rename_color_scheme(const StringName &p_old_name, const StringName &p_name, const StringName &p_theme_type) {
++	ERR_FAIL_COND_MSG(!is_valid_item_name(p_name), vformat("Invalid item name: '%s'", p_name));
++	ERR_FAIL_COND_MSG(!is_valid_type_name(p_theme_type), vformat("Invalid type name: '%s'", p_theme_type));
++	ERR_FAIL_COND_MSG(!color_scheme_map.has(p_theme_type), "Cannot rename the color scheme '" + String(p_old_name) + "' because the node type '" + String(p_theme_type) + "' does not exist.");
++	ERR_FAIL_COND_MSG(color_scheme_map[p_theme_type].has(p_name), "Cannot rename the color scheme '" + String(p_old_name) + "' because the new name '" + String(p_name) + "' already exists.");
++	ERR_FAIL_COND_MSG(!color_scheme_map[p_theme_type].has(p_old_name), "Cannot rename the color scheme '" + String(p_old_name) + "' because it does not exist.");
++
++	color_scheme_map[p_theme_type][p_name] = color_scheme_map[p_theme_type][p_old_name];
++	color_scheme_map[p_theme_type].erase(p_old_name);
++
++	_emit_theme_changed(true);
++}
++
++void Theme::clear_color_scheme(const StringName &p_name, const StringName &p_theme_type) {
++	ERR_FAIL_COND_MSG(!color_scheme_map.has(p_theme_type), "Cannot clear the color '" + String(p_name) + "' because the node type '" + String(p_theme_type) + "' does not exist.");
++	ERR_FAIL_COND_MSG(!color_scheme_map[p_theme_type].has(p_name), "Cannot clear the color '" + String(p_name) + "' because it does not exist.");
++
++	color_scheme_map[p_theme_type].erase(p_name);
++
++	_emit_theme_changed(true);
++}
++
++void Theme::get_color_scheme_list(StringName p_theme_type, List<StringName> *p_list) const {
++	ERR_FAIL_NULL(p_list);
++
++	if (!color_scheme_map.has(p_theme_type)) {
++		return;
++	}
++
++	for (const KeyValue<StringName, Ref<ColorScheme>> &E : color_scheme_map[p_theme_type]) {
++		p_list->push_back(E.key);
++	}
++}
++
++void Theme::add_color_scheme_type(const StringName &p_theme_type) {
++	ERR_FAIL_COND_MSG(!is_valid_type_name(p_theme_type), vformat("Invalid type name: '%s'", p_theme_type));
++
++	if (color_scheme_map.has(p_theme_type)) {
++		return;
++	}
++	color_scheme_map[p_theme_type] = ThemeColorSchemeMap();
++}
++
++void Theme::remove_color_scheme_type(const StringName &p_theme_type) {
++	if (!color_scheme_map.has(p_theme_type)) {
++		return;
++	}
++
++	color_scheme_map.erase(p_theme_type);
++}
++
++void Theme::get_color_scheme_type_list(List<StringName> *p_list) const {
++	ERR_FAIL_NULL(p_list);
++
++	for (const KeyValue<StringName, ThemeColorSchemeMap> &E : color_scheme_map) {
++		p_list->push_back(E.key);
++	}
++}
++
++
+ // Generic methods for managing theme items.
+ void Theme::set_theme_item(DataType p_data_type, const StringName &p_name, const StringName &p_theme_type, const Variant &p_value) {
+ 	switch (p_data_type) {
+@@ -891,6 +1093,18 @@ void Theme::set_theme_item(DataType p_data_type, const StringName &p_name, const
+ 			Ref<StyleBox> stylebox_value = Object::cast_to<StyleBox>(p_value.get_validated_object());
+ 			set_stylebox(p_name, p_theme_type, stylebox_value);
+ 		} break;
++		case DATA_TYPE_COLOR_ROLE: {
++			ERR_FAIL_COND_MSG(p_value.get_type() != Variant::INT, "Theme item's data type (int) does not match Variant's type (" + Variant::get_type_name(p_value.get_type()) + ").");
++
++			ColorRole color_role_value = p_value;
++			set_color_role(p_name, p_theme_type, color_role_value);
++		} break;
++		case DATA_TYPE_COLOR_SCHEME: {
++			ERR_FAIL_COND_MSG(p_value.get_type() != Variant::OBJECT, "Theme item's data type (Object) does not match Variant's type (" + Variant::get_type_name(p_value.get_type()) + ").");
++
++			Ref<ColorScheme> color_scheme_value = Object::cast_to<ColorScheme>(p_value.get_validated_object());
++			set_color_scheme(p_name, p_theme_type, color_scheme_value);
++		} break;
+ 		case DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -910,6 +1124,10 @@ Variant Theme::get_theme_item(DataType p_data_type, const StringName &p_name, co
+ 			return get_icon(p_name, p_theme_type);
+ 		case DATA_TYPE_STYLEBOX:
+ 			return get_stylebox(p_name, p_theme_type);
++		case DATA_TYPE_COLOR_ROLE:
++			return get_color_role(p_name, p_theme_type);
++		case DATA_TYPE_COLOR_SCHEME:
++			return get_color_scheme(p_name, p_theme_type);
+ 		case DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -931,6 +1149,10 @@ bool Theme::has_theme_item(DataType p_data_type, const StringName &p_name, const
+ 			return has_icon(p_name, p_theme_type);
+ 		case DATA_TYPE_STYLEBOX:
+ 			return has_stylebox(p_name, p_theme_type);
++		case DATA_TYPE_COLOR_ROLE:
++			return has_color_role(p_name, p_theme_type);
++		case DATA_TYPE_COLOR_SCHEME:
++			return has_color_scheme(p_name, p_theme_type);
+ 		case DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -952,6 +1174,10 @@ bool Theme::has_theme_item_nocheck(DataType p_data_type, const StringName &p_nam
+ 			return has_icon_nocheck(p_name, p_theme_type);
+ 		case DATA_TYPE_STYLEBOX:
+ 			return has_stylebox_nocheck(p_name, p_theme_type);
++		case DATA_TYPE_COLOR_ROLE:
++			return has_color_role_nocheck(p_name, p_theme_type);
++		case DATA_TYPE_COLOR_SCHEME:
++			return has_color_scheme_nocheck(p_name, p_theme_type);
+ 		case DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -979,6 +1205,12 @@ void Theme::rename_theme_item(DataType p_data_type, const StringName &p_old_name
+ 		case DATA_TYPE_STYLEBOX:
+ 			rename_stylebox(p_old_name, p_name, p_theme_type);
+ 			break;
++		case DATA_TYPE_COLOR_ROLE:
++			rename_color_role(p_old_name, p_name, p_theme_type);
++			break;
++		case DATA_TYPE_COLOR_SCHEME:
++			rename_color_scheme(p_old_name, p_name, p_theme_type);
++			break;
+ 		case DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -1004,6 +1236,12 @@ void Theme::clear_theme_item(DataType p_data_type, const StringName &p_name, con
+ 		case DATA_TYPE_STYLEBOX:
+ 			clear_stylebox(p_name, p_theme_type);
+ 			break;
++		case DATA_TYPE_COLOR_ROLE:
++			clear_color_role(p_name, p_theme_type);
++			break;
++		case DATA_TYPE_COLOR_SCHEME:
++			clear_color_scheme(p_name, p_theme_type);
++			break;
+ 		case DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -1029,6 +1267,12 @@ void Theme::get_theme_item_list(DataType p_data_type, StringName p_theme_type, L
+ 		case DATA_TYPE_STYLEBOX:
+ 			get_stylebox_list(p_theme_type, p_list);
+ 			break;
++		case DATA_TYPE_COLOR_ROLE:
++			get_color_role_list(p_theme_type, p_list);
++			break;
++		case DATA_TYPE_COLOR_SCHEME:
++			get_color_scheme_list(p_theme_type, p_list);
++			break;
+ 		case DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -1054,6 +1298,12 @@ void Theme::add_theme_item_type(DataType p_data_type, const StringName &p_theme_
+ 		case DATA_TYPE_STYLEBOX:
+ 			add_stylebox_type(p_theme_type);
+ 			break;
++		case DATA_TYPE_COLOR_ROLE:
++			add_color_role_type(p_theme_type);
++			break;
++		case DATA_TYPE_COLOR_SCHEME:
++			add_color_scheme_type(p_theme_type);
++			break;
+ 		case DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -1079,6 +1329,12 @@ void Theme::remove_theme_item_type(DataType p_data_type, const StringName &p_the
+ 		case DATA_TYPE_STYLEBOX:
+ 			remove_stylebox_type(p_theme_type);
+ 			break;
++		case DATA_TYPE_COLOR_ROLE:
++			remove_color_role_type(p_theme_type);
++			break;
++		case DATA_TYPE_COLOR_SCHEME:
++			remove_color_scheme_type(p_theme_type);
++			break;
+ 		case DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -1104,6 +1360,12 @@ void Theme::get_theme_item_type_list(DataType p_data_type, List<StringName> *p_l
+ 		case DATA_TYPE_STYLEBOX:
+ 			get_stylebox_type_list(p_list);
+ 			break;
++		case DATA_TYPE_COLOR_ROLE:
++			get_color_role_type_list(p_list);
++			break;
++		case DATA_TYPE_COLOR_SCHEME:
++			get_color_scheme_type_list(p_list);
++			break;
+ 		case DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -1452,6 +1714,68 @@ Vector<String> Theme::_get_constant_type_list() const {
+ 	return ilret;
+ }
+ 
++Vector<String> Theme::_get_color_role_list(const String &p_theme_type) const {
++	Vector<String> ilret;
++	List<StringName> il;
++
++	get_color_role_list(p_theme_type, &il);
++	ilret.resize(il.size());
++
++	int i = 0;
++	String *w = ilret.ptrw();
++	for (List<StringName>::Element *E = il.front(); E; E = E->next(), i++) {
++		w[i] = E->get();
++	}
++	return ilret;
++}
++
++Vector<String> Theme::_get_color_role_type_list() const {
++	Vector<String> ilret;
++	List<StringName> il;
++
++	get_color_role_type_list(&il);
++	ilret.resize(il.size());
++
++	int i = 0;
++	String *w = ilret.ptrw();
++	for (List<StringName>::Element *E = il.front(); E; E = E->next(), i++) {
++		w[i] = E->get();
++	}
++	return ilret;
++}
++
++Vector<String> Theme::_get_color_scheme_list(const String &p_theme_type) const {
++	Vector<String> ilret;
++	List<StringName> il;
++
++	get_color_scheme_list(p_theme_type, &il);
++	ilret.resize(il.size());
++
++	int i = 0;
++	String *w = ilret.ptrw();
++	for (List<StringName>::Element *E = il.front(); E; E = E->next(), i++) {
++		w[i] = E->get();
++	}
++	return ilret;
++}
++
++Vector<String> Theme::_get_color_scheme_type_list() const {
++	Vector<String> ilret;
++	List<StringName> il;
++
++	get_color_scheme_type_list(&il);
++	ilret.resize(il.size());
++
++	int i = 0;
++	String *w = ilret.ptrw();
++	for (List<StringName>::Element *E = il.front(); E; E = E->next(), i++) {
++		w[i] = E->get();
++	}
++	return ilret;
++}
++
++
++
+ Vector<String> Theme::_get_theme_item_list(DataType p_data_type, const String &p_theme_type) const {
+ 	switch (p_data_type) {
+ 		case DATA_TYPE_COLOR:
+@@ -1466,6 +1790,10 @@ Vector<String> Theme::_get_theme_item_list(DataType p_data_type, const String &p
+ 			return _get_icon_list(p_theme_type);
+ 		case DATA_TYPE_STYLEBOX:
+ 			return _get_stylebox_list(p_theme_type);
++		case DATA_TYPE_COLOR_ROLE:
++			return _get_color_role_list(p_theme_type);
++		case DATA_TYPE_COLOR_SCHEME:
++			return _get_color_scheme_list(p_theme_type);
+ 		case DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -1487,6 +1815,10 @@ Vector<String> Theme::_get_theme_item_type_list(DataType p_data_type) const {
+ 			return _get_icon_type_list();
+ 		case DATA_TYPE_STYLEBOX:
+ 			return _get_stylebox_type_list();
++		case DATA_TYPE_COLOR_ROLE:
++			return _get_color_role_type_list();
++		case DATA_TYPE_COLOR_SCHEME:
++			return _get_color_scheme_type_list();
+ 		case DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -1717,6 +2049,23 @@ void Theme::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("get_constant_list", "theme_type"), &Theme::_get_constant_list);
+ 	ClassDB::bind_method(D_METHOD("get_constant_type_list"), &Theme::_get_constant_type_list);
+ 
++	ClassDB::bind_method(D_METHOD("set_color_role", "name", "theme_type", "constant"), &Theme::set_color_role);
++	ClassDB::bind_method(D_METHOD("get_color_role", "name", "theme_type"), &Theme::get_color_role);
++	ClassDB::bind_method(D_METHOD("has_color_role", "name", "theme_type"), &Theme::has_color_role);
++	ClassDB::bind_method(D_METHOD("rename_color_role", "old_name", "name", "theme_type"), &Theme::rename_color_role);
++	ClassDB::bind_method(D_METHOD("clear_color_role", "name", "theme_type"), &Theme::clear_color_role);
++	ClassDB::bind_method(D_METHOD("get_color_role_list", "theme_type"), &Theme::_get_color_role_list);
++	ClassDB::bind_method(D_METHOD("get_color_role_type_list"), &Theme::_get_color_role_type_list);
++
++	ClassDB::bind_method(D_METHOD("set_color_scheme", "name", "theme_type", "constant"), &Theme::set_color_scheme);
++	ClassDB::bind_method(D_METHOD("get_color_scheme", "name", "theme_type"), &Theme::get_color_scheme);
++	ClassDB::bind_method(D_METHOD("has_color_scheme", "name", "theme_type"), &Theme::has_color_scheme);
++	ClassDB::bind_method(D_METHOD("rename_color_scheme", "old_name", "name", "theme_type"), &Theme::rename_color_scheme);
++	ClassDB::bind_method(D_METHOD("clear_color_scheme", "name", "theme_type"), &Theme::clear_color_scheme);
++	ClassDB::bind_method(D_METHOD("get_color_scheme_list", "theme_type"), &Theme::_get_color_scheme_list);
++	ClassDB::bind_method(D_METHOD("get_color_scheme_type_list"), &Theme::_get_color_scheme_type_list);
++
++
+ 	ClassDB::bind_method(D_METHOD("set_default_base_scale", "base_scale"), &Theme::set_default_base_scale);
+ 	ClassDB::bind_method(D_METHOD("get_default_base_scale"), &Theme::get_default_base_scale);
+ 	ClassDB::bind_method(D_METHOD("has_default_base_scale"), &Theme::has_default_base_scale);
+@@ -1729,6 +2078,10 @@ void Theme::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("get_default_font_size"), &Theme::get_default_font_size);
+ 	ClassDB::bind_method(D_METHOD("has_default_font_size"), &Theme::has_default_font_size);
+ 
++	ClassDB::bind_method(D_METHOD("set_default_color_scheme", "color_scheme"), &Theme::set_default_color_scheme);
++	ClassDB::bind_method(D_METHOD("get_default_color_scheme"), &Theme::get_default_color_scheme);
++	ClassDB::bind_method(D_METHOD("has_default_color_scheme"), &Theme::has_default_color_scheme);
++
+ 	ClassDB::bind_method(D_METHOD("set_theme_item", "data_type", "name", "theme_type", "value"), &Theme::set_theme_item);
+ 	ClassDB::bind_method(D_METHOD("get_theme_item", "data_type", "name", "theme_type"), &Theme::get_theme_item);
+ 	ClassDB::bind_method(D_METHOD("has_theme_item", "data_type", "name", "theme_type"), &Theme::has_theme_item);
+@@ -1753,6 +2106,7 @@ void Theme::_bind_methods() {
+ 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "default_base_scale", PROPERTY_HINT_RANGE, "0.0,2.0,0.01,or_greater"), "set_default_base_scale", "get_default_base_scale");
+ 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "default_font", PROPERTY_HINT_RESOURCE_TYPE, "Font"), "set_default_font", "get_default_font");
+ 	ADD_PROPERTY(PropertyInfo(Variant::INT, "default_font_size", PROPERTY_HINT_RANGE, "0,256,1,or_greater,suffix:px"), "set_default_font_size", "get_default_font_size");
++	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "default_color_scheme", PROPERTY_HINT_RESOURCE_TYPE, "ColorScheme"), "set_default_color_scheme", "get_default_color_scheme");
+ 
+ 	BIND_ENUM_CONSTANT(DATA_TYPE_COLOR);
+ 	BIND_ENUM_CONSTANT(DATA_TYPE_CONSTANT);
+@@ -1760,6 +2114,8 @@ void Theme::_bind_methods() {
+ 	BIND_ENUM_CONSTANT(DATA_TYPE_FONT_SIZE);
+ 	BIND_ENUM_CONSTANT(DATA_TYPE_ICON);
+ 	BIND_ENUM_CONSTANT(DATA_TYPE_STYLEBOX);
++	BIND_ENUM_CONSTANT(DATA_TYPE_COLOR_ROLE);
++	BIND_ENUM_CONSTANT(DATA_TYPE_COLOR_SCHEME);
+ 	BIND_ENUM_CONSTANT(DATA_TYPE_MAX);
+ }
+ 
+diff --git a/scene/resources/theme.h b/scene/resources/theme.h
+index b26b5b5e8416987e5d772b9e93478fce23f96610..3c5235277c095b3d2e5f9fab528d7f07537e0f14 100644
+--- a/scene/resources/theme.h
++++ b/scene/resources/theme.h
+@@ -35,6 +35,7 @@
+ #include "scene/resources/font.h"
+ #include "scene/resources/style_box.h"
+ #include "scene/resources/texture.h"
++#include "modules/color_scheme/color_scheme.h"
+ 
+ class Theme : public Resource {
+ 	GDCLASS(Theme, Resource);
+@@ -53,6 +54,9 @@ public:
+ 	using ThemeFontSizeMap = HashMap<StringName, int>;
+ 	using ThemeColorMap = HashMap<StringName, Color>;
+ 	using ThemeConstantMap = HashMap<StringName, int>;
++	using ThemeColorRoleMap = HashMap<StringName, ColorRole>;
++	using ThemeColorSchemeMap = HashMap<StringName, Ref<ColorScheme>>;
++	
+ 
+ 	enum DataType {
+ 		DATA_TYPE_COLOR,
+@@ -61,6 +65,8 @@ public:
+ 		DATA_TYPE_FONT_SIZE,
+ 		DATA_TYPE_ICON,
+ 		DATA_TYPE_STYLEBOX,
++		DATA_TYPE_COLOR_ROLE,
++		DATA_TYPE_COLOR_SCHEME,
+ 		DATA_TYPE_MAX
+ 	};
+ 
+@@ -81,6 +87,10 @@ private:
+ 	Vector<String> _get_color_type_list() const;
+ 	Vector<String> _get_constant_list(const String &p_theme_type) const;
+ 	Vector<String> _get_constant_type_list() const;
++	Vector<String> _get_color_role_list(const String &p_theme_type) const;
++	Vector<String> _get_color_role_type_list() const;
++	Vector<String> _get_color_scheme_list(const String &p_theme_type) const;
++	Vector<String> _get_color_scheme_type_list() const;
+ 
+ 	Vector<String> _get_theme_item_list(DataType p_data_type, const String &p_theme_type) const;
+ 	Vector<String> _get_theme_item_type_list(DataType p_data_type) const;
+@@ -97,6 +107,7 @@ protected:
+ 	float default_base_scale = 0.0;
+ 	Ref<Font> default_font;
+ 	int default_font_size = -1;
++	Ref<ColorScheme> default_color_scheme;
+ 
+ 	HashMap<StringName, ThemeIconMap> icon_map;
+ 	HashMap<StringName, ThemeStyleMap> style_map;
+@@ -106,6 +117,8 @@ protected:
+ 	HashMap<StringName, ThemeConstantMap> constant_map;
+ 	HashMap<StringName, StringName> variation_map;
+ 	HashMap<StringName, List<StringName>> variation_base_map;
++	HashMap<StringName, ThemeColorRoleMap> color_role_map;
++	HashMap<StringName, ThemeColorSchemeMap> color_scheme_map;
+ 
+ 	static void _bind_methods();
+ 
+@@ -130,6 +143,10 @@ public:
+ 	int get_default_font_size() const;
+ 	bool has_default_font_size() const;
+ 
++	void set_default_color_scheme(const Ref<ColorScheme> &p_default_color_scheme);
++	Ref<ColorScheme> get_default_color_scheme() const;
++	bool has_default_color_scheme() const;
++
+ 	void set_icon(const StringName &p_name, const StringName &p_theme_type, const Ref<Texture2D> &p_icon);
+ 	virtual Ref<Texture2D> get_icon(const StringName &p_name, const StringName &p_theme_type) const;
+ 	bool has_icon(const StringName &p_name, const StringName &p_theme_type) const;
+@@ -196,6 +213,28 @@ public:
+ 	void remove_constant_type(const StringName &p_theme_type);
+ 	void get_constant_type_list(List<StringName> *p_list) const;
+ 
++	void set_color_role(const StringName &p_name, const StringName &p_theme_type, const ColorRole p_color_role);
++	virtual ColorRole get_color_role(const StringName &p_name, const StringName &p_theme_type) const;
++	bool has_color_role(const StringName &p_name, const StringName &p_theme_type) const;
++	bool has_color_role_nocheck(const StringName &p_name, const StringName &p_theme_type) const;
++	void rename_color_role(const StringName &p_old_name, const StringName &p_name, const StringName &p_theme_type);
++	void clear_color_role(const StringName &p_name, const StringName &p_theme_type);
++	void get_color_role_list(StringName p_theme_type, List<StringName> *p_list) const;
++	void add_color_role_type(const StringName &p_theme_type);
++	void remove_color_role_type(const StringName &p_theme_type);
++	void get_color_role_type_list(List<StringName> *p_list) const;
++
++	void set_color_scheme(const StringName &p_name, const StringName &p_theme_type, const Ref<ColorScheme> &p_color_scheme);
++	virtual Ref<ColorScheme> get_color_scheme(const StringName &p_name, const StringName &p_theme_type) const;
++	bool has_color_scheme(const StringName &p_name, const StringName &p_theme_type) const;
++	bool has_color_scheme_nocheck(const StringName &p_name, const StringName &p_theme_type) const;
++	void rename_color_scheme(const StringName &p_old_name, const StringName &p_name, const StringName &p_theme_type);
++	void clear_color_scheme(const StringName &p_name, const StringName &p_theme_type);
++	void get_color_scheme_list(StringName p_theme_type, List<StringName> *p_list) const;
++	void add_color_scheme_type(const StringName &p_theme_type);
++	void remove_color_scheme_type(const StringName &p_theme_type);
++	void get_color_scheme_type_list(List<StringName> *p_list) const;
++
+ 	void set_theme_item(DataType p_data_type, const StringName &p_name, const StringName &p_theme_type, const Variant &p_value);
+ 	Variant get_theme_item(DataType p_data_type, const StringName &p_name, const StringName &p_theme_type) const;
+ 	bool has_theme_item(DataType p_data_type, const StringName &p_name, const StringName &p_theme_type) const;

@@ -1,0 +1,467 @@
+{
+    "schemaVersion":  1,
+    "configSha256":  "8a9975205ebe21a4a680f85fac99f84f4bc5f3ad0355ca7af1c0fee2a43c133d",
+    "upstream":  {
+                     "remote":  "origin",
+                     "branch":  "master",
+                     "ref":  "origin/master",
+                     "commit":  "5ec4857b340b6284a18b49b2eda462bd250f219a"
+                 },
+    "integration":  {
+                        "branch":  "personal/main",
+                        "commit":  "38b6ddee72e16d9d646057ee6ba533c122afc47c"
+                    },
+    "generatedAtUtc":  "2026-09-24T03:05:03.3937990Z",
+    "sourceRepositoryWasShallow":  true,
+    "patchCount":  56,
+    "patches":  [
+                    {
+                        "position":  1,
+                        "topic":  "runtime.process-api",
+                        "sourceCommit":  "df077b5fed582a0437149ee09d7ac45dab566af9",
+                        "subject":  "Core: add scriptable process API",
+                        "file":  "patches/runtime/process-api/0001-Core-add-scriptable-process-API.patch",
+                        "sha256":  "83db6de30badc224a2e287014b2d1a72736ee929184b6e8c36dca089aa5fa14e"
+                    },
+                    {
+                        "position":  2,
+                        "topic":  "scripting.gdscript-helper",
+                        "sourceCommit":  "6c29e2c8bed2e64cfbf8fd5310b518f56386fac3",
+                        "subject":  "GDScript: expose editor analysis helper",
+                        "file":  "patches/scripting/gdscript-helper/0002-GDScript-expose-editor-analysis-helper.patch",
+                        "sha256":  "cd25160fe1c7e1be5c25621acdeecb90fa78948ac14d6bbfd967e590a1f85e78"
+                    },
+                    {
+                        "position":  3,
+                        "topic":  "media.gif-support",
+                        "sourceCommit":  "7b94a4dde1f74c946acc0249b9fedfc32a980ab7",
+                        "subject":  "GIF: add animated image support",
+                        "file":  "patches/media/gif-support/0003-GIF-add-animated-image-support.patch",
+                        "sha256":  "1a4c09b5aa626af50af2121e12a2c5bd4d7e488dd9d5e8c8d7637be9f9ac30aa"
+                    },
+                    {
+                        "position":  4,
+                        "topic":  "media.spout",
+                        "sourceCommit":  "3a33e14f21a1127b8dbd104786883b8b113938da",
+                        "subject":  "Spout: add Windows texture sharing bridge",
+                        "file":  "patches/media/spout/0004-Spout-add-Windows-texture-sharing-bridge.patch",
+                        "sha256":  "3573ac161717cdb30ba0a11ee1864ac7d41a6b68b9b6ad9a4b7a57fd5f3ceb4f"
+                    },
+                    {
+                        "position":  5,
+                        "topic":  "animation.spine-runtime",
+                        "sourceCommit":  "380a06d5f6639e714da91b092a04672e019bac67",
+                        "subject":  "Spine: add animation runtime integration",
+                        "file":  "patches/animation/spine-runtime/0005-Spine-add-animation-runtime-integration.patch",
+                        "sha256":  "3d92db9ddfce2ae68424e0efe27fff23602c5bfa53f05ddc5e2336fbcd79f861"
+                    },
+                    {
+                        "position":  6,
+                        "topic":  "ui.dynamic-color-theme",
+                        "sourceCommit":  "5884522a3dd1b906d8d08086decc30dfa53e3202",
+                        "subject":  "Theme: add dynamic color scheme support",
+                        "file":  "patches/ui/dynamic-color-theme/0006-Theme-add-dynamic-color-scheme-support.patch",
+                        "sha256":  "f2635ab077f9e666b21fc235fe7ea9b2f8d8851d3a9dc7591704f809be62cd0a"
+                    },
+                    {
+                        "position":  7,
+                        "topic":  "branding.windows-icons",
+                        "sourceCommit":  "11ae6bfcc714c375e399156a93e8fc4b466501aa",
+                        "subject":  "Windows: use personal executable icons",
+                        "file":  "patches/branding/windows-icons/0007-Windows-use-personal-executable-icons.patch",
+                        "sha256":  "f6ece4465ee159f1e6969789536453cd9567047c13c8cb5c7add74ed83c29c55"
+                    },
+                    {
+                        "position":  8,
+                        "topic":  "ui.texture-button-hit-test-api",
+                        "sourceCommit":  "5dd62618b83d4733ed52354b8bba8d75cf7e4b89",
+                        "subject":  "feat(gui): expose TextureButton hit testing",
+                        "file":  "patches/ui/texture-button-hit-test-api/0008-feat-gui-expose-TextureButton-hit-testing.patch",
+                        "sha256":  "c9fd54719d4df32ddce09d5f9736b307a53598f6f21f81db1c39a7d08c6e5e20"
+                    },
+                    {
+                        "position":  9,
+                        "topic":  "security.encrypted-key-reversal",
+                        "sourceCommit":  "728cc9a6bd8f293dbb79236d203e47ff308fddbf",
+                        "subject":  "feat(security): reverse encrypted file keys",
+                        "file":  "patches/security/encrypted-key-reversal/0009-feat-security-reverse-encrypted-file-keys.patch",
+                        "sha256":  "5b560aac850e66a942812de587b19bdd71d02c31c2cad66e51acdde8aa8a9618"
+                    },
+                    {
+                        "position":  10,
+                        "topic":  "scripting.script-documentation-api",
+                        "sourceCommit":  "dfb6dc26b39b98e68ad7a95980b78e379d96ad01",
+                        "subject":  "feat(scripting): expose script documentation",
+                        "file":  "patches/scripting/script-documentation-api/0010-feat-scripting-expose-script-documentation.patch",
+                        "sha256":  "1cd8ed7ec0087a119b4fcb57eca1a16f7b54c484459d2544a0d6497627822b07"
+                    },
+                    {
+                        "position":  11,
+                        "topic":  "media.gif-streaming-exporter",
+                        "sourceCommit":  "dca2b738065d7e602a621ed2d97bbcb984dc94ac",
+                        "subject":  "feat(gif): add streaming exporter API",
+                        "file":  "patches/media/gif-streaming-exporter/0011-feat-gif-add-streaming-exporter-API.patch",
+                        "sha256":  "11d2fecee54160677228c203892adf6f0236afd6f620345680adde7577899ddd"
+                    },
+                    {
+                        "position":  12,
+                        "topic":  "branding.main-icon",
+                        "sourceCommit":  "b5bbfc0f3dc2bf9aa6759960b18dc179bcbd673e",
+                        "subject":  "feat(branding): add personal main icon",
+                        "file":  "patches/branding/main-icon/0012-feat-branding-add-personal-main-icon.patch",
+                        "sha256":  "ff44e2d3f22faf82606d6ae8abc55b07e1cd29f4bd7ffff24543d1586508c651"
+                    },
+                    {
+                        "position":  13,
+                        "topic":  "build.profiles.fortune-wheel",
+                        "sourceCommit":  "0824c11d5bb49da28ba3b9fd915ff4eb720fcb2d",
+                        "subject":  "build: add Fortune Wheel profiles",
+                        "file":  "patches/build/profiles/fortune-wheel/0013-build-add-Fortune-Wheel-profiles.patch",
+                        "sha256":  "2b1254298eb25da9a04579089c3962bc8691a9e59e4ca0817a707d46193aa6d7"
+                    },
+                    {
+                        "position":  14,
+                        "topic":  "ui.color-role-transform",
+                        "sourceCommit":  "bb8d8c4c70023c73c05046ac385e4830d79424dd",
+                        "subject":  "feat(theme): add color role transforms",
+                        "file":  "patches/ui/color-role-transform/0014-feat-theme-add-color-role-transforms.patch",
+                        "sha256":  "6f09bb0481a886e80669487558483fdf57020a50fdd602235b7affde871d6d79"
+                    },
+                    {
+                        "position":  15,
+                        "topic":  "ui.button-state-layers",
+                        "sourceCommit":  "e3ac8905e66965a049dcfc19fb775e1d66091cda",
+                        "subject":  "feat(gui): add button state layers",
+                        "file":  "patches/ui/button-state-layers/0015-feat-gui-add-button-state-layers.patch",
+                        "sha256":  "65790b548a75012f1eb362ca180a5500a16822018a460d5d585e67aa4faef330"
+                    },
+                    {
+                        "position":  16,
+                        "topic":  "ui.stylebox-elevation",
+                        "sourceCommit":  "6a22295cc77c619d44f8e248c4dbe5708b3773ab",
+                        "subject":  "feat(theme): add Material elevation shadows",
+                        "file":  "patches/ui/stylebox-elevation/0016-feat-theme-add-Material-elevation-shadows.patch",
+                        "sha256":  "d64d0177b708575513fc8b800a71e3caad5166f3e89ae5aa2c62dd33c679f45b"
+                    },
+                    {
+                        "position":  17,
+                        "topic":  "ui.texture-button-state-text",
+                        "sourceCommit":  "fd3d3181aada4b3250148ccae5b45af2eb317bae",
+                        "subject":  "feat(gui): add TextureButton state text",
+                        "file":  "patches/ui/texture-button-state-text/0017-feat-gui-add-TextureButton-state-text.patch",
+                        "sha256":  "dd48cac8a4326219943d147fa587df57465b07a5a7a011bd78a95e230a5cafa9"
+                    },
+                    {
+                        "position":  18,
+                        "topic":  "ui.theme-string-items",
+                        "sourceCommit":  "cdded424f1496efeff24e727c8d5b24d1c43baa1",
+                        "subject":  "feat(theme): add string theme items",
+                        "file":  "patches/ui/theme-string-items/0018-feat-theme-add-string-theme-items.patch",
+                        "sha256":  "4f405195df9e0e5a501aea24078d19bb83b820170804be2695c0235ca361a009"
+                    },
+                    {
+                        "position":  19,
+                        "topic":  "ui.button-text-icon",
+                        "sourceCommit":  "bf3bddf9cd610bf4d8ecea2b7455755b8f3a3bf0",
+                        "subject":  "feat(gui): add Button text icons",
+                        "file":  "patches/ui/button-text-icon/0019-feat-gui-add-Button-text-icons.patch",
+                        "sha256":  "0d19bbb6c810f2e4631c555dac1a63b6c5e16acaf03ef3381f4d1f2fbad1ae3f"
+                    },
+                    {
+                        "position":  20,
+                        "topic":  "ui.custom-icon-font",
+                        "sourceCommit":  "92f3590173207c59347d2a38b0d6c1b85018f254",
+                        "subject":  "feat(theme): add custom icon font support",
+                        "file":  "patches/ui/custom-icon-font/0020-feat-theme-add-custom-icon-font-support.patch",
+                        "sha256":  "bb38d113245521097a31140ea892f2341691aa71262551c414ab7f5d5c56405d"
+                    },
+                    {
+                        "position":  21,
+                        "topic":  "ui.checkbox-state-text",
+                        "sourceCommit":  "23998d8bb0ede7b7a38f70a65d42a5a50fe8bb37",
+                        "subject":  "feat(gui): add checkbox state text icons",
+                        "file":  "patches/ui/checkbox-state-text/0021-feat-gui-add-checkbox-state-text-icons.patch",
+                        "sha256":  "7d2c0a40534b4fc2ac29f03c0aeafc18798624c8717d276ff16d46563d885375"
+                    },
+                    {
+                        "position":  22,
+                        "topic":  "runtime.texture-streaming-init-order",
+                        "sourceCommit":  "6d03cb106e8e1bce95b8cdd1b844370687b6c5e7",
+                        "subject":  "fix(rendering): register streaming settings early",
+                        "file":  "patches/runtime/texture-streaming-init-order/0022-fix-rendering-register-streaming-settings-early.patch",
+                        "sha256":  "e1872df566244c7af976cc60b1621ded6615faf809c5b9c4b57a8733d93abfbf"
+                    },
+                    {
+                        "position":  23,
+                        "topic":  "runtime.process-api",
+                        "sourceCommit":  "8264caab9a17707555ed647806011c741b13f98b",
+                        "subject":  "fix(runtime): validate process pipe handles",
+                        "file":  "patches/runtime/process-api/0023-fix-runtime-validate-process-pipe-handles.patch",
+                        "sha256":  "4a05fb248d3c1b028c3efe0a693d86a79c77f5417ff3b2cf8b259f8292da675f"
+                    },
+                    {
+                        "position":  24,
+                        "topic":  "animation.spine-runtime",
+                        "sourceCommit":  "dc4089cb4f97e3424d5cb12c07441b9a852eb2cd",
+                        "subject":  "fix(spine): harden mesh rendering boundaries",
+                        "file":  "patches/animation/spine-runtime/0024-fix-spine-harden-mesh-rendering-boundaries.patch",
+                        "sha256":  "8321614fe97b4dcf1fc5db3851f060846c9630920a41e18e5e1f8658a513b7e2"
+                    },
+                    {
+                        "position":  25,
+                        "topic":  "branding.main-icon",
+                        "sourceCommit":  "06972f99a32b7d963ac489f00b204ef45e1a4422",
+                        "subject":  "test(pck): size bounds follow source assets",
+                        "file":  "patches/branding/main-icon/0025-test-pck-size-bounds-follow-source-assets.patch",
+                        "sha256":  "5a0cd72fe1911a671ef5768d7420f54191e7d3634e72d35683f842a4f729fd80"
+                    },
+                    {
+                        "position":  26,
+                        "topic":  "editor.headless-export-teardown",
+                        "sourceCommit":  "f5c1a46be5cc699a6e9ef6b78c30b2a61621a812",
+                        "subject":  "fix(editor): stop work after headless teardown",
+                        "file":  "patches/editor/headless-export-teardown/0026-fix-editor-stop-work-after-headless-teardown.patch",
+                        "sha256":  "cd2bea9b66f581495de7551beab44c5ca71da5af6121877aff3ecb01a85b99d8"
+                    },
+                    {
+                        "position":  27,
+                        "topic":  "editor.legacy-main-screen-dock-cleanup",
+                        "sourceCommit":  "661246efd04f9fb4c040e9ae48b987817414fb5f",
+                        "subject":  "fix(editor): release legacy main screen docks",
+                        "file":  "patches/editor/legacy-main-screen-dock-cleanup/0027-fix-editor-release-legacy-main-screen-docks.patch",
+                        "sha256":  "a554ec8f643dd03f1700b243df1d547e0485562bee546b8c46caee56b64cdae6"
+                    },
+                    {
+                        "position":  28,
+                        "topic":  "runtime.process-api",
+                        "sourceCommit":  "69903a894c4fe3607fc46d14c13ac0c1099068e5",
+                        "subject":  "fix(runtime): release Process OS resources",
+                        "file":  "patches/runtime/process-api/0028-fix-runtime-release-Process-OS-resources.patch",
+                        "sha256":  "92f55c5b77e5921878e9c69ef2e257934b65450ea4391f9b6ae40694d274e3bc"
+                    },
+                    {
+                        "position":  29,
+                        "topic":  "rendering.material-post-light",
+                        "sourceCommit":  "3090ee48efce30f8936e7721cc8421e851f6a1a4",
+                        "subject":  "feat(rendering): add material HDR post-light",
+                        "file":  "patches/rendering/material-post-light/0029-feat-rendering-add-material-HDR-post-light.patch",
+                        "sha256":  "739016ecdaeaf0e0c220f9792ce7a9a30e8b4c7d3843385a2c5a230c208ce27f"
+                    },
+                    {
+                        "position":  30,
+                        "topic":  "rendering.material-post-light",
+                        "sourceCommit":  "c42de04a0fbe5a2ca34f705c9712f90b0289bacd",
+                        "subject":  "fix(rendering): parse post-light in headless import",
+                        "file":  "patches/rendering/material-post-light/0030-fix-rendering-parse-post-light-in-headless-import.patch",
+                        "sha256":  "d66fbd4ea239f6b0533c03b1b8192584060c028136d0a966402e65262dc74213"
+                    },
+                    {
+                        "position":  31,
+                        "topic":  "geometry.triangle-mesh-build",
+                        "sourceCommit":  "38bfb5e08165032cbcb5163629612e6ffd5f88de",
+                        "subject":  "perf(geometry): trim BVH build allocation",
+                        "file":  "patches/geometry/triangle-mesh-build/0031-perf-geometry-trim-BVH-build-allocation.patch",
+                        "sha256":  "41088579e614e20881832342c97dccd957a97b176c97be36ca07caf62c931722"
+                    },
+                    {
+                        "position":  32,
+                        "topic":  "geometry.triangle-mesh-refit",
+                        "sourceCommit":  "ccd128dfaa9662cd8ae60c2135cf840da57be1fb",
+                        "subject":  "feat(geometry): add opt-in triangle BVH refit",
+                        "file":  "patches/geometry/triangle-mesh-refit/0032-feat-geometry-add-opt-in-triangle-BVH-refit.patch",
+                        "sha256":  "660422f2992aee1fcadf45016bb595de4a32a8e3495f7d8cbef2729b7898a4b2"
+                    },
+                    {
+                        "position":  33,
+                        "topic":  "geometry.triangle-mesh-refit",
+                        "sourceCommit":  "b8aa7300e249ae270fcf1786d8bb2bf92405d9e4",
+                        "subject":  "perf(geometry): bridge indexed BVH updates",
+                        "file":  "patches/geometry/triangle-mesh-refit/0033-perf-geometry-bridge-indexed-BVH-updates.patch",
+                        "sha256":  "184762b67615e370196c427f780b4e61578d0ca5746ea36019399db7e3aff94b"
+                    },
+                    {
+                        "position":  34,
+                        "topic":  "rendering.unjittered-projection",
+                        "sourceCommit":  "9dd6e3622d81e5e07cbeba4642afebc093caa526",
+                        "subject":  "feat(rendering): expose unjittered projection",
+                        "file":  "patches/rendering/unjittered-projection/0034-feat-rendering-expose-unjittered-projection.patch",
+                        "sha256":  "8cc707017abc5bb28a5c3045f75ce3be5bb06d21b9ec42b9865774d6e9363696"
+                    },
+                    {
+                        "position":  35,
+                        "topic":  "geometry.surface-decode",
+                        "sourceCommit":  "04cf0451bce2064ffab05b3dc69181e114fb7ec8",
+                        "subject":  "perf(rendering): add geometry-only surface decode",
+                        "file":  "patches/geometry/surface-decode/0035-perf-rendering-add-geometry-only-surface-decode.patch",
+                        "sha256":  "f4ca5f63ea9ba150cff479b8fbfc4ce0f9b91b9f6e8606d97424d33809d46dfb"
+                    },
+                    {
+                        "position":  36,
+                        "topic":  "geometry.triangle-mesh-refit",
+                        "sourceCommit":  "0395f4b842f5de97845653e032e34bca1ec5dc23",
+                        "subject":  "perf(geometry): stream indexed BVH construction",
+                        "file":  "patches/geometry/triangle-mesh-refit/0036-perf-geometry-stream-indexed-BVH-construction.patch",
+                        "sha256":  "0f44b7b102ffb5679630ba8ba07d1c06c9b430211270340e9a5fe89af5b08f37"
+                    },
+                    {
+                        "position":  37,
+                        "topic":  "rendering.viewport-parent-order",
+                        "sourceCommit":  "9d709eec4f81199c5b4732e572ffdabda8800dfe",
+                        "subject":  "fix(rendering): refresh viewport parent order",
+                        "file":  "patches/rendering/viewport-parent-order/0037-fix-rendering-refresh-viewport-parent-order.patch",
+                        "sha256":  "c989f393e9719423d9cadca3995b907921ef1fd8492aeeb8101755908e9a39e6"
+                    },
+                    {
+                        "position":  38,
+                        "topic":  "rendering.ssr-reprojection-boundary",
+                        "sourceCommit":  "db1af1e99a5025bfbf8b05ef27dd4a5e739ec371",
+                        "subject":  "fix(rendering): reject invalid SSR reprojection",
+                        "file":  "patches/rendering/ssr-reprojection-boundary/0038-fix-rendering-reject-invalid-SSR-reprojection.patch",
+                        "sha256":  "93b8c12fb7a67d3a1953b3f9e3eb6825235ee54444e47ef39cbe328666477537"
+                    },
+                    {
+                        "position":  39,
+                        "topic":  "ui.dynamic-color-theme",
+                        "sourceCommit":  "c6963d88bc0db22f904213548a886711494d6579",
+                        "subject":  "fix(scene): serialize dynamic theme overrides",
+                        "file":  "patches/ui/dynamic-color-theme/0039-fix-scene-serialize-dynamic-theme-overrides.patch",
+                        "sha256":  "c8cf828a35bff17bb03916133e832182e69ed9b2f81548457b088ce60d4b13e6"
+                    },
+                    {
+                        "position":  40,
+                        "topic":  "ui.dynamic-color-theme",
+                        "sourceCommit":  "21db102ff575702033915825c0bd4b2a95e9b187",
+                        "subject":  "fix(scene): align dynamic color presence",
+                        "file":  "patches/ui/dynamic-color-theme/0040-fix-scene-align-dynamic-color-presence.patch",
+                        "sha256":  "8de3743d8753602663f75822ee76fe1feedbb3fe0ccb2a65ab220f8622ab84f6"
+                    },
+                    {
+                        "position":  41,
+                        "topic":  "ui.dynamic-color-theme",
+                        "sourceCommit":  "4424576f0c0de3133c57bf89f20e25e381d2b4eb",
+                        "subject":  "fix(editor): preserve raw color schemes",
+                        "file":  "patches/ui/dynamic-color-theme/0041-fix-editor-preserve-raw-color-schemes.patch",
+                        "sha256":  "7da776853830373032dd95d1a0e36345072c4adb4c089601c155152652ef62a2"
+                    },
+                    {
+                        "position":  42,
+                        "topic":  "ui.dynamic-color-theme",
+                        "sourceCommit":  "95aeb355357f335f948ed3d49cac350109c7e329",
+                        "subject":  "fix(color-scheme): refresh on texture change",
+                        "file":  "patches/ui/dynamic-color-theme/0042-fix-color-scheme-refresh-on-texture-change.patch",
+                        "sha256":  "4b9a3a192846e8189c31e8814353a93aea0a81fcbf3370acf29b98b5e95e6a7b"
+                    },
+                    {
+                        "position":  43,
+                        "topic":  "ui.dynamic-color-theme",
+                        "sourceCommit":  "425e16c87866766bb7cf4920f8c75cfca7073ebe",
+                        "subject":  "fix(theme): align dynamic color consumer keys",
+                        "file":  "patches/ui/dynamic-color-theme/0043-fix-theme-align-dynamic-color-consumer-keys.patch",
+                        "sha256":  "b5a27827f85ebf408f6c3eef67694d74b033cfe813345a7a28892d491a5dbea9"
+                    },
+                    {
+                        "position":  44,
+                        "topic":  "ui.dynamic-color-theme",
+                        "sourceCommit":  "5727c04681b28cea521da04864aa31e8a0ee875f",
+                        "subject":  "fix(color-rect): honor node color schemes",
+                        "file":  "patches/ui/dynamic-color-theme/0044-fix-color-rect-honor-node-color-schemes.patch",
+                        "sha256":  "bf5b46a45a51a9a25c149a67522c9f02f4d57baafe37ffbcb9ca67a5af283a32"
+                    },
+                    {
+                        "position":  45,
+                        "topic":  "ui.dynamic-color-theme",
+                        "sourceCommit":  "b6c3ace02d9d2545c458372c438e7757e01e6e91",
+                        "subject":  "feat(theme): add dynamic metadata for controls",
+                        "file":  "patches/ui/dynamic-color-theme/0045-feat-theme-add-dynamic-metadata-for-controls.patch",
+                        "sha256":  "608ef8d22db61c62e24360378b9ea2aa49292c35fe5d30c177c7c6c4bd58a63e"
+                    },
+                    {
+                        "position":  46,
+                        "topic":  "ui.dynamic-color-theme",
+                        "sourceCommit":  "ce4acab49e9522feefdce3dd120373b8297fcecf",
+                        "subject":  "perf(color-scheme): cache extracted texture colors",
+                        "file":  "patches/ui/dynamic-color-theme/0046-perf-color-scheme-cache-extracted-texture-colors.patch",
+                        "sha256":  "0752eeaa59f642f77141e951393a743c8fc020ced7f73bbdedcdb7800ef231dc"
+                    },
+                    {
+                        "position":  47,
+                        "topic":  "ui.dynamic-color-theme",
+                        "sourceCommit":  "b90efd1092359fa49cdebfe05ff2f760e7699229",
+                        "subject":  "perf(scene): cache dynamic theme color reads",
+                        "file":  "patches/ui/dynamic-color-theme/0047-perf-scene-cache-dynamic-theme-color-reads.patch",
+                        "sha256":  "60272b4afd69b001f2eaead8fe27793141a2dd74908cd3872af03ed7a9abe6ff"
+                    },
+                    {
+                        "position":  48,
+                        "topic":  "ui.dynamic-color-theme",
+                        "sourceCommit":  "3b91748c52bae58681cb35109a8e19f4c2543e1d",
+                        "subject":  "perf(scene): avoid static stylebox copies",
+                        "file":  "patches/ui/dynamic-color-theme/0048-perf-scene-avoid-static-stylebox-copies.patch",
+                        "sha256":  "a360120d9f5e7e253e4f7f949ea46209b5372bfadc07e4603d0caf100d3ff252"
+                    },
+                    {
+                        "position":  49,
+                        "topic":  "ui.dynamic-color-theme",
+                        "sourceCommit":  "94fc911957625be388c244779ca442853b81da93",
+                        "subject":  "fix(color-scheme): validate inputs and fallback",
+                        "file":  "patches/ui/dynamic-color-theme/0049-fix-color-scheme-validate-inputs-and-fallback.patch",
+                        "sha256":  "c28d6a231f2fd8dd491dc01c01b7849ebf9d8c52fe56b0b281746df2db52d7ee"
+                    },
+                    {
+                        "position":  50,
+                        "topic":  "ui.dynamic-color-theme",
+                        "sourceCommit":  "6db67e72eecc13f93e9f02dc6567b9fbf1b9e509",
+                        "subject":  "fix(theme): publish type helper changes",
+                        "file":  "patches/ui/dynamic-color-theme/0050-fix-theme-publish-type-helper-changes.patch",
+                        "sha256":  "4cb98f1d39cb7a3daca384b58b4296d351839bec943e6a2c6cf7707182ec37ed"
+                    },
+                    {
+                        "position":  51,
+                        "topic":  "ui.dynamic-color-theme",
+                        "sourceCommit":  "3a6537d06bca0cbcacfa8f70952ad9451deba199",
+                        "subject":  "build: require color scheme for theme system",
+                        "file":  "patches/ui/dynamic-color-theme/0051-build-require-color-scheme-for-theme-system.patch",
+                        "sha256":  "a48356054a88e78d7c9cb694bdeb120017836abc56afbb5ada006f19350e083b"
+                    },
+                    {
+                        "position":  52,
+                        "topic":  "ui.dynamic-color-theme",
+                        "sourceCommit":  "a87330bfbdc5e03971cb76dae4d1ba248f2118fd",
+                        "subject":  "fix(theme): sync editor color scheme darkness",
+                        "file":  "patches/ui/dynamic-color-theme/0052-fix-theme-sync-editor-color-scheme-darkness.patch",
+                        "sha256":  "7c082fb2d83236ec187850d6b595d2ad4be88f38efeb00b038c1cbee5e65e1e8"
+                    },
+                    {
+                        "position":  53,
+                        "topic":  "ui.dynamic-color-theme",
+                        "sourceCommit":  "e5e72dc044b75ad805276aa1788a5775c7e5e52b",
+                        "subject":  "fix(theme): isolate editor static colors",
+                        "file":  "patches/ui/dynamic-color-theme/0053-fix-theme-isolate-editor-static-colors.patch",
+                        "sha256":  "13802a7ac2971c07a0bc9b7651519fed03d7974e008b2cf76084327596b8d2ee"
+                    },
+                    {
+                        "position":  54,
+                        "topic":  "ui.dynamic-color-theme",
+                        "sourceCommit":  "5e4c9cad2bc43b92763ec226a5371b6f6d74b430",
+                        "subject":  "fix(theme): disable dynamic roles in editor",
+                        "file":  "patches/ui/dynamic-color-theme/0054-fix-theme-disable-dynamic-roles-in-editor.patch",
+                        "sha256":  "f8af585090108d41ab119eae44a57331e4b11cfe74f4d6f0d9af0687c9560129"
+                    },
+                    {
+                        "position":  55,
+                        "topic":  "ui.dynamic-color-theme",
+                        "sourceCommit":  "c917e020974375e2dc4f6e5dd0a4b08760390731",
+                        "subject":  "fix(theme): isolate editor default theme metadata",
+                        "file":  "patches/ui/dynamic-color-theme/0055-fix-theme-isolate-editor-default-theme-metadata.patch",
+                        "sha256":  "51ca82d613d7be6898ef4453785220b0e785ef7beb1984d41e53d6facab59502"
+                    },
+                    {
+                        "position":  56,
+                        "topic":  "ui.dynamic-color-theme",
+                        "sourceCommit":  "38b6ddee72e16d9d646057ee6ba533c122afc47c",
+                        "subject":  "fix(theme): keep editor dynamic metadata available",
+                        "file":  "patches/ui/dynamic-color-theme/0056-fix-theme-keep-editor-dynamic-metadata-available.patch",
+                        "sha256":  "e16de2aee5f073ad08ef8b83f3ed46b568d6bfb518660c199692d7c179e0929a"
+                    }
+                ]
+}

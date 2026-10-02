@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="GraphFrame" inherits="GraphElement" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_titlebar_hbox">
+			<return type="HBoxContainer" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="autoshrink_enabled" type="bool" setter="set_autoshrink_enabled" getter="is_autoshrink_enabled" default="true">
+		</member>
+		<member name="autoshrink_margin" type="int" setter="set_autoshrink_margin" getter="get_autoshrink_margin" default="40">
+		</member>
+		<member name="drag_margin" type="int" setter="set_drag_margin" getter="get_drag_margin" default="16">
+		</member>
+		<member name="mouse_filter" type="int" setter="set_mouse_filter" getter="get_mouse_filter" overrides="Control" enum="Control.MouseFilter" default="0" />
+		<member name="tint_color" type="Color" setter="set_tint_color" getter="get_tint_color" default="Color(0.3, 0.3, 0.3, 0.75)">
+		</member>
+		<member name="tint_color_enabled" type="bool" setter="set_tint_color_enabled" getter="is_tint_color_enabled" default="false">
+		</member>
+		<member name="title" type="String" setter="set_title" getter="get_title" default="&quot;&quot;">
+		</member>
+	</members>
+	<signals>
+		<signal name="autoshrink_changed">
+			<description>
+			</description>
+		</signal>
+	</signals>
+	<theme_items>
+		<theme_item name="resizer_color" data_type="color" type="Color" default="Color(0.875, 0.875, 0.875, 1)">
+		</theme_item>
+		<theme_item name="panel" data_type="style" type="StyleBox">
+		</theme_item>
+		<theme_item name="panel_selected" data_type="style" type="StyleBox">
+		</theme_item>
+		<theme_item name="titlebar" data_type="style" type="StyleBox">
+		</theme_item>
+		<theme_item name="titlebar_selected" data_type="style" type="StyleBox">
+		</theme_item>
+	</theme_items>
+</class>

@@ -1,0 +1,35 @@
+# Current and archived compiled releases.
+/export/
+/export.stage-*/
+/archive/export-*/
+/archive/engine-color-dynamic-*/
+
+# Local tool installations and duplicate temporary checkouts.
+/.tools/
+/.codex_tmp/
+/.tmp/mimi-stack-replay/
+/.validation/dynamic-theme-final/toolchain/
+/engine/graphify-out/
+/engine/core/graphify-out/
+
+# Generated caches. Keep historical source, probes, patches, and fixtures.
+**/.godot/
+**/__pycache__/
+*.pyc
+
+# Local validation/build output, not the validation source projects.
+/.validation/**/*.log
+/.validation/**/*.exe
+/.validation/**/*.dll
+/.validation/**/*.pck
+/.validation/**/*.pdb
+/.validation/**/*.exit
+/.validation/**/build-*.exit-code.txt
+/.runtime/**/*.log
+/.runtime/**/*.exit
+/.runtime/**/*.exe
+/.runtime/**/*.dll
+/.runtime/**/*.pck
+/.runtime/**/*.pdb
+/.tmp/**/*.log
+/archive/verification/**/*.log

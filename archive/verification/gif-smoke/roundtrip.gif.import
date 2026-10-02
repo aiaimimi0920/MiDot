@@ -1,0 +1,15 @@
+[remap]
+
+importer="animated_texture"
+type="AnimatedTexture"
+uid="uid://yohue8k61irf"
+path="res://.godot/imported/roundtrip.gif-ba402d5ca7d5507170a4cdaa54f71b8e.res"
+
+[deps]
+
+source_file="res://roundtrip.gif"
+dest_files=["res://.godot/imported/roundtrip.gif-ba402d5ca7d5507170a4cdaa54f71b8e.res"]
+
+[params]
+
+max_frames=0

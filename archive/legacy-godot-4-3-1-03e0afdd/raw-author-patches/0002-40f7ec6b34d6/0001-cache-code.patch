@@ -1,0 +1,59 @@
+From 40f7ec6b34d6a3930facbbd3209956abf263a9b7 Mon Sep 17 00:00:00 2001
+From: aiaimimi0920 <153103332+aiaimimi0920@users.noreply.github.com>
+Date: Tue, 22 Apr 2025 18:36:06 +0800
+Subject: [PATCH] # cache code
+
+---
+ core/io/file_access_encrypted.cpp | 6 ++++--
+ core/io/file_access_encrypted.h   | 2 +-
+ scene/main/viewport.cpp           | 3 +++
+ 3 files changed, 8 insertions(+), 3 deletions(-)
+
+diff --git a/core/io/file_access_encrypted.cpp b/core/io/file_access_encrypted.cpp
+index f3d89a66971f5cb4b0a2861ac30b3d511e7abe5e..09c12a90a25bafeff04d8dc8db02d2ed135928e2 100644
+--- a/core/io/file_access_encrypted.cpp
++++ b/core/io/file_access_encrypted.cpp
+@@ -41,9 +41,11 @@ void FileAccessEncrypted::deinitialize() {
+ 	}
+ }
+ 
+-Error FileAccessEncrypted::open_and_parse(Ref<FileAccess> p_base, const Vector<uint8_t> &p_key, Mode p_mode, bool p_with_magic, const Vector<uint8_t> &p_iv) {
++Error FileAccessEncrypted::open_and_parse(Ref<FileAccess> p_base, const Vector<uint8_t> &raw_key, Mode p_mode, bool p_with_magic, const Vector<uint8_t> &p_iv) {
+ 	ERR_FAIL_COND_V_MSG(file.is_valid(), ERR_ALREADY_IN_USE, vformat("Can't open file while another file from path '%s' is open.", file->get_path_absolute()));
+-	ERR_FAIL_COND_V(p_key.size() != 32, ERR_INVALID_PARAMETER);
++	ERR_FAIL_COND_V(raw_key.size() != 32, ERR_INVALID_PARAMETER);
++	Vector<uint8_t> p_key = raw_key;
++	p_key.reverse();
+ 
+ 	pos = 0;
+ 	eofed = false;
+diff --git a/core/io/file_access_encrypted.h b/core/io/file_access_encrypted.h
+index a1bc0f09dcf6e5bcfe14afccb5b4b201bb06a344..0a3f2b9b85d864ddf19a48989fa33ca3598d169d 100644
+--- a/core/io/file_access_encrypted.h
++++ b/core/io/file_access_encrypted.h
+@@ -61,7 +61,7 @@ private:
+ 	static CryptoCore::RandomGenerator *_fae_static_rng;
+ 
+ public:
+-	Error open_and_parse(Ref<FileAccess> p_base, const Vector<uint8_t> &p_key, Mode p_mode, bool p_with_magic = true, const Vector<uint8_t> &p_iv = Vector<uint8_t>());
++	Error open_and_parse(Ref<FileAccess> p_base, const Vector<uint8_t> &raw_key, Mode p_mode, bool p_with_magic = true, const Vector<uint8_t> &p_iv = Vector<uint8_t>());
+ 	Error open_and_parse_password(Ref<FileAccess> p_base, const String &p_key, Mode p_mode);
+ 
+ 	Vector<uint8_t> get_iv() const { return iv; }
+diff --git a/scene/main/viewport.cpp b/scene/main/viewport.cpp
+index 0098f4dc92afedbc2f1a7318d99aa8194a672b19..52e945dacc886baa978d5303388238ed23fb6d91 100644
+--- a/scene/main/viewport.cpp
++++ b/scene/main/viewport.cpp
+@@ -1808,6 +1808,9 @@ void Viewport::_gui_input_event(Ref<InputEvent> p_event) {
+ 			if (!gui.mouse_focus_mask.is_empty() && !gui.mouse_focus_mask.has_flag(button_mask)) {
+ 				// Do not steal mouse focus and stuff while a focus mask without the current mouse button exists.
+ 				gui.mouse_focus_mask.set_flag(button_mask);
++				if (!gui.mouse_focus){
++					return;
++				}
+ 			} else {
+ 				gui.mouse_focus = gui_find_control(mpos);
+ 
+-- 
+2.39.1.windows.1
+

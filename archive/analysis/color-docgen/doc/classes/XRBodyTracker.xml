@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="XRBodyTracker" inherits="XRPositionalTracker" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_joint_flags" qualifiers="const">
+			<return type="int" enum="XRBodyTracker.JointFlags" is_bitfield="true" />
+			<param index="0" name="joint" type="int" enum="XRBodyTracker.Joint" />
+			<description>
+			</description>
+		</method>
+		<method name="get_joint_transform" qualifiers="const">
+			<return type="Transform3D" />
+			<param index="0" name="joint" type="int" enum="XRBodyTracker.Joint" />
+			<description>
+			</description>
+		</method>
+		<method name="set_joint_flags">
+			<return type="void" />
+			<param index="0" name="joint" type="int" enum="XRBodyTracker.Joint" />
+			<param index="1" name="flags" type="int" enum="XRBodyTracker.JointFlags" is_bitfield="true" />
+			<description>
+			</description>
+		</method>
+		<method name="set_joint_transform">
+			<return type="void" />
+			<param index="0" name="joint" type="int" enum="XRBodyTracker.Joint" />
+			<param index="1" name="transform" type="Transform3D" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="body_flags" type="int" setter="set_body_flags" getter="get_body_flags" enum="XRBodyTracker.BodyFlags" is_bitfield="true" default="0">
+		</member>
+		<member name="has_tracking_data" type="bool" setter="set_has_tracking_data" getter="get_has_tracking_data" default="false">
+		</member>
+		<member name="type" type="int" setter="set_tracker_type" getter="get_tracker_type" overrides="XRTracker" enum="XRServer.TrackerType" default="32" />
+	</members>
+	<constants>
+		<constant name="BODY_FLAG_UPPER_BODY_SUPPORTED" value="1" enum="BodyFlags" is_bitfield="true">
+		</constant>
+		<constant name="BODY_FLAG_LOWER_BODY_SUPPORTED" value="2" enum="BodyFlags" is_bitfield="true">
+		</constant>
+		<constant name="BODY_FLAG_HANDS_SUPPORTED" value="4" enum="BodyFlags" is_bitfield="true">
+		</constant>
+		<constant name="JOINT_ROOT" value="0" enum="Joint">
+		</constant>
+		<constant name="JOINT_HIPS" value="1" enum="Joint">
+		</constant>
+		<constant name="JOINT_SPINE" value="2" enum="Joint">
+		</constant>
+		<constant name="JOINT_CHEST" value="3" enum="Joint">
+		</constant>
+		<constant name="JOINT_UPPER_CHEST" value="4" enum="Joint">
+		</constant>
+		<constant name="JOINT_NECK" value="5" enum="Joint">
+		</constant>
+		<constant name="JOINT_HEAD" value="6" enum="Joint">
+		</constant>
+		<constant name="JOINT_HEAD_TIP" value="7" enum="Joint">
+		</constant>
+		<constant name="JOINT_LEFT_SHOULDER" value="8" enum="Joint">
+		</constant>
+		<constant name="JOINT_LEFT_UPPER_ARM" value="9" enum="Joint">
+		</constant>
+		<constant name="JOINT_LEFT_LOWER_ARM" value="10" enum="Joint">
+		</constant>
+		<constant name="JOINT_RIGHT_SHOULDER" value="11" enum="Joint">
+		</constant>
+		<constant name="JOINT_RIGHT_UPPER_ARM" value="12" enum="Joint">
+		</constant>
+		<constant name="JOINT_RIGHT_LOWER_ARM" value="13" enum="Joint">
+		</constant>
+		<constant name="JOINT_LEFT_UPPER_LEG" value="14" enum="Joint">
+		</constant>
+		<constant name="JOINT_LEFT_LOWER_LEG" value="15" enum="Joint">
+		</constant>
+		<constant name="JOINT_LEFT_FOOT" value="16" enum="Joint">
+		</constant>
+		<constant name="JOINT_LEFT_TOES" value="17" enum="Joint">
+		</constant>
+		<constant name="JOINT_RIGHT_UPPER_LEG" value="18" enum="Joint">
+		</constant>
+		<constant name="JOINT_RIGHT_LOWER_LEG" value="19" enum="Joint">
+		</constant>
+		<constant name="JOINT_RIGHT_FOOT" value="20" enum="Joint">
+		</constant>
+		<constant name="JOINT_RIGHT_TOES" value="21" enum="Joint">
+		</constant>
+		<constant name="JOINT_LEFT_HAND" value="22" enum="Joint">
+		</constant>
+		<constant name="JOINT_LEFT_PALM" value="23" enum="Joint">
+		</constant>
+		<constant name="JOINT_LEFT_WRIST" value="24" enum="Joint">
+		</constant>
+		<constant name="JOINT_LEFT_THUMB_METACARPAL" value="25" enum="Joint">
+		</constant>
+		<constant name="JOINT_LEFT_THUMB_PHALANX_PROXIMAL" value="26" enum="Joint">
+		</constant>
+		<constant name="JOINT_LEFT_THUMB_PHALANX_DISTAL" value="27" enum="Joint">
+		</constant>
+		<constant name="JOINT_LEFT_THUMB_TIP" value="28" enum="Joint">
+		</constant>
+		<constant name="JOINT_LEFT_INDEX_FINGER_METACARPAL" value="29" enum="Joint">
+		</constant>
+		<constant name="JOINT_LEFT_INDEX_FINGER_PHALANX_PROXIMAL" value="30" enum="Joint">
+		</constant>
+		<constant name="JOINT_LEFT_INDEX_FINGER_PHALANX_INTERMEDIATE" value="31" enum="Joint">
+		</constant>
+		<constant name="JOINT_LEFT_INDEX_FINGER_PHALANX_DISTAL" value="32" enum="Joint">
+		</constant>
+		<constant name="JOINT_LEFT_INDEX_FINGER_TIP" value="33" enum="Joint">
+		</constant>
+		<constant name="JOINT_LEFT_MIDDLE_FINGER_METACARPAL" value="34" enum="Joint">
+		</constant>
+		<constant name="JOINT_LEFT_MIDDLE_FINGER_PHALANX_PROXIMAL" value="35" enum="Joint">
+		</constant>
+		<constant name="JOINT_LEFT_MIDDLE_FINGER_PHALANX_INTERMEDIATE" value="36" enum="Joint">
+		</constant>
+		<constant name="JOINT_LEFT_MIDDLE_FINGER_PHALANX_DISTAL" value="37" enum="Joint">
+		</constant>
+		<constant name="JOINT_LEFT_MIDDLE_FINGER_TIP" value="38" enum="Joint">
+		</constant>
+		<constant name="JOINT_LEFT_RING_FINGER_METACARPAL" value="39" enum="Joint">
+		</constant>
+		<constant name="JOINT_LEFT_RING_FINGER_PHALANX_PROXIMAL" value="40" enum="Joint">
+		</constant>
+		<constant name="JOINT_LEFT_RING_FINGER_PHALANX_INTERMEDIATE" value="41" enum="Joint">
+		</constant>
+		<constant name="JOINT_LEFT_RING_FINGER_PHALANX_DISTAL" value="42" enum="Joint">
+		</constant>
+		<constant name="JOINT_LEFT_RING_FINGER_TIP" value="43" enum="Joint">
+		</constant>
+		<constant name="JOINT_LEFT_PINKY_FINGER_METACARPAL" value="44" enum="Joint">
+		</constant>
+		<constant name="JOINT_LEFT_PINKY_FINGER_PHALANX_PROXIMAL" value="45" enum="Joint">
+		</constant>
+		<constant name="JOINT_LEFT_PINKY_FINGER_PHALANX_INTERMEDIATE" value="46" enum="Joint">
+		</constant>
+		<constant name="JOINT_LEFT_PINKY_FINGER_PHALANX_DISTAL" value="47" enum="Joint">
+		</constant>
+		<constant name="JOINT_LEFT_PINKY_FINGER_TIP" value="48" enum="Joint">
+		</constant>
+		<constant name="JOINT_RIGHT_HAND" value="49" enum="Joint">
+		</constant>
+		<constant name="JOINT_RIGHT_PALM" value="50" enum="Joint">
+		</constant>
+		<constant name="JOINT_RIGHT_WRIST" value="51" enum="Joint">
+		</constant>
+		<constant name="JOINT_RIGHT_THUMB_METACARPAL" value="52" enum="Joint">
+		</constant>
+		<constant name="JOINT_RIGHT_THUMB_PHALANX_PROXIMAL" value="53" enum="Joint">
+		</constant>
+		<constant name="JOINT_RIGHT_THUMB_PHALANX_DISTAL" value="54" enum="Joint">
+		</constant>
+		<constant name="JOINT_RIGHT_THUMB_TIP" value="55" enum="Joint">
+		</constant>
+		<constant name="JOINT_RIGHT_INDEX_FINGER_METACARPAL" value="56" enum="Joint">
+		</constant>
+		<constant name="JOINT_RIGHT_INDEX_FINGER_PHALANX_PROXIMAL" value="57" enum="Joint">
+		</constant>
+		<constant name="JOINT_RIGHT_INDEX_FINGER_PHALANX_INTERMEDIATE" value="58" enum="Joint">
+		</constant>
+		<constant name="JOINT_RIGHT_INDEX_FINGER_PHALANX_DISTAL" value="59" enum="Joint">
+		</constant>
+		<constant name="JOINT_RIGHT_INDEX_FINGER_TIP" value="60" enum="Joint">
+		</constant>
+		<constant name="JOINT_RIGHT_MIDDLE_FINGER_METACARPAL" value="61" enum="Joint">
+		</constant>
+		<constant name="JOINT_RIGHT_MIDDLE_FINGER_PHALANX_PROXIMAL" value="62" enum="Joint">
+		</constant>
+		<constant name="JOINT_RIGHT_MIDDLE_FINGER_PHALANX_INTERMEDIATE" value="63" enum="Joint">
+		</constant>
+		<constant name="JOINT_RIGHT_MIDDLE_FINGER_PHALANX_DISTAL" value="64" enum="Joint">
+		</constant>
+		<constant name="JOINT_RIGHT_MIDDLE_FINGER_TIP" value="65" enum="Joint">
+		</constant>
+		<constant name="JOINT_RIGHT_RING_FINGER_METACARPAL" value="66" enum="Joint">
+		</constant>
+		<constant name="JOINT_RIGHT_RING_FINGER_PHALANX_PROXIMAL" value="67" enum="Joint">
+		</constant>
+		<constant name="JOINT_RIGHT_RING_FINGER_PHALANX_INTERMEDIATE" value="68" enum="Joint">
+		</constant>
+		<constant name="JOINT_RIGHT_RING_FINGER_PHALANX_DISTAL" value="69" enum="Joint">
+		</constant>
+		<constant name="JOINT_RIGHT_RING_FINGER_TIP" value="70" enum="Joint">
+		</constant>
+		<constant name="JOINT_RIGHT_PINKY_FINGER_METACARPAL" value="71" enum="Joint">
+		</constant>
+		<constant name="JOINT_RIGHT_PINKY_FINGER_PHALANX_PROXIMAL" value="72" enum="Joint">
+		</constant>
+		<constant name="JOINT_RIGHT_PINKY_FINGER_PHALANX_INTERMEDIATE" value="73" enum="Joint">
+		</constant>
+		<constant name="JOINT_RIGHT_PINKY_FINGER_PHALANX_DISTAL" value="74" enum="Joint">
+		</constant>
+		<constant name="JOINT_RIGHT_PINKY_FINGER_TIP" value="75" enum="Joint">
+		</constant>
+		<constant name="JOINT_LOWER_CHEST" value="76" enum="Joint">
+		</constant>
+		<constant name="JOINT_LEFT_SCAPULA" value="77" enum="Joint">
+		</constant>
+		<constant name="JOINT_LEFT_WRIST_TWIST" value="78" enum="Joint">
+		</constant>
+		<constant name="JOINT_RIGHT_SCAPULA" value="79" enum="Joint">
+		</constant>
+		<constant name="JOINT_RIGHT_WRIST_TWIST" value="80" enum="Joint">
+		</constant>
+		<constant name="JOINT_LEFT_FOOT_TWIST" value="81" enum="Joint">
+		</constant>
+		<constant name="JOINT_LEFT_HEEL" value="82" enum="Joint">
+		</constant>
+		<constant name="JOINT_LEFT_MIDDLE_FOOT" value="83" enum="Joint">
+		</constant>
+		<constant name="JOINT_RIGHT_FOOT_TWIST" value="84" enum="Joint">
+		</constant>
+		<constant name="JOINT_RIGHT_HEEL" value="85" enum="Joint">
+		</constant>
+		<constant name="JOINT_RIGHT_MIDDLE_FOOT" value="86" enum="Joint">
+		</constant>
+		<constant name="JOINT_MAX" value="87" enum="Joint">
+		</constant>
+		<constant name="JOINT_FLAG_ORIENTATION_VALID" value="1" enum="JointFlags" is_bitfield="true">
+		</constant>
+		<constant name="JOINT_FLAG_ORIENTATION_TRACKED" value="2" enum="JointFlags" is_bitfield="true">
+		</constant>
+		<constant name="JOINT_FLAG_POSITION_VALID" value="4" enum="JointFlags" is_bitfield="true">
+		</constant>
+		<constant name="JOINT_FLAG_POSITION_TRACKED" value="8" enum="JointFlags" is_bitfield="true">
+		</constant>
+	</constants>
+</class>

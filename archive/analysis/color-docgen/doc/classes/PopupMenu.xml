@@ -1,0 +1,683 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="PopupMenu" inherits="Popup" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="activate_item_by_event">
+			<return type="bool" />
+			<param index="0" name="event" type="InputEvent" />
+			<param index="1" name="for_global_only" type="bool" default="false" />
+			<description>
+			</description>
+		</method>
+		<method name="add_check_item">
+			<return type="void" />
+			<param index="0" name="label" type="String" />
+			<param index="1" name="id" type="int" default="-1" />
+			<param index="2" name="accel" type="int" enum="Key" default="0" />
+			<description>
+			</description>
+		</method>
+		<method name="add_check_shortcut">
+			<return type="void" />
+			<param index="0" name="shortcut" type="Shortcut" />
+			<param index="1" name="id" type="int" default="-1" />
+			<param index="2" name="global" type="bool" default="false" />
+			<description>
+			</description>
+		</method>
+		<method name="add_icon_check_item">
+			<return type="void" />
+			<param index="0" name="texture" type="Texture2D" />
+			<param index="1" name="label" type="String" />
+			<param index="2" name="id" type="int" default="-1" />
+			<param index="3" name="accel" type="int" enum="Key" default="0" />
+			<description>
+			</description>
+		</method>
+		<method name="add_icon_check_shortcut">
+			<return type="void" />
+			<param index="0" name="texture" type="Texture2D" />
+			<param index="1" name="shortcut" type="Shortcut" />
+			<param index="2" name="id" type="int" default="-1" />
+			<param index="3" name="global" type="bool" default="false" />
+			<description>
+			</description>
+		</method>
+		<method name="add_icon_item">
+			<return type="void" />
+			<param index="0" name="texture" type="Texture2D" />
+			<param index="1" name="label" type="String" />
+			<param index="2" name="id" type="int" default="-1" />
+			<param index="3" name="accel" type="int" enum="Key" default="0" />
+			<description>
+			</description>
+		</method>
+		<method name="add_icon_radio_check_item">
+			<return type="void" />
+			<param index="0" name="texture" type="Texture2D" />
+			<param index="1" name="label" type="String" />
+			<param index="2" name="id" type="int" default="-1" />
+			<param index="3" name="accel" type="int" enum="Key" default="0" />
+			<description>
+			</description>
+		</method>
+		<method name="add_icon_radio_check_shortcut">
+			<return type="void" />
+			<param index="0" name="texture" type="Texture2D" />
+			<param index="1" name="shortcut" type="Shortcut" />
+			<param index="2" name="id" type="int" default="-1" />
+			<param index="3" name="global" type="bool" default="false" />
+			<description>
+			</description>
+		</method>
+		<method name="add_icon_shortcut">
+			<return type="void" />
+			<param index="0" name="texture" type="Texture2D" />
+			<param index="1" name="shortcut" type="Shortcut" />
+			<param index="2" name="id" type="int" default="-1" />
+			<param index="3" name="global" type="bool" default="false" />
+			<param index="4" name="allow_echo" type="bool" default="false" />
+			<description>
+			</description>
+		</method>
+		<method name="add_item">
+			<return type="void" />
+			<param index="0" name="label" type="String" />
+			<param index="1" name="id" type="int" default="-1" />
+			<param index="2" name="accel" type="int" enum="Key" default="0" />
+			<description>
+			</description>
+		</method>
+		<method name="add_multistate_item">
+			<return type="void" />
+			<param index="0" name="label" type="String" />
+			<param index="1" name="max_states" type="int" />
+			<param index="2" name="default_state" type="int" default="0" />
+			<param index="3" name="id" type="int" default="-1" />
+			<param index="4" name="accel" type="int" enum="Key" default="0" />
+			<description>
+			</description>
+		</method>
+		<method name="add_radio_check_item">
+			<return type="void" />
+			<param index="0" name="label" type="String" />
+			<param index="1" name="id" type="int" default="-1" />
+			<param index="2" name="accel" type="int" enum="Key" default="0" />
+			<description>
+			</description>
+		</method>
+		<method name="add_radio_check_shortcut">
+			<return type="void" />
+			<param index="0" name="shortcut" type="Shortcut" />
+			<param index="1" name="id" type="int" default="-1" />
+			<param index="2" name="global" type="bool" default="false" />
+			<description>
+			</description>
+		</method>
+		<method name="add_separator">
+			<return type="void" />
+			<param index="0" name="label" type="String" default="&quot;&quot;" />
+			<param index="1" name="id" type="int" default="-1" />
+			<description>
+			</description>
+		</method>
+		<method name="add_shortcut">
+			<return type="void" />
+			<param index="0" name="shortcut" type="Shortcut" />
+			<param index="1" name="id" type="int" default="-1" />
+			<param index="2" name="global" type="bool" default="false" />
+			<param index="3" name="allow_echo" type="bool" default="false" />
+			<description>
+			</description>
+		</method>
+		<method name="add_submenu_item">
+			<return type="void" />
+			<param index="0" name="label" type="String" />
+			<param index="1" name="submenu" type="String" />
+			<param index="2" name="id" type="int" default="-1" />
+			<description>
+			</description>
+		</method>
+		<method name="add_submenu_node_item">
+			<return type="void" />
+			<param index="0" name="label" type="String" />
+			<param index="1" name="submenu" type="PopupMenu" />
+			<param index="2" name="id" type="int" default="-1" />
+			<description>
+			</description>
+		</method>
+		<method name="clear">
+			<return type="void" />
+			<param index="0" name="free_submenus" type="bool" default="false" />
+			<description>
+			</description>
+		</method>
+		<method name="get_focused_item" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_item_accelerator" qualifiers="const">
+			<return type="int" enum="Key" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_item_auto_translate_mode" qualifiers="const">
+			<return type="int" enum="Node.AutoTranslateMode" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_item_icon" qualifiers="const">
+			<return type="Texture2D" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_item_icon_max_width" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_item_icon_modulate" qualifiers="const">
+			<return type="Color" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_item_id" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_item_indent" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_item_index" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="id" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_item_language" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_item_metadata" qualifiers="const">
+			<return type="Variant" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_item_multistate" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_item_multistate_max" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_item_shortcut" qualifiers="const">
+			<return type="Shortcut" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_item_submenu" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_item_submenu_node" qualifiers="const">
+			<return type="PopupMenu" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_item_text" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_item_text_direction" qualifiers="const">
+			<return type="int" enum="Control.TextDirection" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_item_tooltip" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="is_item_checkable" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="is_item_checked" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="is_item_disabled" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="is_item_indeterminate" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="is_item_radio_checkable" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="is_item_separator" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="is_item_shortcut_disabled" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="is_native_menu" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="is_system_menu" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="remove_item">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="scroll_to_item">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_focused_item">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_item_accelerator">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="accel" type="int" enum="Key" />
+			<description>
+			</description>
+		</method>
+		<method name="set_item_as_checkable">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="enable" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="set_item_as_radio_checkable">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="enable" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="set_item_as_separator">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="enable" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="set_item_auto_translate_mode">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="mode" type="int" enum="Node.AutoTranslateMode" />
+			<description>
+			</description>
+		</method>
+		<method name="set_item_checked">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="checked" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="set_item_disabled">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="disabled" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="set_item_icon">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="icon" type="Texture2D" />
+			<description>
+			</description>
+		</method>
+		<method name="set_item_icon_max_width">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="width" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_item_icon_modulate">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="modulate" type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="set_item_id">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="id" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_item_indent">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="indent" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_item_indeterminate">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="indeterminate" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="set_item_index">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="target_index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_item_language">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="language" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="set_item_metadata">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="metadata" type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="set_item_multistate">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="state" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_item_multistate_max">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="max_states" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_item_shortcut">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="shortcut" type="Shortcut" />
+			<param index="2" name="global" type="bool" default="false" />
+			<description>
+			</description>
+		</method>
+		<method name="set_item_shortcut_disabled">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="disabled" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="set_item_submenu">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="submenu" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="set_item_submenu_node">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="submenu" type="PopupMenu" />
+			<description>
+			</description>
+		</method>
+		<method name="set_item_text">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="text" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="set_item_text_direction">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="direction" type="int" enum="Control.TextDirection" />
+			<description>
+			</description>
+		</method>
+		<method name="set_item_tooltip">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="tooltip" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="toggle_item_checked">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="toggle_item_multistate">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="allow_search" type="bool" setter="set_allow_search" getter="get_allow_search" default="true">
+		</member>
+		<member name="canvas_item_default_texture_filter" type="int" setter="set_default_canvas_item_texture_filter" getter="get_default_canvas_item_texture_filter" overrides="Viewport" enum="Viewport.DefaultCanvasItemTextureFilter" default="4" />
+		<member name="canvas_item_default_texture_repeat" type="int" setter="set_default_canvas_item_texture_repeat" getter="get_default_canvas_item_texture_repeat" overrides="Viewport" enum="Viewport.DefaultCanvasItemTextureRepeat" default="3" />
+		<member name="hide_on_checkable_item_selection" type="bool" setter="set_hide_on_checkable_item_selection" getter="is_hide_on_checkable_item_selection" default="true">
+		</member>
+		<member name="hide_on_item_selection" type="bool" setter="set_hide_on_item_selection" getter="is_hide_on_item_selection" default="true">
+		</member>
+		<member name="hide_on_state_item_selection" type="bool" setter="set_hide_on_state_item_selection" getter="is_hide_on_state_item_selection" default="false">
+		</member>
+		<member name="item_count" type="int" setter="set_item_count" getter="get_item_count" default="0">
+		</member>
+		<member name="item_{index}/checkable" type="int" setter="" getter="" default="0">
+		</member>
+		<member name="item_{index}/checked" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="item_{index}/disabled" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="item_{index}/icon" type="Texture2D" setter="" getter="">
+		</member>
+		<member name="item_{index}/id" type="int" setter="" getter="" default="0">
+		</member>
+		<member name="item_{index}/indeterminate" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="item_{index}/separator" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="item_{index}/text" type="String" setter="" getter="" default="&quot;&quot;">
+		</member>
+		<member name="prefer_native_menu" type="bool" setter="set_prefer_native_menu" getter="is_prefer_native_menu" default="false">
+		</member>
+		<member name="search_bar_enabled" type="bool" setter="set_search_bar_enabled" getter="is_search_bar_enabled" default="false">
+		</member>
+		<member name="search_bar_fuzzy_search_enabled" type="bool" setter="set_search_bar_fuzzy_search_enabled" getter="is_search_bar_fuzzy_search_enabled" default="true">
+		</member>
+		<member name="search_bar_fuzzy_search_max_misses" type="int" setter="set_search_bar_fuzzy_search_max_misses" getter="get_search_bar_fuzzy_search_max_misses" default="2">
+		</member>
+		<member name="search_bar_min_item_count" type="int" setter="set_search_bar_min_item_count" getter="get_search_bar_min_item_count" default="0">
+		</member>
+		<member name="shrink_height" type="bool" setter="set_shrink_height" getter="get_shrink_height" default="true">
+		</member>
+		<member name="shrink_width" type="bool" setter="set_shrink_width" getter="get_shrink_width" default="true">
+		</member>
+		<member name="submenu_popup_delay" type="float" setter="set_submenu_popup_delay" getter="get_submenu_popup_delay" default="0.2">
+		</member>
+		<member name="system_menu_id" type="int" setter="set_system_menu" getter="get_system_menu" enum="NativeMenu.SystemMenus" default="0">
+		</member>
+		<member name="transparent" type="bool" setter="set_flag" getter="get_flag" overrides="Window" default="true" />
+		<member name="transparent_bg" type="bool" setter="set_transparent_background" getter="has_transparent_background" overrides="Viewport" default="true" />
+	</members>
+	<signals>
+		<signal name="id_focused">
+			<param index="0" name="id" type="int" />
+			<description>
+			</description>
+		</signal>
+		<signal name="id_pressed">
+			<param index="0" name="id" type="int" />
+			<description>
+			</description>
+		</signal>
+		<signal name="index_pressed">
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</signal>
+		<signal name="menu_changed">
+			<description>
+			</description>
+		</signal>
+	</signals>
+	<theme_items>
+		<theme_item name="font_accelerator_color" data_type="color" type="Color" default="Color(0.7, 0.7, 0.7, 0.8)">
+		</theme_item>
+		<theme_item name="font_color" data_type="color" type="Color" default="Color(0.875, 0.875, 0.875, 1)">
+		</theme_item>
+		<theme_item name="font_disabled_color" data_type="color" type="Color" default="Color(0.4, 0.4, 0.4, 0.8)">
+		</theme_item>
+		<theme_item name="font_hover_color" data_type="color" type="Color" default="Color(0.875, 0.875, 0.875, 1)">
+		</theme_item>
+		<theme_item name="font_outline_color" data_type="color" type="Color" default="Color(0, 0, 0, 1)">
+		</theme_item>
+		<theme_item name="font_separator_color" data_type="color" type="Color" default="Color(0.875, 0.875, 0.875, 1)">
+		</theme_item>
+		<theme_item name="font_separator_outline_color" data_type="color" type="Color" default="Color(0, 0, 0, 1)">
+		</theme_item>
+		<theme_item name="gutter_compact" data_type="constant" type="int" default="1">
+		</theme_item>
+		<theme_item name="h_separation" data_type="constant" type="int" default="4">
+		</theme_item>
+		<theme_item name="icon_max_width" data_type="constant" type="int" default="0">
+		</theme_item>
+		<theme_item name="indent" data_type="constant" type="int" default="10">
+		</theme_item>
+		<theme_item name="item_end_padding" data_type="constant" type="int" default="2">
+		</theme_item>
+		<theme_item name="item_start_padding" data_type="constant" type="int" default="2">
+		</theme_item>
+		<theme_item name="outline_size" data_type="constant" type="int" default="0">
+		</theme_item>
+		<theme_item name="search_bar_separation" data_type="constant" type="int" default="4">
+		</theme_item>
+		<theme_item name="separator_outline_size" data_type="constant" type="int" default="0">
+		</theme_item>
+		<theme_item name="v_separation" data_type="constant" type="int" default="4">
+		</theme_item>
+		<theme_item name="font" data_type="font" type="Font">
+		</theme_item>
+		<theme_item name="font_separator" data_type="font" type="Font">
+		</theme_item>
+		<theme_item name="font_separator_size" data_type="font_size" type="int">
+		</theme_item>
+		<theme_item name="font_size" data_type="font_size" type="int">
+		</theme_item>
+		<theme_item name="checked" data_type="icon" type="Texture2D">
+		</theme_item>
+		<theme_item name="checked_disabled" data_type="icon" type="Texture2D">
+		</theme_item>
+		<theme_item name="indeterminate" data_type="icon" type="Texture2D">
+		</theme_item>
+		<theme_item name="indeterminate_disabled" data_type="icon" type="Texture2D">
+		</theme_item>
+		<theme_item name="radio_checked" data_type="icon" type="Texture2D">
+		</theme_item>
+		<theme_item name="radio_checked_disabled" data_type="icon" type="Texture2D">
+		</theme_item>
+		<theme_item name="radio_unchecked" data_type="icon" type="Texture2D">
+		</theme_item>
+		<theme_item name="radio_unchecked_disabled" data_type="icon" type="Texture2D">
+		</theme_item>
+		<theme_item name="search" data_type="icon" type="Texture2D">
+		</theme_item>
+		<theme_item name="submenu" data_type="icon" type="Texture2D">
+		</theme_item>
+		<theme_item name="submenu_mirrored" data_type="icon" type="Texture2D">
+		</theme_item>
+		<theme_item name="unchecked" data_type="icon" type="Texture2D">
+		</theme_item>
+		<theme_item name="unchecked_disabled" data_type="icon" type="Texture2D">
+		</theme_item>
+		<theme_item name="hover" data_type="style" type="StyleBox">
+		</theme_item>
+		<theme_item name="labeled_separator_left" data_type="style" type="StyleBox">
+		</theme_item>
+		<theme_item name="labeled_separator_right" data_type="style" type="StyleBox">
+		</theme_item>
+		<theme_item name="panel" data_type="style" type="StyleBox">
+		</theme_item>
+		<theme_item name="separator" data_type="style" type="StyleBox">
+		</theme_item>
+	</theme_items>
+</class>

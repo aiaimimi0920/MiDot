@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="AnimationNodeObserverBlendSpace" inherits="AnimationNodeObserver" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<signals>
+		<signal name="closest_point_changed">
+			<param index="0" name="closest_point_name" type="StringName" />
+			<description>
+			</description>
+		</signal>
+	</signals>
+</class>

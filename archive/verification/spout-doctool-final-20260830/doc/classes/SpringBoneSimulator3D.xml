@@ -1,0 +1,542 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SpringBoneSimulator3D" inherits="SkeletonModifier3D" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="are_all_child_collisions_enabled" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="clear_collisions">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="clear_exclude_collisions">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="clear_settings">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="get_center_bone" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_center_bone_name" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_center_from" qualifiers="const">
+			<return type="int" enum="SpringBoneSimulator3D.CenterFrom" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_center_node" qualifiers="const">
+			<return type="NodePath" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_collision_count" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_collision_path" qualifiers="const">
+			<return type="NodePath" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="collision" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_drag" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_drag_damping_curve" qualifiers="const">
+			<return type="Curve" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_end_bone" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_end_bone_direction" qualifiers="const">
+			<return type="int" enum="SkeletonModifier3D.BoneDirection" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_end_bone_length" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_end_bone_name" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_exclude_collision_count" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_exclude_collision_path" qualifiers="const">
+			<return type="NodePath" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="collision" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_gravity" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_gravity_damping_curve" qualifiers="const">
+			<return type="Curve" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_gravity_direction" qualifiers="const">
+			<return type="Vector3" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_joint_bone" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="joint" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_joint_bone_name" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="joint" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_joint_count" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_joint_drag" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="joint" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_joint_gravity" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="joint" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_joint_gravity_direction" qualifiers="const">
+			<return type="Vector3" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="joint" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_joint_radius" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="joint" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_joint_rotation_axis" qualifiers="const">
+			<return type="int" enum="SkeletonModifier3D.RotationAxis" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="joint" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_joint_rotation_axis_vector" qualifiers="const">
+			<return type="Vector3" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="joint" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_joint_stiffness" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="joint" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_radius" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_radius_damping_curve" qualifiers="const">
+			<return type="Curve" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_root_bone" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_root_bone_name" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_rotation_axis" qualifiers="const">
+			<return type="int" enum="SkeletonModifier3D.RotationAxis" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_rotation_axis_vector" qualifiers="const">
+			<return type="Vector3" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_stiffness" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_stiffness_damping_curve" qualifiers="const">
+			<return type="Curve" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="is_config_individual" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="is_end_bone_extended" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="reset">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="set_center_bone">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="bone" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_center_bone_name">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="bone_name" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="set_center_from">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="center_from" type="int" enum="SpringBoneSimulator3D.CenterFrom" />
+			<description>
+			</description>
+		</method>
+		<method name="set_center_node">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="node_path" type="NodePath" />
+			<description>
+			</description>
+		</method>
+		<method name="set_collision_count">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="count" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_collision_path">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="collision" type="int" />
+			<param index="2" name="node_path" type="NodePath" />
+			<description>
+			</description>
+		</method>
+		<method name="set_drag">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="drag" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="set_drag_damping_curve">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="curve" type="Curve" />
+			<description>
+			</description>
+		</method>
+		<method name="set_enable_all_child_collisions">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="enabled" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="set_end_bone">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="bone" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_end_bone_direction">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="bone_direction" type="int" enum="SkeletonModifier3D.BoneDirection" />
+			<description>
+			</description>
+		</method>
+		<method name="set_end_bone_length">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="length" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="set_end_bone_name">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="bone_name" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="set_exclude_collision_count">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="count" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_exclude_collision_path">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="collision" type="int" />
+			<param index="2" name="node_path" type="NodePath" />
+			<description>
+			</description>
+		</method>
+		<method name="set_extend_end_bone">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="enabled" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="set_gravity">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="gravity" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="set_gravity_damping_curve">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="curve" type="Curve" />
+			<description>
+			</description>
+		</method>
+		<method name="set_gravity_direction">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="gravity_direction" type="Vector3" />
+			<description>
+			</description>
+		</method>
+		<method name="set_individual_config">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="enabled" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="set_joint_drag">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="joint" type="int" />
+			<param index="2" name="drag" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="set_joint_gravity">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="joint" type="int" />
+			<param index="2" name="gravity" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="set_joint_gravity_direction">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="joint" type="int" />
+			<param index="2" name="gravity_direction" type="Vector3" />
+			<description>
+			</description>
+		</method>
+		<method name="set_joint_radius">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="joint" type="int" />
+			<param index="2" name="radius" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="set_joint_rotation_axis">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="joint" type="int" />
+			<param index="2" name="axis" type="int" enum="SkeletonModifier3D.RotationAxis" />
+			<description>
+			</description>
+		</method>
+		<method name="set_joint_rotation_axis_vector">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="joint" type="int" />
+			<param index="2" name="vector" type="Vector3" />
+			<description>
+			</description>
+		</method>
+		<method name="set_joint_stiffness">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="joint" type="int" />
+			<param index="2" name="stiffness" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="set_radius">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="radius" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="set_radius_damping_curve">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="curve" type="Curve" />
+			<description>
+			</description>
+		</method>
+		<method name="set_root_bone">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="bone" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_root_bone_name">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="bone_name" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="set_rotation_axis">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="axis" type="int" enum="SkeletonModifier3D.RotationAxis" />
+			<description>
+			</description>
+		</method>
+		<method name="set_rotation_axis_vector">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="vector" type="Vector3" />
+			<description>
+			</description>
+		</method>
+		<method name="set_stiffness">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="stiffness" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="set_stiffness_damping_curve">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="curve" type="Curve" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="external_force" type="Vector3" setter="set_external_force" getter="get_external_force" default="Vector3(0, 0, 0)">
+		</member>
+		<member name="mutable_bone_axes" type="bool" setter="set_mutable_bone_axes" getter="are_bone_axes_mutable" default="true">
+		</member>
+		<member name="setting_count" type="int" setter="set_setting_count" getter="get_setting_count" default="0">
+		</member>
+	</members>
+	<constants>
+		<constant name="CENTER_FROM_WORLD_ORIGIN" value="0" enum="CenterFrom">
+		</constant>
+		<constant name="CENTER_FROM_NODE" value="1" enum="CenterFrom">
+		</constant>
+		<constant name="CENTER_FROM_BONE" value="2" enum="CenterFrom">
+		</constant>
+	</constants>
+</class>

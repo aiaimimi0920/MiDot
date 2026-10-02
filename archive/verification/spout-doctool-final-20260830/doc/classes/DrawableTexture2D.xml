@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="DrawableTexture2D" inherits="Texture2D" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="blit_rect">
+			<return type="void" />
+			<param index="0" name="rect" type="Rect2i" />
+			<param index="1" name="source" type="Texture2D" />
+			<param index="2" name="modulate" type="Color" default="Color(1, 1, 1, 1)" />
+			<param index="3" name="mipmap" type="int" default="0" />
+			<param index="4" name="material" type="Material" default="null" />
+			<description>
+			</description>
+		</method>
+		<method name="blit_rect_multi">
+			<return type="void" />
+			<param index="0" name="rect" type="Rect2i" />
+			<param index="1" name="sources" type="Texture2D[]" />
+			<param index="2" name="extra_targets" type="DrawableTexture2D[]" />
+			<param index="3" name="modulate" type="Color" default="Color(1, 1, 1, 1)" />
+			<param index="4" name="mipmap" type="int" default="0" />
+			<param index="5" name="material" type="Material" default="null" />
+			<description>
+			</description>
+		</method>
+		<method name="generate_mipmaps">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="get_use_mipmaps" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="set_format">
+			<return type="void" />
+			<param index="0" name="format" type="int" enum="DrawableTexture2D.DrawableFormat" />
+			<description>
+			</description>
+		</method>
+		<method name="set_use_mipmaps">
+			<return type="void" />
+			<param index="0" name="mipmaps" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="setup">
+			<return type="void" />
+			<param index="0" name="width" type="int" />
+			<param index="1" name="height" type="int" />
+			<param index="2" name="format" type="int" enum="DrawableTexture2D.DrawableFormat" />
+			<param index="3" name="color" type="Color" default="Color(1, 1, 1, 1)" />
+			<param index="4" name="use_mipmaps" type="bool" default="false" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="resource_local_to_scene" type="bool" setter="set_local_to_scene" getter="is_local_to_scene" overrides="Resource" default="false" />
+	</members>
+	<constants>
+		<constant name="DRAWABLE_FORMAT_RGBA8" value="0" enum="DrawableFormat">
+		</constant>
+		<constant name="DRAWABLE_FORMAT_RGBA8_SRGB" value="1" enum="DrawableFormat">
+		</constant>
+		<constant name="DRAWABLE_FORMAT_RGBAH" value="2" enum="DrawableFormat">
+		</constant>
+		<constant name="DRAWABLE_FORMAT_RGBAF" value="3" enum="DrawableFormat">
+		</constant>
+	</constants>
+</class>

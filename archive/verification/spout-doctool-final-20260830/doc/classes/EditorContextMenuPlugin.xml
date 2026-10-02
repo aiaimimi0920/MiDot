@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="EditorContextMenuPlugin" inherits="RefCounted" api_type="editor" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="_get_menu_options" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="data" type="Dictionary[StringName, Variant]" />
+			<description>
+			</description>
+		</method>
+		<method name="_popup_menu" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="paths" type="PackedStringArray" />
+			<description>
+			</description>
+		</method>
+		<method name="add_context_menu_item">
+			<return type="void" />
+			<param index="0" name="name" type="String" />
+			<param index="1" name="callback" type="Callable" />
+			<param index="2" name="icon" type="Texture2D" default="null" />
+			<description>
+			</description>
+		</method>
+		<method name="add_context_menu_item_from_shortcut">
+			<return type="void" />
+			<param index="0" name="name" type="String" />
+			<param index="1" name="shortcut" type="Shortcut" />
+			<param index="2" name="icon" type="Texture2D" default="null" />
+			<description>
+			</description>
+		</method>
+		<method name="add_context_submenu_item">
+			<return type="void" />
+			<param index="0" name="name" type="String" />
+			<param index="1" name="menu" type="PopupMenu" />
+			<param index="2" name="icon" type="Texture2D" default="null" />
+			<description>
+			</description>
+		</method>
+		<method name="add_menu_shortcut">
+			<return type="void" />
+			<param index="0" name="shortcut" type="Shortcut" />
+			<param index="1" name="callback" type="Callable" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="CONTEXT_SLOT_SCENE_TREE" value="0" enum="ContextMenuSlot">
+		</constant>
+		<constant name="CONTEXT_SLOT_FILESYSTEM" value="1" enum="ContextMenuSlot">
+		</constant>
+		<constant name="CONTEXT_SLOT_SCRIPT_EDITOR" value="2" enum="ContextMenuSlot">
+		</constant>
+		<constant name="CONTEXT_SLOT_FILESYSTEM_CREATE" value="3" enum="ContextMenuSlot">
+		</constant>
+		<constant name="CONTEXT_SLOT_SCRIPT_EDITOR_CODE" value="4" enum="ContextMenuSlot">
+		</constant>
+		<constant name="CONTEXT_SLOT_SCENE_TABS" value="5" enum="ContextMenuSlot">
+		</constant>
+		<constant name="CONTEXT_SLOT_2D_EDITOR" value="6" enum="ContextMenuSlot">
+		</constant>
+		<constant name="CONTEXT_SLOT_INSPECTOR_PROPERTY" value="7" enum="ContextMenuSlot">
+		</constant>
+	</constants>
+</class>

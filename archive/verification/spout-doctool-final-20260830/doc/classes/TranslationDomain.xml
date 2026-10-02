@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TranslationDomain" inherits="RefCounted" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add_translation">
+			<return type="void" />
+			<param index="0" name="translation" type="Translation" />
+			<description>
+			</description>
+		</method>
+		<method name="clear">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="find_translations" qualifiers="const">
+			<return type="Translation[]" />
+			<param index="0" name="locale" type="String" />
+			<param index="1" name="exact" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_locale_override" qualifiers="const">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="get_translation_object" qualifiers="const">
+			<return type="Translation" />
+			<param index="0" name="locale" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="get_translations" qualifiers="const">
+			<return type="Translation[]" />
+			<description>
+			</description>
+		</method>
+		<method name="has_translation" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="translation" type="Translation" />
+			<description>
+			</description>
+		</method>
+		<method name="has_translation_for_locale" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="locale" type="String" />
+			<param index="1" name="exact" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="pseudolocalize" qualifiers="const">
+			<return type="StringName" />
+			<param index="0" name="message" type="StringName" />
+			<description>
+			</description>
+		</method>
+		<method name="remove_translation">
+			<return type="void" />
+			<param index="0" name="translation" type="Translation" />
+			<description>
+			</description>
+		</method>
+		<method name="set_locale_override">
+			<return type="void" />
+			<param index="0" name="locale" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="translate" qualifiers="const">
+			<return type="StringName" />
+			<param index="0" name="message" type="StringName" />
+			<param index="1" name="context" type="StringName" default="&amp;&quot;&quot;" />
+			<description>
+			</description>
+		</method>
+		<method name="translate_plural" qualifiers="const">
+			<return type="StringName" />
+			<param index="0" name="message" type="StringName" />
+			<param index="1" name="message_plural" type="StringName" />
+			<param index="2" name="n" type="int" />
+			<param index="3" name="context" type="StringName" default="&amp;&quot;&quot;" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="enabled" type="bool" setter="set_enabled" getter="is_enabled" default="true">
+		</member>
+		<member name="pseudolocalization_accents_enabled" type="bool" setter="set_pseudolocalization_accents_enabled" getter="is_pseudolocalization_accents_enabled" default="true">
+		</member>
+		<member name="pseudolocalization_double_vowels_enabled" type="bool" setter="set_pseudolocalization_double_vowels_enabled" getter="is_pseudolocalization_double_vowels_enabled" default="false">
+		</member>
+		<member name="pseudolocalization_enabled" type="bool" setter="set_pseudolocalization_enabled" getter="is_pseudolocalization_enabled" default="false">
+		</member>
+		<member name="pseudolocalization_expansion_ratio" type="float" setter="set_pseudolocalization_expansion_ratio" getter="get_pseudolocalization_expansion_ratio" default="0.0">
+		</member>
+		<member name="pseudolocalization_fake_bidi_enabled" type="bool" setter="set_pseudolocalization_fake_bidi_enabled" getter="is_pseudolocalization_fake_bidi_enabled" default="false">
+		</member>
+		<member name="pseudolocalization_override_enabled" type="bool" setter="set_pseudolocalization_override_enabled" getter="is_pseudolocalization_override_enabled" default="false">
+		</member>
+		<member name="pseudolocalization_prefix" type="String" setter="set_pseudolocalization_prefix" getter="get_pseudolocalization_prefix" default="&quot;[&quot;">
+		</member>
+		<member name="pseudolocalization_skip_placeholders_enabled" type="bool" setter="set_pseudolocalization_skip_placeholders_enabled" getter="is_pseudolocalization_skip_placeholders_enabled" default="true">
+		</member>
+		<member name="pseudolocalization_suffix" type="String" setter="set_pseudolocalization_suffix" getter="get_pseudolocalization_suffix" default="&quot;]&quot;">
+		</member>
+	</members>
+</class>

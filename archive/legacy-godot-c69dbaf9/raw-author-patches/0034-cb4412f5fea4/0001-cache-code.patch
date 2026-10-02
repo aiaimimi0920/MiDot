@@ -1,0 +1,342 @@
+From cb4412f5fea49820125e1d51f1a10893f7d3ca54 Mon Sep 17 00:00:00 2001
+From: aiaimimi0920 <153103332+aiaimimi0920@users.noreply.github.com>
+Date: Tue, 5 Mar 2024 10:56:04 +0800
+Subject: [PATCH] #cache code
+
+---
+ editor/editor_themes.cpp              | 11 ------
+ modules/color_scheme/color_role.h     |  3 +-
+ scene/gui/color_rect.cpp              | 41 ++++++++++++++++++++++
+ scene/gui/color_rect.h                |  9 +++++
+ scene/gui/control.cpp                 |  3 ++
+ scene/resources/style_box_texture.cpp | 50 +++++++++++++++++++++++++++
+ scene/resources/style_box_texture.h   | 11 ++++++
+ scene/theme/default_theme.cpp         | 30 ++++++++++------
+ scene/theme/default_theme.h           |  1 -
+ 9 files changed, 136 insertions(+), 23 deletions(-)
+
+diff --git a/editor/editor_themes.cpp b/editor/editor_themes.cpp
+index 7ff9be4f1834468b216657d2a9c6142cbe12f9d0..0dd787f0ea403b268722463a1695c30b0bad3c52 100644
+--- a/editor/editor_themes.cpp
++++ b/editor/editor_themes.cpp
+@@ -1654,17 +1654,6 @@ Ref<Theme> create_editor_theme(const Ref<Theme> p_theme) {
+ 	// Separators
+ 	theme->set_stylebox("separator", "HSeparator", make_line_stylebox(separator_color, MAX(Math::round(EDSCALE), border_width)));
+ 	theme->set_stylebox("separator", "VSeparator", make_line_stylebox(separator_color, MAX(Math::round(EDSCALE), border_width), 0, 0, true));
+-	theme->set_color_role("separator_color_role", "HSeparator", ColorRole::PRIMARY);
+-	theme->set_color_role("separator_color_role", "VSeparator", ColorRole::PRIMARY);
+-
+-
+-	// Ref<ColorScheme> separator_color_scheme;
+-	Ref<ColorScheme> separator_color_scheme(memnew(ColorScheme));
+-	// separator_color_scheme.instantiate();
+-	separator_color_scheme->set_source_color(Color("#6750A4"));
+-
+-	theme->set_color_scheme("separator_color_scheme", "HSeparator", separator_color_scheme);
+-	theme->set_color_scheme("separator_color_scheme", "VSeparator", separator_color_scheme);
+ 
+ 	// Debugger
+ 
+diff --git a/modules/color_scheme/color_role.h b/modules/color_scheme/color_role.h
+index 7b1d8dea7e9c4bb28da4d19ed07918eb136c6b6e..1669fd6b4ba956855e03b9c0fe80a94e0aca66d9 100644
+--- a/modules/color_scheme/color_role.h
++++ b/modules/color_scheme/color_role.h
+@@ -32,6 +32,7 @@
+ #define COLOR_ROLE_H
+ 
+ enum class ColorRole {
++	STATIC,
+ 	PRIMARY_PALETTE_KEY,
+ 	SECONDARY_PALETTE_KEY,
+ 	TERTIARY_PALETTE_KEY,
+@@ -89,6 +90,6 @@ enum class ColorRole {
+ };
+ 
+ static const String color_role_hint = 
+-	"Primary Palette key,Secondary Palette key,Tertiary Palette key,Neutral Palette key,Neutral Variant Palette key,Background,On Background,Surface,Surface Dim,Surface Bright,Surface Container Lowest,Surface Container Low,Surface Container,Surface Container High,Surface Container Highest,On Surface,Surface Variant,On Surface Variant,Inverse Surface,Inverse On Surface,Outline,Outline Variant,Shadow,Scrim,Surface Tint,Primary,On Primary,Primary Container,On Primary Container,Inverse Primary,Secondary,On Secondary,Secondary Container,On Secondary Container,Tertiary,On Tertiary,Tertiary Container,On Tertiary Container,Error,On Error,Error Container,On Error Container,Primary Fixed,Primary Fixed Dim,On Primary Fixed,On Primary Fixed Variant,Secondary Fixed,Secondary Fixed Dim,On Secondary Fixed,On Secondary Fixed Variant,Tertiary Fixed,Tertiary Fixed Dim,On Tertiary Fixed,On Tertiary Fixed Variant";
++	"Static,Primary Palette key,Secondary Palette key,Tertiary Palette key,Neutral Palette key,Neutral Variant Palette key,Background,On Background,Surface,Surface Dim,Surface Bright,Surface Container Lowest,Surface Container Low,Surface Container,Surface Container High,Surface Container Highest,On Surface,Surface Variant,On Surface Variant,Inverse Surface,Inverse On Surface,Outline,Outline Variant,Shadow,Scrim,Surface Tint,Primary,On Primary,Primary Container,On Primary Container,Inverse Primary,Secondary,On Secondary,Secondary Container,On Secondary Container,Tertiary,On Tertiary,Tertiary Container,On Tertiary Container,Error,On Error,Error Container,On Error Container,Primary Fixed,Primary Fixed Dim,On Primary Fixed,On Primary Fixed Variant,Secondary Fixed,Secondary Fixed Dim,On Secondary Fixed,On Secondary Fixed Variant,Tertiary Fixed,Tertiary Fixed Dim,On Tertiary Fixed,On Tertiary Fixed Variant";
+ 
+ #endif // COLOR_ROLE_H
+diff --git a/scene/gui/color_rect.cpp b/scene/gui/color_rect.cpp
+index fc334325b6746d904e8e5499221be4a16c55ca01..6bcfa982d71cc796a8844347652dd4ae8c336b71 100644
+--- a/scene/gui/color_rect.cpp
++++ b/scene/gui/color_rect.cpp
+@@ -42,6 +42,41 @@ Color ColorRect::get_color() const {
+ 	return color;
+ }
+ 
++void ColorRect::set_color_scheme(const Ref<ColorScheme> &p_color_scheme) {
++	if (color_scheme.is_valid()) {
++		color_scheme->disconnect_changed(callable_mp(this, &ColorRect::_update_color));
++	}
++	color_scheme = p_color_scheme;
++	if (color_scheme.is_valid()) {
++		color_scheme->connect_changed(callable_mp(this, &ColorRect::_update_color,CONNECT_REFERENCE_COUNTED));
++	}
++	_update_color();
++}
++
++Ref<ColorScheme> ColorRect::get_color_scheme() const {
++	return color_scheme;
++}
++
++void ColorRect::set_color_role(const ColorRole p_color_role) {
++	color_role = p_color_role;
++	_update_color();
++}
++
++ColorRole ColorRect::get_color_role() const {
++	return color_role;
++}
++
++void ColorRect::_update_color() {
++	if(color_role!=ColorRole::STATIC){
++		if (color_scheme.is_valid()) {
++			const Color target_color = color_scheme->get_color(color_role);
++			if (target_color != color) {
++				set_color(target_color);
++			}
++		}
++	}
++}
++
+ void ColorRect::_notification(int p_what) {
+ 	switch (p_what) {
+ 		case NOTIFICATION_DRAW: {
+@@ -53,6 +88,12 @@ void ColorRect::_notification(int p_what) {
+ void ColorRect::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("set_color", "color"), &ColorRect::set_color);
+ 	ClassDB::bind_method(D_METHOD("get_color"), &ColorRect::get_color);
++	ClassDB::bind_method(D_METHOD("set_color_scheme", "color_scheme"), &ColorRect::set_color_scheme);
++	ClassDB::bind_method(D_METHOD("get_color_scheme"), &ColorRect::get_color_scheme);
++	ClassDB::bind_method(D_METHOD("set_color_role", "color_role"), &ColorRect::set_color_role);
++	ClassDB::bind_method(D_METHOD("get_color_role"), &ColorRect::get_color_role);
+ 
+ 	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "color"), "set_color", "get_color");
++	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "color_scheme"), "set_color_scheme", "get_color_scheme");
++	ADD_PROPERTY(PropertyInfo(Variant::INT, "color_role", PROPERTY_HINT_ENUM, color_role_hint), "set_color_role", "get_color_role");
+ }
+diff --git a/scene/gui/color_rect.h b/scene/gui/color_rect.h
+index c0b17dfb5b50608eae9ad0bd93ee9f549c91ecd7..1840fe9ca03fbea45339e463c2312875bf510b7e 100644
+--- a/scene/gui/color_rect.h
++++ b/scene/gui/color_rect.h
+@@ -37,6 +37,8 @@ class ColorRect : public Control {
+ 	GDCLASS(ColorRect, Control);
+ 
+ 	Color color = Color(1, 1, 1);
++	ColorRole color_role = ColorRole::STATIC;
++	Ref<ColorScheme> color_scheme;
+ 
+ protected:
+ 	void _notification(int p_what);
+@@ -45,6 +47,13 @@ protected:
+ public:
+ 	void set_color(const Color &p_color);
+ 	Color get_color() const;
++
++	void set_color_role(const ColorRole p_color);
++	ColorRole get_color_role() const;
++	void set_color_scheme(const Ref<ColorScheme> &p_color_scheme);
++	Ref<ColorScheme> get_color_scheme() const;
++
++	void _update_color();
+ };
+ 
+ #endif // COLOR_RECT_H
+diff --git a/scene/gui/control.cpp b/scene/gui/control.cpp
+index 9fd33187cfbefeb79a28bdf561cd3358e8871302..46f5cb92e75e0dabdaa82e518b30f0372fe35007 100644
+--- a/scene/gui/control.cpp
++++ b/scene/gui/control.cpp
+@@ -2723,6 +2723,9 @@ Color Control::get_theme_color(const StringName &p_name, const StringName &p_the
+     List<StringName> theme_types;
+     data.theme_owner->get_theme_type_dependencies(this, p_theme_type, &theme_types);
+     Color color = data.theme_owner->get_theme_item_in_types(Theme::DATA_TYPE_COLOR, p_name, theme_types);
++	//WARN_PRINT("get_theme_color: ");
++	//WARN_PRINT("p_name: " + String(p_name));
++	//WARN_PRINT("theme_types: " + String(p_theme_type));
+     data.theme_color_cache[p_theme_type][p_name] = color;
+     return color;
+ }
+diff --git a/scene/resources/style_box_texture.cpp b/scene/resources/style_box_texture.cpp
+index 156525d21c46b0217ce1598720517c5970413b51..f3fbf3fb48fdab0515cc37dd074ae2f9b3862f57 100644
+--- a/scene/resources/style_box_texture.cpp
++++ b/scene/resources/style_box_texture.cpp
+@@ -156,6 +156,48 @@ Color StyleBoxTexture::get_modulate() const {
+ 	return modulate;
+ }
+ 
++
++void StyleBoxTexture::set_color_scheme(const Ref<ColorScheme> &p_color_scheme) {
++	if (color_scheme.is_valid()) {
++		color_scheme->disconnect_changed(callable_mp(this, &StyleBoxTexture::_update_color));
++	}
++
++	color_scheme = p_color_scheme;
++	if (color_scheme.is_valid()) {
++		color_scheme->connect_changed(callable_mp(this, &StyleBoxTexture::_update_color, CONNECT_REFERENCE_COUNTED));
++	}
++	
++
++	_update_color();
++	
++	emit_changed();
++}
++
++Ref<ColorScheme> StyleBoxTexture::get_color_scheme() const {
++	return color_scheme;
++}
++
++void StyleBoxTexture::set_color_role(const ColorRole p_color_role) {
++	color_role = p_color_role;
++	_update_color();
++	emit_changed();
++}
++
++ColorRole StyleBoxTexture::get_color_role() const {
++	return color_role;
++}
++
++void StyleBoxTexture::_update_color() {
++	if (color_scheme.is_valid()) {
++		const Color target_color = color_scheme->get_color(color_role);
++		if (target_color != modulate) {
++			set_modulate(target_color);
++		}
++	}
++}
++
++
++
+ Rect2 StyleBoxTexture::get_draw_rect(const Rect2 &p_rect) const {
+ 	return p_rect.grow_individual(expand_margin[SIDE_LEFT], expand_margin[SIDE_TOP], expand_margin[SIDE_RIGHT], expand_margin[SIDE_BOTTOM]);
+ }
+@@ -202,6 +244,11 @@ void StyleBoxTexture::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("set_modulate", "color"), &StyleBoxTexture::set_modulate);
+ 	ClassDB::bind_method(D_METHOD("get_modulate"), &StyleBoxTexture::get_modulate);
+ 
++	ClassDB::bind_method(D_METHOD("set_color_scheme", "color_scheme"), &StyleBoxTexture::set_color_scheme);
++	ClassDB::bind_method(D_METHOD("get_color_scheme"), &StyleBoxTexture::get_color_scheme);
++	ClassDB::bind_method(D_METHOD("set_color_role", "color_role"), &StyleBoxTexture::set_color_role);
++	ClassDB::bind_method(D_METHOD("get_color_role"), &StyleBoxTexture::get_color_role);
++
+ 	ClassDB::bind_method(D_METHOD("set_h_axis_stretch_mode", "mode"), &StyleBoxTexture::set_h_axis_stretch_mode);
+ 	ClassDB::bind_method(D_METHOD("get_h_axis_stretch_mode"), &StyleBoxTexture::get_h_axis_stretch_mode);
+ 
+@@ -209,6 +256,8 @@ void StyleBoxTexture::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("get_v_axis_stretch_mode"), &StyleBoxTexture::get_v_axis_stretch_mode);
+ 
+ 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "texture", PROPERTY_HINT_RESOURCE_TYPE, "Texture2D"), "set_texture", "get_texture");
++	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "color_scheme"), "set_color_scheme", "get_color_scheme");
++
+ 
+ 	ADD_GROUP("Texture Margins", "texture_margin_");
+ 	ADD_PROPERTYI(PropertyInfo(Variant::FLOAT, "texture_margin_left", PROPERTY_HINT_RANGE, "0,2048,1,suffix:px"), "set_texture_margin", "get_texture_margin", SIDE_LEFT);
+@@ -231,6 +280,7 @@ void StyleBoxTexture::_bind_methods() {
+ 
+ 	ADD_GROUP("Modulate", "modulate_");
+ 	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "modulate_color"), "set_modulate", "get_modulate");
++	ADD_PROPERTY(PropertyInfo(Variant::INT, "color_role", PROPERTY_HINT_ENUM, color_role_hint), "set_color_role", "get_color_role");
+ 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "draw_center"), "set_draw_center", "is_draw_center_enabled");
+ 
+ 	BIND_ENUM_CONSTANT(AXIS_STRETCH_MODE_STRETCH);
+diff --git a/scene/resources/style_box_texture.h b/scene/resources/style_box_texture.h
+index b1b833f4706fa8394d3666b5585119fd596088c8..b3788251c47b77bec158e79290e1567c4e595f84 100644
+--- a/scene/resources/style_box_texture.h
++++ b/scene/resources/style_box_texture.h
+@@ -51,6 +51,9 @@ private:
+ 	Ref<Texture2D> texture;
+ 	bool draw_center = true;
+ 	Color modulate = Color(1, 1, 1, 1);
++	Ref<ColorScheme> color_scheme;
++	ColorRole color_role;
++
+ 	AxisStretchMode axis_h = AXIS_STRETCH_MODE_STRETCH;
+ 	AxisStretchMode axis_v = AXIS_STRETCH_MODE_STRETCH;
+ 
+@@ -87,6 +90,14 @@ public:
+ 	void set_modulate(const Color &p_modulate);
+ 	Color get_modulate() const;
+ 
++	void set_color_scheme(const Ref<ColorScheme> &p_color_scheme);
++	Ref<ColorScheme> get_color_scheme() const;
++
++	void set_color_role(const ColorRole p_color_role);
++	ColorRole get_color_role() const;
++
++	void _update_color();
++
+ 	virtual Rect2 get_draw_rect(const Rect2 &p_rect) const override;
+ 	virtual void draw(RID p_canvas_item, const Rect2 &p_rect) const override;
+ 
+diff --git a/scene/theme/default_theme.cpp b/scene/theme/default_theme.cpp
+index e11c50b4b713c071b45b8fa682ae04e6d09736d3..eb77c00f927b27912c843c6951309dbd0ecf1b3f 100644
+--- a/scene/theme/default_theme.cpp
++++ b/scene/theme/default_theme.cpp
+@@ -70,6 +70,23 @@ static Ref<StyleBoxFlat> make_flat_stylebox(Color p_color, float p_margin_left =
+ 	return style;
+ }
+ 
++static Ref<StyleBoxFlat> make_color_role_flat_stylebox(ColorRole p_color_role, Ref<ColorScheme> color_scheme, float p_margin_left = default_margin, float p_margin_top = default_margin, float p_margin_right = default_margin, float p_margin_bottom = default_margin, int p_corner_radius = default_corner_radius, bool p_draw_center = true, int p_border_width = 0) {
++	Ref<StyleBoxFlat> style(memnew(StyleBoxFlat));
++	style->set_color_scheme(color_scheme);
++	style->set_bg_color_role(p_color_role);
++	style->set_content_margin_individual(Math::round(p_margin_left * scale), Math::round(p_margin_top * scale), Math::round(p_margin_right * scale), Math::round(p_margin_bottom * scale));
++
++	style->set_corner_radius_all(Math::round(p_corner_radius * scale));
++	style->set_anti_aliased(true);
++	// Adjust level of detail based on the corners' effective sizes.
++	style->set_corner_detail(MIN(Math::ceil(1.5 * p_corner_radius), 6) * scale);
++
++	style->set_draw_center(p_draw_center);
++	style->set_border_width_all(Math::round(p_border_width * scale));
++
++	return style;
++}
++
+ static Ref<StyleBoxFlat> sb_expand(Ref<StyleBoxFlat> p_sbox, float p_left, float p_top, float p_right, float p_bottom) {
+ 	p_sbox->set_expand_margin(SIDE_LEFT, Math::round(p_left * scale));
+ 	p_sbox->set_expand_margin(SIDE_TOP, Math::round(p_top * scale));
+@@ -112,7 +129,6 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 	theme->set_default_font(default_font);
+ 	theme->set_default_font_size(Math::round(default_font_size * scale));
+ 	theme->set_default_base_scale(scale);
+-	
+ 	theme->set_default_color_scheme(default_color_scheme);
+ 
+ 	// Font colors
+@@ -671,6 +687,9 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 	separator_horizontal->set_thickness(Math::round(scale));
+ 	separator_horizontal->set_color(style_separator_color);
+ 	separator_horizontal->set_content_margin_individual(default_margin, 0, default_margin, 0);
++	separator_horizontal->set_color_scheme(default_color_scheme);
++	separator_horizontal->set_color_role(ColorRole::OUTLINE_VARIANT);
++
+ 	Ref<StyleBoxLine> separator_vertical = separator_horizontal->duplicate();
+ 	separator_vertical->set_vertical(true);
+ 	separator_vertical->set_content_margin_individual(0, default_margin, 0, default_margin);
+@@ -930,15 +949,6 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 	// Separators
+ 	theme->set_stylebox("separator", "HSeparator", separator_horizontal);
+ 	theme->set_stylebox("separator", "VSeparator", separator_vertical);
+-	theme->set_color_role("separator_color_role", "HSeparator", ColorRole::PRIMARY);
+-	theme->set_color_role("separator_color_role", "VSeparator", ColorRole::PRIMARY);
+-
+-	// Ref<ColorScheme> separator_color_scheme;
+-	// Ref<ColorScheme> separator_color_scheme(memnew(ColorScheme));
+-	// separator_color_scheme.instantiate();
+-	// separator_color_scheme->set_source_color(Color("#6750A4"));
+-	theme->set_color_scheme("separator_color_scheme", "HSeparator", Ref<ColorScheme>());
+-	theme->set_color_scheme("separator_color_scheme", "VSeparator", Ref<ColorScheme>());
+ 
+ 	theme->set_icon("close", "Icons", icons["close"]);
+ 	theme->set_font("normal", "Fonts", Ref<Font>());
+diff --git a/scene/theme/default_theme.h b/scene/theme/default_theme.h
+index 521989ef67cbd9eac24f2e0c56343e9e2fc75f2b..0c90e7523de41384c32096401d522445e78ae077 100644
+--- a/scene/theme/default_theme.h
++++ b/scene/theme/default_theme.h
+@@ -35,5 +35,4 @@
+ 
+ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const Ref<Font> &bold_font, const Ref<Font> &bold_italics_font, const Ref<Font> &italics_font, Ref<Texture2D> &default_icon, Ref<StyleBox> &default_style, float p_scale, const Ref<ColorScheme> &default_color_scheme);
+ void make_default_theme(float p_scale, Ref<Font> p_font, Ref<ColorScheme> p_color_scheme, TextServer::SubpixelPositioning p_font_subpixel = TextServer::SUBPIXEL_POSITIONING_AUTO, TextServer::Hinting p_font_hinting = TextServer::HINTING_LIGHT, TextServer::FontAntialiasing p_font_antialiased = TextServer::FONT_ANTIALIASING_GRAY, bool p_font_msdf = false, bool p_font_generate_mipmaps = false);
+-
+ #endif // DEFAULT_THEME_H

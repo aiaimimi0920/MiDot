@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="OpenXRSpatialComponentMarkerList" inherits="OpenXRSpatialComponentData" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_marker_data" qualifiers="const">
+			<return type="Variant" />
+			<param index="0" name="snapshot" type="RID" />
+			<param index="1" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_marker_id" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_marker_type" qualifiers="const">
+			<return type="int" enum="OpenXRSpatialComponentMarkerList.MarkerType" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="MARKER_TYPE_UNKNOWN" value="0" enum="MarkerType">
+		</constant>
+		<constant name="MARKER_TYPE_QRCODE" value="1" enum="MarkerType">
+		</constant>
+		<constant name="MARKER_TYPE_MICRO_QRCODE" value="2" enum="MarkerType">
+		</constant>
+		<constant name="MARKER_TYPE_ARUCO" value="3" enum="MarkerType">
+		</constant>
+		<constant name="MARKER_TYPE_APRIL_TAG" value="4" enum="MarkerType">
+		</constant>
+		<constant name="MARKER_TYPE_MAX" value="5" enum="MarkerType">
+		</constant>
+	</constants>
+</class>

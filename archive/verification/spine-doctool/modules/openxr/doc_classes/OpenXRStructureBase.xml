@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="OpenXRStructureBase" inherits="RefCounted" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="_get_header" qualifiers="virtual">
+			<return type="int" />
+			<param index="0" name="next" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_header">
+			<return type="int" />
+			<param index="0" name="next" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_structure_type">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="next" type="OpenXRStructureBase" setter="set_next" getter="get_next">
+		</member>
+	</members>
+</class>

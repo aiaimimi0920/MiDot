@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="HeightMapShape3D" inherits="Shape3D" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_max_height" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="get_min_height" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="update_map_data_from_image">
+			<return type="void" />
+			<param index="0" name="image" type="Image" />
+			<param index="1" name="height_min" type="float" />
+			<param index="2" name="height_max" type="float" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="map_data" type="PackedFloat32Array" setter="set_map_data" getter="get_map_data" default="PackedFloat32Array(0, 0, 0, 0)">
+		</member>
+		<member name="map_depth" type="int" setter="set_map_depth" getter="get_map_depth" default="2">
+		</member>
+		<member name="map_width" type="int" setter="set_map_width" getter="get_map_width" default="2">
+		</member>
+	</members>
+</class>

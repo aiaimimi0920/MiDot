@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Semaphore" inherits="RefCounted" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="post">
+			<return type="void" />
+			<param index="0" name="count" type="int" default="1" />
+			<description>
+			</description>
+		</method>
+		<method name="try_wait">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="wait">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>

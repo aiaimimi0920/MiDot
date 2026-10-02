@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="LabelSettings" inherits="Resource" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add_stacked_outline">
+			<return type="void" />
+			<param index="0" name="index" type="int" default="-1" />
+			<description>
+			</description>
+		</method>
+		<method name="add_stacked_shadow">
+			<return type="void" />
+			<param index="0" name="index" type="int" default="-1" />
+			<description>
+			</description>
+		</method>
+		<method name="get_stacked_outline_color" qualifiers="const">
+			<return type="Color" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_stacked_outline_size" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_stacked_shadow_color" qualifiers="const">
+			<return type="Color" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_stacked_shadow_offset" qualifiers="const">
+			<return type="Vector2" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_stacked_shadow_outline_size" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="move_stacked_outline">
+			<return type="void" />
+			<param index="0" name="from_index" type="int" />
+			<param index="1" name="to_position" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="move_stacked_shadow">
+			<return type="void" />
+			<param index="0" name="from_index" type="int" />
+			<param index="1" name="to_position" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="remove_stacked_outline">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="remove_stacked_shadow">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_stacked_outline_color">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="color" type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="set_stacked_outline_size">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="size" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_stacked_shadow_color">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="color" type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="set_stacked_shadow_offset">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="offset" type="Vector2" />
+			<description>
+			</description>
+		</method>
+		<method name="set_stacked_shadow_outline_size">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="size" type="int" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="font" type="Font" setter="set_font" getter="get_font">
+		</member>
+		<member name="font_color" type="Color" setter="set_font_color" getter="get_font_color" default="Color(1, 1, 1, 1)">
+		</member>
+		<member name="font_size" type="int" setter="set_font_size" getter="get_font_size" default="16">
+		</member>
+		<member name="line_spacing" type="float" setter="set_line_spacing" getter="get_line_spacing" default="3.0">
+		</member>
+		<member name="outline_color" type="Color" setter="set_outline_color" getter="get_outline_color" default="Color(1, 1, 1, 1)">
+		</member>
+		<member name="outline_size" type="int" setter="set_outline_size" getter="get_outline_size" default="0">
+		</member>
+		<member name="paragraph_spacing" type="float" setter="set_paragraph_spacing" getter="get_paragraph_spacing" default="0.0">
+		</member>
+		<member name="shadow_color" type="Color" setter="set_shadow_color" getter="get_shadow_color" default="Color(0, 0, 0, 0)">
+		</member>
+		<member name="shadow_offset" type="Vector2" setter="set_shadow_offset" getter="get_shadow_offset" default="Vector2(1, 1)">
+		</member>
+		<member name="shadow_size" type="int" setter="set_shadow_size" getter="get_shadow_size" default="1">
+		</member>
+		<member name="stacked_outline_count" type="int" setter="set_stacked_outline_count" getter="get_stacked_outline_count" default="0">
+		</member>
+		<member name="stacked_outline_{index}/color" type="Color" setter="" getter="" default="Color(0, 0, 0, 1)">
+		</member>
+		<member name="stacked_outline_{index}/size" type="int" setter="" getter="" default="0">
+		</member>
+		<member name="stacked_shadow_count" type="int" setter="set_stacked_shadow_count" getter="get_stacked_shadow_count" default="0">
+		</member>
+		<member name="stacked_shadow_{index}/color" type="Color" setter="" getter="" default="Color(0, 0, 0, 1)">
+		</member>
+		<member name="stacked_shadow_{index}/offset" type="Vector2" setter="" getter="" default="Vector2(1, 1)">
+		</member>
+		<member name="stacked_shadow_{index}/outline_size" type="int" setter="" getter="" default="0">
+		</member>
+	</members>
+</class>

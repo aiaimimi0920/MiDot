@@ -1,0 +1,303 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ColorScheme" inherits="Resource" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_background">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_color">
+			<return type="Color" />
+			<param index="0" name="color_role" type="int" enum="ColorRole" />
+			<description>
+			</description>
+		</method>
+		<method name="get_error">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_error_container">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_inverse_on_surface">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_inverse_primary">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_inverse_surface">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_neutral_palette_key_color">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_neutral_variant_palette_key_color">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_on_background">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_on_error">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_on_error_container">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_on_primary">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_on_primary_container">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_on_primary_fixed">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_on_primary_fixed_variant">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_on_secondary">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_on_secondary_container">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_on_secondary_fixed">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_on_secondary_fixed_variant">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_on_surface">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_on_surface_variant">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_on_tertiary">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_on_tertiary_container">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_on_tertiary_fixed">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_on_tertiary_fixed_variant">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_outline">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_outline_variant">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_primary">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_primary_container">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_primary_fixed">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_primary_fixed_dim">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_primary_palette_key_color">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_scrim">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_secondary">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_secondary_container">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_secondary_fixed">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_secondary_fixed_dim">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_secondary_palette_key_color">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_shadow">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_surface">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_surface_bright">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_surface_container">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_surface_container_high">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_surface_container_highest">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_surface_container_low">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_surface_container_lowest">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_surface_dim">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_surface_tint">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_surface_variant">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_tertiary">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_tertiary_container">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_tertiary_fixed">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_tertiary_fixed_dim">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+		<method name="get_tertiary_palette_key_color">
+			<return type="Color" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="contrast_level" type="float" setter="set_contrast_level" getter="get_contrast_level" default="0.0">
+		</member>
+		<member name="dark" type="bool" setter="set_dark" getter="is_dark" default="false">
+		</member>
+		<member name="source_color" type="Color" setter="set_source_color" getter="get_source_color" default="Color(0.40392157, 0.3137255, 0.6431373, 1)">
+		</member>
+		<member name="source_texture" type="Texture2D" setter="set_source_texture" getter="get_source_texture">
+		</member>
+	</members>
+	<signals>
+		<signal name="updated_color_scheme">
+			<description>
+			</description>
+		</signal>
+	</signals>
+</class>

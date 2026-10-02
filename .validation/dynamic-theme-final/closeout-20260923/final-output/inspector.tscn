@@ -1,0 +1,24 @@
+[gd_scene format=3 uid="uid://c0cxpr02hbbts"]
+
+[sub_resource type="ColorScheme" id="ColorScheme_jsdyt"]
+
+[sub_resource type="Theme" id="Theme_qlh7s"]
+default_color_scheme = SubResource("ColorScheme_jsdyt")
+
+[node name="InspectorSmoke" type="Control" unique_id=1528829863]
+layout_mode = 3
+anchors_preset = 0
+theme = SubResource("Theme_qlh7s")
+
+[node name="Button" type="Button" parent="." unique_id=2113313077]
+layout_mode = 0
+theme_override_color_roles/font_color_role = 27
+theme_override_color_schemes/font_color_scheme = SubResource("ColorScheme_jsdyt")
+theme_override_colors/font_color_scale = Color(1, 1, 1, 1)
+theme_override_color_schemes/default_color_scheme = SubResource("ColorScheme_jsdyt")
+
+[node name="AcceptDialog" type="AcceptDialog" parent="." unique_id=2014269855]
+theme_override_color_roles/title_color_role = 27
+theme_override_color_schemes/title_color_scheme = SubResource("ColorScheme_jsdyt")
+theme_override_colors/title_color_scale = Color(1, 1, 1, 1)
+theme_override_color_schemes/default_color_scheme = SubResource("ColorScheme_jsdyt")

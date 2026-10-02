@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="CompositorEffect" inherits="Resource" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="_render_callback" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="effect_callback_type" type="int" />
+			<param index="1" name="render_data" type="RenderData" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="access_resolved_color" type="bool" setter="set_access_resolved_color" getter="get_access_resolved_color">
+		</member>
+		<member name="access_resolved_depth" type="bool" setter="set_access_resolved_depth" getter="get_access_resolved_depth">
+		</member>
+		<member name="effect_callback_type" type="int" setter="set_effect_callback_type" getter="get_effect_callback_type" enum="CompositorEffect.EffectCallbackType">
+		</member>
+		<member name="enabled" type="bool" setter="set_enabled" getter="get_enabled">
+		</member>
+		<member name="needs_motion_vectors" type="bool" setter="set_needs_motion_vectors" getter="get_needs_motion_vectors">
+		</member>
+		<member name="needs_normal_roughness" type="bool" setter="set_needs_normal_roughness" getter="get_needs_normal_roughness">
+		</member>
+		<member name="needs_separate_specular" type="bool" setter="set_needs_separate_specular" getter="get_needs_separate_specular">
+		</member>
+	</members>
+	<constants>
+		<constant name="EFFECT_CALLBACK_TYPE_PRE_OPAQUE" value="0" enum="EffectCallbackType">
+		</constant>
+		<constant name="EFFECT_CALLBACK_TYPE_POST_OPAQUE" value="1" enum="EffectCallbackType">
+		</constant>
+		<constant name="EFFECT_CALLBACK_TYPE_POST_SKY" value="2" enum="EffectCallbackType">
+		</constant>
+		<constant name="EFFECT_CALLBACK_TYPE_PRE_TRANSPARENT" value="3" enum="EffectCallbackType">
+		</constant>
+		<constant name="EFFECT_CALLBACK_TYPE_POST_TRANSPARENT" value="4" enum="EffectCallbackType">
+		</constant>
+		<constant name="EFFECT_CALLBACK_TYPE_MAX" value="5" enum="EffectCallbackType">
+		</constant>
+	</constants>
+</class>

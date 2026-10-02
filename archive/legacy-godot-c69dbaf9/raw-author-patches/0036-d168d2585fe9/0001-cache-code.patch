@@ -1,0 +1,115 @@
+From d168d2585fe970d28608e541d15b1ec068cc2615 Mon Sep 17 00:00:00 2001
+From: aiaimimi0920 <153103332+aiaimimi0920@users.noreply.github.com>
+Date: Wed, 6 Mar 2024 11:33:25 +0800
+Subject: [PATCH] # cache code
+
+---
+ scene/gui/popup_menu.cpp      | 19 +++++++++++++++++++
+ scene/gui/popup_menu.h        | 19 +++++++++++++++++++
+ scene/theme/default_theme.cpp | 19 +++++++++++++++++++
+ 3 files changed, 57 insertions(+)
+
+diff --git a/scene/gui/popup_menu.cpp b/scene/gui/popup_menu.cpp
+index d6b8dd02025d5dc1118bc35430c3c9c3586e9039..60486cd84ac8259219a71eefaccb6081c08c13a8 100644
+--- a/scene/gui/popup_menu.cpp
++++ b/scene/gui/popup_menu.cpp
+@@ -2760,6 +2760,24 @@ void PopupMenu::_bind_methods() {
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_FONT, PopupMenu, font_separator);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_FONT_SIZE, PopupMenu, font_separator_size);
+ 
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_SCHEME, PopupMenu, default_color_scheme);
++
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_SCHEME, PopupMenu, font_color_scheme);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_SCHEME, PopupMenu, font_hover_color_scheme);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_SCHEME, PopupMenu, font_disabled_color_scheme);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_SCHEME, PopupMenu, font_accelerator_color_scheme);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_SCHEME, PopupMenu, font_outline_color_scheme);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_SCHEME, PopupMenu, font_separator_color_scheme);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_SCHEME, PopupMenu, font_separator_outline_color_scheme);
++
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_ROLE, PopupMenu, font_color_role);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_ROLE, PopupMenu, font_hover_color_role);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_ROLE, PopupMenu, font_disabled_color_role);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_ROLE, PopupMenu, font_accelerator_color_role);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_ROLE, PopupMenu, font_outline_color_role);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_ROLE, PopupMenu, font_separator_color_role);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_ROLE, PopupMenu, font_separator_outline_color_role);
++
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, PopupMenu, font_color);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, PopupMenu, font_hover_color);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, PopupMenu, font_disabled_color);
+@@ -2772,6 +2790,7 @@ void PopupMenu::_bind_methods() {
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, PopupMenu, font_separator_outline_color);
+ }
+ 
++
+ void PopupMenu::popup(const Rect2i &p_bounds) {
+ 	moved = Vector2();
+ 	popup_time_msec = OS::get_singleton()->get_ticks_msec();
+diff --git a/scene/gui/popup_menu.h b/scene/gui/popup_menu.h
+index 5d5f4a8322a6ed7a0d288ba3ad059322c081c30e..5b87756c2c14688287740e90a5cf52dd81510e78 100644
+--- a/scene/gui/popup_menu.h
++++ b/scene/gui/popup_menu.h
+@@ -173,6 +173,8 @@ class PopupMenu : public Popup {
+ 		Ref<Font> font_separator;
+ 		int font_separator_size = 0;
+ 
++		Ref<ColorScheme> default_color_scheme;
++
+ 		Color font_color;
+ 		Color font_hover_color;
+ 		Color font_disabled_color;
+@@ -183,6 +185,23 @@ class PopupMenu : public Popup {
+ 		Color font_separator_color;
+ 		int font_separator_outline_size = 0;
+ 		Color font_separator_outline_color;
++
++		ColorRole font_color_role;
++		ColorRole font_hover_color_role;
++		ColorRole font_disabled_color_role;
++		ColorRole font_accelerator_color_role;
++		ColorRole font_outline_color_role;
++		ColorRole font_separator_color_role;
++		ColorRole font_separator_outline_color_role;
++
++		Ref<ColorScheme> font_color_scheme;
++		Ref<ColorScheme> font_hover_color_scheme;
++		Ref<ColorScheme> font_disabled_color_scheme;
++		Ref<ColorScheme> font_accelerator_color_scheme;
++		Ref<ColorScheme> font_outline_color_scheme;
++		Ref<ColorScheme> font_separator_color_scheme;
++		Ref<ColorScheme> font_separator_outline_color_scheme;
++
+ 	} theme_cache;
+ 
+ 	void _draw_items();
+diff --git a/scene/theme/default_theme.cpp b/scene/theme/default_theme.cpp
+index 9eb036f2d50bef95662fa9b56a4b4bdda2bfbf91..3be31c9fbfbde8c3790f4f5a8042b22dbbaaa450 100644
+--- a/scene/theme/default_theme.cpp
++++ b/scene/theme/default_theme.cpp
+@@ -1029,6 +1029,25 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 	theme->set_font_size("font_size", "PopupMenu", -1);
+ 	theme->set_font_size("font_separator_size", "PopupMenu", -1);
+ 
++	theme->set_color_scheme("default_color_scheme", "PopupMenu", default_color_scheme);
++
++
++	theme->set_color_scheme("font_color_scheme", "PopupMenu", Ref<ColorScheme>());
++	theme->set_color_scheme("font_accelerator_color_scheme", "PopupMenu", Ref<ColorScheme>());
++	theme->set_color_scheme("font_disabled_color_scheme", "PopupMenu", Ref<ColorScheme>());
++	theme->set_color_scheme("font_hover_color_scheme", "PopupMenu", Ref<ColorScheme>());
++	theme->set_color_scheme("font_separator_color_scheme", "PopupMenu", Ref<ColorScheme>());
++	theme->set_color_scheme("font_outline_color_scheme", "PopupMenu", Ref<ColorScheme>());
++	theme->set_color_scheme("font_separator_outline_color_scheme", "PopupMenu", Ref<ColorScheme>());
++
++	theme->set_color_role("font_color_role", "PopupMenu", ColorRole::PRIMARY);
++	theme->set_color_role("font_accelerator_color_role", "PopupMenu", ColorRole::PRIMARY);
++	theme->set_color_role("font_disabled_color_role", "PopupMenu", ColorRole::PRIMARY);
++	theme->set_color_role("font_hover_color_role", "PopupMenu", ColorRole::PRIMARY);
++	theme->set_color_role("font_separator_color_role", "PopupMenu", ColorRole::PRIMARY);
++	theme->set_color_role("font_outline_color_role", "PopupMenu", ColorRole::PRIMARY);
++	theme->set_color_role("font_separator_outline_color_role", "PopupMenu", ColorRole::PRIMARY);
++
+ 	theme->set_color("font_color", "PopupMenu", control_font_color);
+ 	theme->set_color("font_accelerator_color", "PopupMenu", Color(0.7, 0.7, 0.7, 0.8));
+ 	theme->set_color("font_disabled_color", "PopupMenu", Color(0.4, 0.4, 0.4, 0.8));

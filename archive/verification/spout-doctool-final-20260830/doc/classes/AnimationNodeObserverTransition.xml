@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="AnimationNodeObserverTransition" inherits="AnimationNodeObserver" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<signals>
+		<signal name="state_finished">
+			<param index="0" name="state" type="String" />
+			<description>
+			</description>
+		</signal>
+		<signal name="state_started">
+			<param index="0" name="state" type="String" />
+			<description>
+			</description>
+		</signal>
+	</signals>
+</class>

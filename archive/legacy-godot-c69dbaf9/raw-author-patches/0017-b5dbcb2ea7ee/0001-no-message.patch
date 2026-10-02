@@ -1,0 +1,42 @@
+From b5dbcb2ea7eebef870c9efe2f3c475d9453cdc76 Mon Sep 17 00:00:00 2001
+From: vmjcv <vmjcv666@gmail.com>
+Date: Thu, 2 Nov 2023 22:27:58 +0800
+Subject: [PATCH] no message
+
+---
+ editor/editor_node.cpp | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/editor/editor_node.cpp b/editor/editor_node.cpp
+index 707c03a2ee7ad6789f3023e49eff5fd319ff045f..6fe23720fbe4445824639a4f347f67cf55c421ca 100644
+--- a/editor/editor_node.cpp
++++ b/editor/editor_node.cpp
+@@ -4032,8 +4032,9 @@ void EditorNode::update_diff_data_for_node(
+ 		update_diff_data_for_node(p_edited_scene, p_root, child, p_modification_table, p_addition_list);
+ 	}
+ }
++//
+ 
+-void EditorNode::open_request(const String &p_path, bool p_ignore_broken_deps, bool p_set_inherited, bool p_clear_errors, bool p_force_open_imported, bool p_silent_change_tab) {
++void EditorNode::open_request(const String &p_path) {
+ 	if (!opening_prev) {
+ 		List<String>::Element *prev_scene_item = previous_scenes.find(p_path);
+ 		if (prev_scene_item != nullptr) {
+@@ -4041,7 +4042,7 @@ void EditorNode::open_request(const String &p_path, bool p_ignore_broken_deps, b
+ 		}
+ 	}
+ 
+-	load_scene(p_path, p_ignore_broken_deps, p_set_inherited, p_clear_errors, p_force_open_imported, p_silent_change_tab); // As it will be opened in separate tab.
++	load_scene(p_path); // As it will be opened in separate tab.
+ }
+ 
+ bool EditorNode::has_previous_scenes() const {
+@@ -8077,8 +8078,6 @@ EditorNode::EditorNode() {
+ 	String exec = OS::get_singleton()->get_executable_path();
+ 	// Save editor executable path for third-party tools.
+ 	EditorSettings::get_singleton()->set_project_metadata("editor_metadata", "executable_path", exec);
+-
+-	surface_upgrade_tool = memnew(SurfaceUpgradeTool);
+ }
+ 
+ EditorNode::~EditorNode() {

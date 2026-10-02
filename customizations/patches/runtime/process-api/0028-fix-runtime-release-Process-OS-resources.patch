@@ -1,0 +1,402 @@
+From 69903a894c4fe3607fc46d14c13ac0c1099068e5 Mon Sep 17 00:00:00 2001
+From: aiaimimi0920 <153103332+aiaimimi0920@users.noreply.github.com>
+Date: Wed, 2 Sep 2026 01:01:36 +0800
+Subject: [PATCH] fix(runtime): release Process OS resources
+
+Close process and thread handles after exit and unregister Process-owned PIDs when the wrapper is released. This prevents per-child handle and process-map growth during long sessions.
+
+Godot-Patch-Topic: runtime.process-api
+---
+ core/io/process.cpp             |  15 ++++
+ core/io/process.h               |   2 +
+ core/os/os.h                    |   1 +
+ doc/classes/Process.xml         |   2 +-
+ drivers/unix/os_unix.cpp        |  21 +++++-
+ drivers/unix/os_unix.h          |   1 +
+ platform/windows/os_windows.cpp |  39 ++++++++--
+ platform/windows/os_windows.h   |   2 +
+ tests/core/io/test_process.cpp  | 127 ++++++++++++++++++++++++++++++++
+ 9 files changed, 198 insertions(+), 12 deletions(-)
+ create mode 100644 tests/core/io/test_process.cpp
+
+diff --git a/core/io/process.cpp b/core/io/process.cpp
+index a33f68c68c45bccfc40873c37c295c963ad6d45f..c2d20a7f6018f33c864a2ce50b68381550ca02e6 100644
+--- a/core/io/process.cpp
++++ b/core/io/process.cpp
+@@ -99,6 +99,21 @@ void Process::_flush_remainders_if_exited() const {
+ 	}
+ }
+ 
++Process::~Process() {
++	OS *os = OS::get_singleton();
++	if (os == nullptr || process_id <= 0) {
++		return;
++	}
++	bool is_running = os->is_process_running(process_id);
++	if (is_running) {
++		os->kill(process_id);
++		is_running = os->is_process_running(process_id);
++	}
++	if (!is_running) {
++		os->release_process(process_id);
++	}
++}
++
+ Ref<Process> Process::create(const String &p_path, const Vector<String> &p_arguments, const String &p_working_directory, bool p_open_stdin) {
+ 	List<String> arguments;
+ 	for (const String &argument : p_arguments) {
+diff --git a/core/io/process.h b/core/io/process.h
+index bc83d4a948e80ea8a27e465c28281b858e01c4fc..e2a070a0f496f4c1f0bfc3a836f00ca738599abe 100644
+--- a/core/io/process.h
++++ b/core/io/process.h
+@@ -57,6 +57,8 @@ protected:
+ 	static void _bind_methods();
+ 
+ public:
++	~Process();
++
+ 	static Ref<Process> create(const String &p_path, const Vector<String> &p_arguments = Vector<String>(), const String &p_working_directory = String(), bool p_open_stdin = false);
+ 
+ 	int get_available_stdout_lines() const;
+diff --git a/core/os/os.h b/core/os/os.h
+index 5a3105438aac1a0970e31758e1dd3110a1d23fd1..542b319156852b3ad500e20518c6386f38b17e02 100644
+--- a/core/os/os.h
++++ b/core/os/os.h
+@@ -221,6 +221,7 @@ public:
+ 	virtual int get_process_id() const;
+ 	virtual bool is_process_running(const ProcessID &p_pid) const = 0;
+ 	virtual int get_process_exit_code(const ProcessID &p_pid) const = 0;
++	virtual void release_process(const ProcessID &p_pid) {}
+ 	virtual void vibrate_handheld(int p_duration_ms = 500, float p_amplitude = -1.0) {}
+ 
+ 	virtual Error shell_open(const String &p_uri);
+diff --git a/doc/classes/Process.xml b/doc/classes/Process.xml
+index 2f3a769ad25316897210fd231471078da47fa97b..029de01cf7bc8540b75cfb4507fa6f12cd918205 100644
+--- a/doc/classes/Process.xml
++++ b/doc/classes/Process.xml
+@@ -4,7 +4,7 @@
+ 		Runs and controls a child process with redirected standard streams.
+ 	</brief_description>
+ 	<description>
+-		[Process] provides a non-blocking object wrapper around a child process. Create one with [method create], then poll and read its standard output and error lines. Standard input is writable only when [code]open_stdin[/code] is [code]true[/code].
++			[Process] provides a non-blocking object wrapper around a child process. Create one with [method create], then poll and read its standard output and error lines. Standard input is writable only when [code]open_stdin[/code] is [code]true[/code]. The child process is terminated when the last reference to this object is released.
+ 	</description>
+ 	<tutorials>
+ 	</tutorials>
+diff --git a/drivers/unix/os_unix.cpp b/drivers/unix/os_unix.cpp
+index 46508be07039a21d6d296d3dd26d858a7dc54ab6..5ce89f6b8a96f4723b10860aea369295478a290a 100644
+--- a/drivers/unix/os_unix.cpp
++++ b/drivers/unix/os_unix.cpp
+@@ -965,9 +965,19 @@ Error OS_Unix::create_process(const String &p_path, const List<String> &p_argume
+ Error OS_Unix::kill(const ProcessID &p_pid) {
+ 	int ret = ::kill(p_pid, SIGKILL);
+ 	if (!ret) {
+-		//avoid zombie process
+-		int st;
+-		_wait_for_pid_completion(p_pid, &st, 0);
++		// Avoid a zombie process and preserve a stable cached exit status.
++		int status = 0;
++		const int wait_result = _wait_for_pid_completion(p_pid, &status, 0);
++		if (wait_result == 0) {
++			status = WIFEXITED(status) ? WEXITSTATUS(status) : status;
++
++			MutexLock lock(process_map_mutex);
++			ProcessInfo *pi = process_map->getptr(p_pid);
++			if (pi) {
++				pi->is_running = false;
++				pi->exit_code = status;
++			}
++		}
+ 	}
+ 	return ret ? ERR_INVALID_PARAMETER : OK;
+ }
+@@ -993,6 +1003,11 @@ int OS_Unix::get_process_exit_code(const ProcessID &p_pid) const {
+ 	return exit_code;
+ }
+ 
++void OS_Unix::release_process(const ProcessID &p_pid) {
++	MutexLock lock(process_map_mutex);
++	process_map->erase(p_pid);
++}
++
+ String OS_Unix::get_locale() const {
+ 	if (!has_environment("LANG")) {
+ 		return "en";
+diff --git a/drivers/unix/os_unix.h b/drivers/unix/os_unix.h
+index 79580198fe0b349b84ea10937e9f2e0e0fb807a8..67a56187ff60de861aae6d67e42005c2ff94262a 100644
+--- a/drivers/unix/os_unix.h
++++ b/drivers/unix/os_unix.h
+@@ -126,6 +126,7 @@ public:
+ 	virtual int get_process_id() const override;
+ 	virtual bool is_process_running(const ProcessID &p_pid) const override;
+ 	virtual int get_process_exit_code(const ProcessID &p_pid) const override;
++	virtual void release_process(const ProcessID &p_pid) override;
+ 
+ 	virtual bool has_environment(const String &p_var) const override;
+ 	virtual String get_environment(const String &p_var) const override;
+diff --git a/platform/windows/os_windows.cpp b/platform/windows/os_windows.cpp
+index f6b5c769282d19a44a1f5a35b2c0db76b5ec2ede..294b3409b8fad3f6d99c3f387612a49131e0ad17 100644
+--- a/platform/windows/os_windows.cpp
++++ b/platform/windows/os_windows.cpp
+@@ -1606,13 +1606,11 @@ Error OS_Windows::kill(const ProcessID &p_pid) {
+ 	int ret = 0;
+ 	MutexLock lock(process_map_mutex);
+ 	if (process_map->has(p_pid)) {
+-		const PROCESS_INFORMATION pi = (*process_map)[p_pid].pi;
++		ProcessInfo &info = (*process_map)[p_pid];
++		const HANDLE process_handle = info.pi.hProcess;
++		ret = process_handle != nullptr ? TerminateProcess(process_handle, 0) : 0;
++		_close_process_handles(info);
+ 		process_map->erase(p_pid);
+-
+-		ret = TerminateProcess(pi.hProcess, 0);
+-
+-		CloseHandle(pi.hProcess);
+-		CloseHandle(pi.hThread);
+ 	} else {
+ 		HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, false, (DWORD)p_pid);
+ 		if (hProcess != nullptr) {
+@@ -1635,8 +1633,9 @@ bool OS_Windows::is_process_running(const ProcessID &p_pid) const {
+ 		return false;
+ 	}
+ 
+-	const ProcessInfo &info = (*process_map)[p_pid];
++	ProcessInfo &info = (*process_map)[p_pid];
+ 	if (!info.is_running) {
++		_close_process_handles(info);
+ 		return false;
+ 	}
+ 
+@@ -1649,6 +1648,7 @@ bool OS_Windows::is_process_running(const ProcessID &p_pid) const {
+ 	if (dw_exit_code != STILL_ACTIVE) {
+ 		info.is_running = false;
+ 		info.exit_code = dw_exit_code;
++		_close_process_handles(info);
+ 		return false;
+ 	}
+ 
+@@ -1661,8 +1661,9 @@ int OS_Windows::get_process_exit_code(const ProcessID &p_pid) const {
+ 		return -1;
+ 	}
+ 
+-	const ProcessInfo &info = (*process_map)[p_pid];
++	ProcessInfo &info = (*process_map)[p_pid];
+ 	if (!info.is_running) {
++		_close_process_handles(info);
+ 		return info.exit_code;
+ 	}
+ 
+@@ -1679,9 +1680,31 @@ int OS_Windows::get_process_exit_code(const ProcessID &p_pid) const {
+ 
+ 	info.is_running = false;
+ 	info.exit_code = dw_exit_code;
++	_close_process_handles(info);
+ 	return dw_exit_code;
+ }
+ 
++void OS_Windows::release_process(const ProcessID &p_pid) {
++	MutexLock lock(process_map_mutex);
++	ProcessInfo *info = process_map->getptr(p_pid);
++	if (info == nullptr) {
++		return;
++	}
++	_close_process_handles(*info);
++	process_map->erase(p_pid);
++}
++
++void OS_Windows::_close_process_handles(ProcessInfo &p_info) const {
++	if (p_info.pi.hProcess != nullptr && p_info.pi.hProcess != GetCurrentProcess()) {
++		CloseHandle(p_info.pi.hProcess);
++		p_info.pi.hProcess = nullptr;
++	}
++	if (p_info.pi.hThread != nullptr) {
++		CloseHandle(p_info.pi.hThread);
++		p_info.pi.hThread = nullptr;
++	}
++}
++
+ Error OS_Windows::set_cwd(const String &p_cwd) {
+ 	if (_wchdir((LPCWSTR)(p_cwd.utf16().get_data())) != 0) {
+ 		return ERR_CANT_OPEN;
+diff --git a/platform/windows/os_windows.h b/platform/windows/os_windows.h
+index 48b86e397539ef6ef33fcc226c526893215018fe..7f03ad7dc39d3558bea789b938bf6703990673eb 100644
+--- a/platform/windows/os_windows.h
++++ b/platform/windows/os_windows.h
+@@ -165,6 +165,7 @@ protected:
+ 	};
+ 	HashMap<ProcessID, ProcessInfo> *process_map = nullptr;
+ 	Mutex process_map_mutex;
++	void _close_process_handles(ProcessInfo &p_info) const;
+ 
+ public:
+ 	virtual void alert(const String &p_alert, const String &p_title = "ALERT!") override;
+@@ -207,6 +208,7 @@ public:
+ 	virtual int get_process_id() const override;
+ 	virtual bool is_process_running(const ProcessID &p_pid) const override;
+ 	virtual int get_process_exit_code(const ProcessID &p_pid) const override;
++	virtual void release_process(const ProcessID &p_pid) override;
+ 
+ 	virtual bool has_environment(const String &p_var) const override;
+ 	virtual String get_environment(const String &p_var) const override;
+diff --git a/tests/core/io/test_process.cpp b/tests/core/io/test_process.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..654d3f8414f5d5192a3bfde9d9435c8af4cd4fd0
+--- /dev/null
++++ b/tests/core/io/test_process.cpp
+@@ -0,0 +1,127 @@
++/**************************************************************************/
++/*  test_process.cpp                                                      */
++/**************************************************************************/
++/*                         This file is part of:                          */
++/*                             Godot Engine                               */
++/*                        https://godotengine.org                         */
++/**************************************************************************/
++/* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
++/* Copyright (c) 2007-2014 Juan Linietsky, Ariel Manzur.                  */
++/*                                                                        */
++/* Permission is hereby granted, free of charge, to any person obtaining  */
++/* a copy of this software and associated documentation files (the        */
++/* "Software"), to deal in the Software without restriction, including    */
++/* without limitation the rights to use, copy, modify, merge, publish,    */
++/* distribute, sublicense, and/or sell copies of the Software, and to     */
++/* permit persons to whom the Software is furnished to do so, subject to  */
++/* the following conditions:                                              */
++/*                                                                        */
++/* The above copyright notice and this permission notice shall be         */
++/* included in all copies or substantial portions of the Software.        */
++/*                                                                        */
++/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,        */
++/* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF     */
++/* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. */
++/* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY   */
++/* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,   */
++/* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE      */
++/* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
++/**************************************************************************/
++
++#include "tests/test_macros.h"
++
++TEST_FORCE_LINK(test_process)
++
++#include "core/io/process.h"
++#include "core/os/os.h"
++
++#ifdef WINDOWS_ENABLED
++#include <windows.h>
++#endif
++
++namespace TestProcess {
++
++static Ref<Process> create_test_process() {
++	Vector<String> arguments;
++#ifdef WINDOWS_ENABLED
++	arguments.push_back("/C");
++	arguments.push_back("echo process-out&1>&2 echo process-err&exit /B 7");
++	return Process::create("cmd.exe", arguments);
++#else
++	arguments.push_back("-c");
++	arguments.push_back("printf 'process-out\\n'; printf 'process-err\\n' >&2; exit 7");
++	return Process::create("/bin/sh", arguments);
++#endif
++}
++
++#ifdef WINDOWS_ENABLED
++static Ref<Process> create_sleeping_test_process() {
++	Vector<String> arguments;
++	arguments.push_back("-NoLogo");
++	arguments.push_back("-NoProfile");
++	arguments.push_back("-NonInteractive");
++	arguments.push_back("-Command");
++	arguments.push_back("Start-Sleep -Seconds 30");
++	return Process::create("powershell.exe", arguments);
++}
++#endif
++
++static int wait_for_exit(const Ref<Process> &p_process) {
++	const uint64_t deadline = OS::get_singleton()->get_ticks_usec() + 10'000'000;
++	int exit_status = -1;
++	while (OS::get_singleton()->get_ticks_usec() < deadline) {
++		exit_status = p_process->get_exit_status();
++		if (exit_status != -1) {
++			break;
++		}
++		OS::get_singleton()->delay_usec(1'000);
++	}
++	return exit_status;
++}
++
++TEST_CASE("[Process] Captures output and exit status") {
++	Ref<Process> process = create_test_process();
++	REQUIRE(process.is_valid());
++	CHECK(wait_for_exit(process) == 7);
++	CHECK(process->get_available_stdout_lines() == 1);
++	CHECK(process->get_stdout_line() == "process-out");
++	CHECK(process->get_available_stderr_lines() == 1);
++	CHECK(process->get_stderr_line() == "process-err");
++	CHECK(process->get_exit_status() == 7);
++}
++
++#ifdef WINDOWS_ENABLED
++TEST_CASE("[Process] Releases Windows child process handles") {
++	DWORD handles_before = 0;
++	REQUIRE(GetProcessHandleCount(GetCurrentProcess(), &handles_before));
++
++	for (int i = 0; i < 32; i++) {
++		Ref<Process> process = create_test_process();
++		REQUIRE(process.is_valid());
++		CHECK(wait_for_exit(process) == 7);
++		process.unref();
++	}
++
++	DWORD handles_after = 0;
++	REQUIRE(GetProcessHandleCount(GetCurrentProcess(), &handles_after));
++	CHECK_MESSAGE(handles_after <= handles_before + 4, "Completed Process instances must not retain Windows handles.");
++}
++
++TEST_CASE("[Process] Terminates a live Windows child on last reference") {
++	Ref<Process> process = create_sleeping_test_process();
++	REQUIRE(process.is_valid());
++	const ProcessID process_id = process->get_id();
++	REQUIRE(OS::get_singleton()->is_process_running(process_id));
++
++	process.unref();
++
++	HANDLE process_handle = OpenProcess(SYNCHRONIZE, false, static_cast<DWORD>(process_id));
++	if (process_handle != nullptr) {
++		CHECK(WaitForSingleObject(process_handle, 5'000) == WAIT_OBJECT_0);
++		CloseHandle(process_handle);
++	}
++	CHECK_FALSE(OS::get_singleton()->is_process_running(process_id));
++}
++#endif
++
++} // namespace TestProcess
+
+base-commit: 5ec4857b340b6284a18b49b2eda462bd250f219a
+prerequisite-patch-id: b38459b409a3326aed65d2433e1341638171f884
+prerequisite-patch-id: bdb0fe8d6ba7fff1b900ae33d9bec552ea61724c
+prerequisite-patch-id: 4dcdddc73066f768cb97c56444abacb21bda061c
+prerequisite-patch-id: 1f2fbc55f35da3e943dcbaeeb3c9a6d798621bf3
+prerequisite-patch-id: 4dd1cec6888d5160c85be2072b9e5dd05411d007
+prerequisite-patch-id: 60110ae09a2d09796ad65e339ee0b5abc2ce541a
+prerequisite-patch-id: bdb0025d4207a7cf0e1466ca96b2824d238b3caf
+prerequisite-patch-id: 8c55a8201fec417bc2629b903ea2d630aedab1d8
+prerequisite-patch-id: 9dfaaac9d4a47edf9d1eccce8fa66b69e674a911
+prerequisite-patch-id: 17fa223ec74d20c7792e45826a4f0d8ecd7f85d7
+prerequisite-patch-id: 0fb9ef780b3f10a7e82968e44defda508734fa91
+prerequisite-patch-id: 2af824bf187ff13746bd620b1032f57d166c0114
+prerequisite-patch-id: dc8aa901272b27086c9045fc0b9335986d3a8128
+prerequisite-patch-id: 0ce30d5045f596dbc6bf72cbcd9bb16472513013
+prerequisite-patch-id: 50d820c0fb3ac27ddef8f76b133637558f8bcc8e
+prerequisite-patch-id: 69b2baab747aed9362c0ca4c161fc02e5970db44
+prerequisite-patch-id: 41b4bd5af73a2a33c2e64048b72e0d4f3c664f19
+prerequisite-patch-id: 67083f15ed3c32a690794c698729f213a5245e20
+prerequisite-patch-id: 14ad80fb2ee81b00b9194186196bba9d350bc28e
+prerequisite-patch-id: 7d791289954a2144845e9b843451c6c9717daf6a
+prerequisite-patch-id: d5e37dc01427a0639bba6123e6afee995d62ef4a
+prerequisite-patch-id: fa2f2bf9521e391400e0151a1a290fca10a3f124
+prerequisite-patch-id: 2e5d11daca8780d00fe2d10677ac0c26098fae5c
+prerequisite-patch-id: 06b6906be778d545881f82f2431b2204eb052a6c
+prerequisite-patch-id: 6f98206b25188cf56bc55e3fbad4fff5da6d6d4e
+prerequisite-patch-id: 9c598b9a701c8d9fb585255c239a2f64c998f3a0
+prerequisite-patch-id: 148113e476c059293ce209839c317a4945cc1899

@@ -1,0 +1,118 @@
+From 38b6ddee72e16d9d646057ee6ba533c122afc47c Mon Sep 17 00:00:00 2001
+From: aiaimimi0920 <153103332+aiaimimi0920@users.noreply.github.com>
+Date: Wed, 23 Sep 2026 20:04:05 -0700
+Subject: [PATCH] fix(theme): keep editor dynamic metadata available
+
+Godot-Patch-Topic: ui.dynamic-color-theme
+---
+ scene/gui/control.cpp         | 2 +-
+ scene/main/window.cpp         | 2 +-
+ scene/theme/default_theme.cpp | 5 +----
+ 3 files changed, 3 insertions(+), 6 deletions(-)
+
+diff --git a/scene/gui/control.cpp b/scene/gui/control.cpp
+index 53f317dd226ef361c2307fd99ff1d457f03b4993..0f64a86ceeb934e4e288484ea3d15d44271d27d6 100644
+--- a/scene/gui/control.cpp
++++ b/scene/gui/control.cpp
+@@ -3973,7 +3973,7 @@ Color Control::get_theme_color(const StringName &p_name, const StringName &p_the
+ 		WARN_PRINT_ONCE(vformat("Attempting to access theme items too early in %s; prefer NOTIFICATION_POSTINITIALIZE and NOTIFICATION_THEME_CHANGED", get_description()));
+ 	}
+ 	auto resolve_dynamic_color = [&](ColorRole p_color_role, Color &r_color) {
+-		if (p_color_role == ColorRole::STATIC) {
++		if (p_color_role == ColorRole::STATIC || Engine::get_singleton()->is_editor_hint()) {
+ 			return false;
+ 		}
+ 
+diff --git a/scene/main/window.cpp b/scene/main/window.cpp
+index cc446f5d927f3abcb7b326d8739bd37a6065f1bc..34654ae26437f0d6ade7481d1553f71f7c6563a0 100644
+--- a/scene/main/window.cpp
++++ b/scene/main/window.cpp
+@@ -2936,7 +2936,7 @@ Color Window::get_theme_color(const StringName &p_name, const StringName &p_them
+ 		WARN_PRINT_ONCE(vformat("Attempting to access theme items too early in %s; prefer NOTIFICATION_POSTINITIALIZE and NOTIFICATION_THEME_CHANGED", get_description()));
+ 	}
+ 	auto resolve_dynamic_color = [&](ColorRole p_color_role, Color &r_color) {
+-		if (p_color_role == ColorRole::STATIC) {
++		if (p_color_role == ColorRole::STATIC || Engine::get_singleton()->is_editor_hint()) {
+ 			return false;
+ 		}
+ 
+diff --git a/scene/theme/default_theme.cpp b/scene/theme/default_theme.cpp
+index 3a47d0284b11ada3a97b1e1e6b15678cad21a5b4..3dc13ebb24da5512b0e90ca7e8b6a43a78f196e9 100644
+--- a/scene/theme/default_theme.cpp
++++ b/scene/theme/default_theme.cpp
+@@ -30,7 +30,6 @@
+ 
+ #include "default_theme.h"
+ 
+-#include "core/config/engine.h"
+ #include "core/io/image.h"
+ #include "scene/resources/dpi_texture.h"
+ #include "scene/resources/font.h"
+@@ -1441,9 +1440,7 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 	theme->set_icon("resizer", "GraphEditMinimap", icons["resizer_nw"]);
+ 	theme->set_color("resizer_color", "GraphEditMinimap", Color(1, 1, 1, 0.85));
+ 
+-	if (!Engine::get_singleton()->is_editor_hint()) {
+-		fill_dynamic_color_metadata(theme, p_color_scheme);
+-	}
++	fill_dynamic_color_metadata(theme, p_color_scheme);
+ 	fill_dynamic_stylebox_metadata(theme);
+ 
+ 	// Theme
+
+base-commit: 5ec4857b340b6284a18b49b2eda462bd250f219a
+prerequisite-patch-id: b38459b409a3326aed65d2433e1341638171f884
+prerequisite-patch-id: bdb0fe8d6ba7fff1b900ae33d9bec552ea61724c
+prerequisite-patch-id: 4dcdddc73066f768cb97c56444abacb21bda061c
+prerequisite-patch-id: 1f2fbc55f35da3e943dcbaeeb3c9a6d798621bf3
+prerequisite-patch-id: 4dd1cec6888d5160c85be2072b9e5dd05411d007
+prerequisite-patch-id: 60110ae09a2d09796ad65e339ee0b5abc2ce541a
+prerequisite-patch-id: bdb0025d4207a7cf0e1466ca96b2824d238b3caf
+prerequisite-patch-id: 8c55a8201fec417bc2629b903ea2d630aedab1d8
+prerequisite-patch-id: 9dfaaac9d4a47edf9d1eccce8fa66b69e674a911
+prerequisite-patch-id: 17fa223ec74d20c7792e45826a4f0d8ecd7f85d7
+prerequisite-patch-id: 0fb9ef780b3f10a7e82968e44defda508734fa91
+prerequisite-patch-id: 2af824bf187ff13746bd620b1032f57d166c0114
+prerequisite-patch-id: dc8aa901272b27086c9045fc0b9335986d3a8128
+prerequisite-patch-id: 0ce30d5045f596dbc6bf72cbcd9bb16472513013
+prerequisite-patch-id: 50d820c0fb3ac27ddef8f76b133637558f8bcc8e
+prerequisite-patch-id: 69b2baab747aed9362c0ca4c161fc02e5970db44
+prerequisite-patch-id: 41b4bd5af73a2a33c2e64048b72e0d4f3c664f19
+prerequisite-patch-id: 67083f15ed3c32a690794c698729f213a5245e20
+prerequisite-patch-id: 14ad80fb2ee81b00b9194186196bba9d350bc28e
+prerequisite-patch-id: 7d791289954a2144845e9b843451c6c9717daf6a
+prerequisite-patch-id: d5e37dc01427a0639bba6123e6afee995d62ef4a
+prerequisite-patch-id: fa2f2bf9521e391400e0151a1a290fca10a3f124
+prerequisite-patch-id: 2e5d11daca8780d00fe2d10677ac0c26098fae5c
+prerequisite-patch-id: 06b6906be778d545881f82f2431b2204eb052a6c
+prerequisite-patch-id: 6f98206b25188cf56bc55e3fbad4fff5da6d6d4e
+prerequisite-patch-id: 9c598b9a701c8d9fb585255c239a2f64c998f3a0
+prerequisite-patch-id: 148113e476c059293ce209839c317a4945cc1899
+prerequisite-patch-id: 68f8ac60d0f60d3ac0bb1fe23aa79abd660c2009
+prerequisite-patch-id: 470ac52175750bf3eadc5e0286a61411eb3f6ebf
+prerequisite-patch-id: 075c9922d2a9fadb91e8c3402b4e7d2f7bf7f8a1
+prerequisite-patch-id: 3b6bc3f484f1654f8bca99626ff2507a0e17a3ca
+prerequisite-patch-id: d4fed2df8ba748ad28488271c1b2c42cc88f8c17
+prerequisite-patch-id: 6a2c61a480ce572ae1c3692257cf60463d4d3cf9
+prerequisite-patch-id: c0be036c6582ae10a9c24249190be04a37c8392a
+prerequisite-patch-id: 02e0656ba365a7fb2cad0c69ca9ecbcf05ea35f1
+prerequisite-patch-id: 6b9471813c5552c60fce6f086172833038fed2ae
+prerequisite-patch-id: 9a80815a3f443dabb008cef85de0783e1530a9c9
+prerequisite-patch-id: 6cbac35a7fd4756f09c6b54a683203752361d1b8
+prerequisite-patch-id: 3f83b289634f3f0c6efc0f2104447c35fa4e6999
+prerequisite-patch-id: 7fa76bc0dcf10c37ddce6dfe863cf8a15db1a4e3
+prerequisite-patch-id: 59285ed00363fbf066365f96211e649c4e9e8707
+prerequisite-patch-id: 7fef71675ff2ac560045ba78cb2e69d3d05bf3da
+prerequisite-patch-id: cb3f5d7d6c2d28699fd25638d57711baff02bf35
+prerequisite-patch-id: 77196bacb24fd150ffc6b82969c4d274c01d6f9a
+prerequisite-patch-id: e9942d4f02f72a92af555c51c615991adb95fb8e
+prerequisite-patch-id: d4228c26ec2e9e69226ab4b8a1adfe40be71e2e2
+prerequisite-patch-id: 433f891f57c7f1058f239694b9e5df4630dfb450
+prerequisite-patch-id: 395a24a434c14e0a86c2593175e2c4b2f83d0a15
+prerequisite-patch-id: f7b6b4fb0db3aaab3b76e3536517b536e9470ae5
+prerequisite-patch-id: 95f67e1b177da895271b995d9c66eec294eee6ed
+prerequisite-patch-id: 69e4d9487e53c02a4cf88ebf20b6a44293989b81
+prerequisite-patch-id: 162768f49e58e449b45c1a0d2dfe3024495b7cb8
+prerequisite-patch-id: 5c94f76c6efe7aa74007ec38c35ac067a423f7c5
+prerequisite-patch-id: 7db2bfee60272d5ee87fc909c0135d071c5c92ea
+prerequisite-patch-id: 5363b08331c6956c28aaf51803c4f4b36621e80a

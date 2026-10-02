@@ -1,0 +1,75 @@
+From 3f0e0ff50a9f730db0bc86df1064b4ca2ad35aeb Mon Sep 17 00:00:00 2001
+From: aiaimimi0920 <153103332+aiaimimi0920@users.noreply.github.com>
+Date: Sun, 3 Mar 2024 05:48:45 +0800
+Subject: [PATCH] #cache code 1
+
+---
+ core/variant/variant.cpp | 10 ++++++++++
+ core/variant/variant.h   |  5 +++++
+ 2 files changed, 15 insertions(+)
+
+diff --git a/core/variant/variant.cpp b/core/variant/variant.cpp
+index 4c0212075b0d7e80c2a3e20bb71566f6ecae4701..2c17044ed90f5a5fbe99bd71e7644df980a92b7c 100644
+--- a/core/variant/variant.cpp
++++ b/core/variant/variant.cpp
+@@ -2404,6 +2404,11 @@ Variant::operator Orientation() const {
+ 	return (Orientation) operator int();
+ }
+ 
++
++Variant::operator ColorRole() const {
++	return (ColorRole) operator int();
++}
++
+ Variant::operator IPAddress() const {
+ 	if (type == PACKED_FLOAT32_ARRAY || type == PACKED_INT32_ARRAY || type == PACKED_FLOAT64_ARRAY || type == PACKED_INT64_ARRAY || type == PACKED_BYTE_ARRAY) {
+ 		Vector<int> addr = operator Vector<int>();
+@@ -2593,6 +2598,11 @@ Variant::Variant(const Color &p_color) {
+ 	memnew_placement(_data._mem, Color(p_color));
+ }
+ 
++// Variant::Variant(const ColorRole &p_color_role) {
++// 	type = COLOR;
++// 	memnew_placement(_data._mem, ColorRole(p_color_role));
++// }
++
+ Variant::Variant(const NodePath &p_node_path) {
+ 	type = NODE_PATH;
+ 	memnew_placement(_data._mem, NodePath(p_node_path));
+diff --git a/core/variant/variant.h b/core/variant/variant.h
+index 17e701cf663e335a462bc6a433ad241b76f73791..9e6e01853abac80b7243f924e0bff85b071c8083 100644
+--- a/core/variant/variant.h
++++ b/core/variant/variant.h
+@@ -60,6 +60,8 @@
+ #include "core/variant/callable.h"
+ #include "core/variant/dictionary.h"
+ 
++#include "modules/color_scheme/color_role.h"
++
+ class Object;
+ 
+ struct PropertyInfo;
+@@ -392,6 +394,7 @@ public:
+ 	operator Projection() const;
+ 
+ 	operator Color() const;
++	operator ColorRole() const;
+ 	operator NodePath() const;
+ 	operator ::RID() const;
+ 
+@@ -464,6 +467,7 @@ public:
+ 	Variant(const Transform3D &p_transform);
+ 	Variant(const Projection &p_projection);
+ 	Variant(const Color &p_color);
++	// Variant(const ColorRole &p_color_role);
+ 	Variant(const NodePath &p_node_path);
+ 	Variant(const ::RID &p_rid);
+ 	Variant(const Object *p_object);
+@@ -503,6 +507,7 @@ public:
+ 	VARIANT_ENUM_CLASS_CONSTRUCTOR(Key)
+ 	VARIANT_ENUM_CLASS_CONSTRUCTOR(MIDIMessage)
+ 	VARIANT_ENUM_CLASS_CONSTRUCTOR(MouseButton)
++	VARIANT_ENUM_CLASS_CONSTRUCTOR(ColorRole)
+ 
+ #undef VARIANT_ENUM_CLASS_CONSTRUCTOR
+ 

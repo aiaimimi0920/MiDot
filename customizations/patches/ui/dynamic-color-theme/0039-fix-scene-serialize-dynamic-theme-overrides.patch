@@ -1,0 +1,981 @@
+From c6963d88bc0db22f904213548a886711494d6579 Mon Sep 17 00:00:00 2001
+From: aiaimimi0920 <153103332+aiaimimi0920@users.noreply.github.com>
+Date: Wed, 23 Sep 2026 02:37:44 -0700
+Subject: [PATCH] fix(scene): serialize dynamic theme overrides
+
+Godot-Patch-Topic: ui.dynamic-color-theme
+---
+ editor/inspector/editor_inspector.cpp |   7 +
+ scene/gui/control.cpp                 | 105 +++++++++---
+ scene/main/window.cpp                 | 167 +++++++++++++++-----
+ tests/scene/test_control.cpp          | 219 ++++++++++++++++++++++++++
+ tests/scene/test_window.cpp           | 214 +++++++++++++++++++++++++
+ 5 files changed, 648 insertions(+), 64 deletions(-)
+
+diff --git a/editor/inspector/editor_inspector.cpp b/editor/inspector/editor_inspector.cpp
+index 30176faa3205dd955db706941ccd6a627fb3530c..86f654c25e7958d03ac25cda05162200550cddde 100644
+--- a/editor/inspector/editor_inspector.cpp
++++ b/editor/inspector/editor_inspector.cpp
+@@ -5926,8 +5926,15 @@ void EditorInspector::_property_checked(const String &p_path, bool p_checked) {
+ 		} else {
+ 			Variant to_create;
+ 			Control *control = Object::cast_to<Control>(object);
++			Window *window = Object::cast_to<Window>(object);
+ 			if (control && p_path.begins_with("theme_override_")) {
+ 				to_create = control->get_used_theme_item(p_path);
++			} else if (window && p_path.begins_with("theme_override_color_schemes/")) {
++				to_create = window->get_theme_color_scheme(p_path.get_slicec('/', 1));
++			} else if (window && p_path.begins_with("theme_override_color_roles/")) {
++				to_create = static_cast<int64_t>(window->get_theme_color_role(p_path.get_slicec('/', 1)));
++			} else if (window && p_path.begins_with("theme_override_colors/")) {
++				to_create = window->get_theme_color(p_path.get_slicec('/', 1));
+ 			} else {
+ 				List<PropertyInfo> pinfo;
+ 				object->get_property_list(&pinfo);
+diff --git a/scene/gui/control.cpp b/scene/gui/control.cpp
+index 08a3cc4c59ca3249f2fb63391202a1934beee3de..cca6128ca679fdf7c3242d3295200b9724d9b89a 100644
+--- a/scene/gui/control.cpp
++++ b/scene/gui/control.cpp
+@@ -497,6 +497,55 @@ void Control::_get_property_list(List<PropertyInfo> *p_list) const {
+ 	ERR_MAIN_THREAD_GUARD;
+ 	List<ThemeDB::ThemeItemBind> theme_items;
+ 	ThemeDB::get_singleton()->get_class_items(get_class_name(), &theme_items, true);
++	HashSet<StringName> added_properties;
++	auto add_property = [&](const PropertyInfo &p_property) {
++		if (!added_properties.has(p_property.name)) {
++			added_properties.insert(p_property.name);
++			p_list->push_back(p_property);
++		}
++	};
++	auto add_color_property = [&](const StringName &p_name) {
++		uint32_t usage = PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_CHECKABLE;
++		if (data.theme_color_override.has(p_name)) {
++			usage |= PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED;
++		}
++		add_property(PropertyInfo(Variant::COLOR, PNAME("theme_override_colors") + String("/") + p_name, PROPERTY_HINT_NONE, "", usage));
++	};
++	auto add_color_role_property = [&](const StringName &p_name) {
++		uint32_t usage = PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_CHECKABLE;
++		if (data.theme_color_role_override.has(p_name)) {
++			usage |= PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED;
++		}
++		add_property(PropertyInfo(Variant::INT, PNAME("theme_override_color_roles") + String("/") + p_name, PROPERTY_HINT_ENUM, color_role_hint, usage));
++	};
++	auto add_color_scheme_property = [&](const StringName &p_name) {
++		uint32_t usage = PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_CHECKABLE;
++		if (data.theme_color_scheme_override.has(p_name)) {
++			usage |= PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED;
++		}
++		add_property(PropertyInfo(Variant::OBJECT, PNAME("theme_override_color_schemes") + String("/") + p_name, PROPERTY_HINT_RESOURCE_TYPE, ColorScheme::get_class_static(), usage));
++	};
++	auto add_dynamic_color_properties = [&](const StringName &p_name) {
++		add_color_property(p_name);
++		add_color_role_property(String(p_name) + "_role");
++		add_color_scheme_property(String(p_name) + "_scheme");
++		if (!String(p_name).ends_with("_scale")) {
++			const StringName scale_name = String(p_name) + "_scale";
++			add_color_property(scale_name);
++			add_color_role_property(String(scale_name) + "_role");
++			add_color_scheme_property(String(scale_name) + "_scheme");
++		}
++	};
++	auto add_stylebox_property = [&](const StringName &p_name) {
++		uint32_t usage = PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_CHECKABLE;
++		if (data.theme_style_override.has(p_name)) {
++			usage |= PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED;
++		}
++		add_property(PropertyInfo(Variant::OBJECT, PNAME("theme_override_styles") + String("/") + p_name, PROPERTY_HINT_RESOURCE_TYPE, StyleBox::get_class_static(), usage));
++	};
++	auto add_stylebox_scheme_property = [&](const StringName &p_name) {
++		add_color_scheme_property(String(p_name) + "_scheme");
++	};
+ 
+ 	p_list->push_back(PropertyInfo(Variant::NIL, GNAME("Theme Overrides", "theme_override_"), PROPERTY_HINT_NONE, "theme_override_", PROPERTY_USAGE_GROUP));
+ 
+@@ -509,73 +558,77 @@ void Control::_get_property_list(List<PropertyInfo> *p_list) const {
+ 
+ 		switch (E.data_type) {
+ 			case Theme::DATA_TYPE_COLOR: {
+-				if (data.theme_color_override.has(E.item_name)) {
+-					usage |= PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED;
+-				}
+-				p_list->push_back(PropertyInfo(Variant::COLOR, PNAME("theme_override_colors") + String("/") + E.item_name, PROPERTY_HINT_NONE, "", usage));
++				add_dynamic_color_properties(E.item_name);
+ 			} break;
+ 
+ 			case Theme::DATA_TYPE_COLOR_ROLE: {
+-				if (data.theme_color_role_override.has(E.item_name)) {
+-					usage |= PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED;
+-				}
+-				p_list->push_back(PropertyInfo(Variant::INT, PNAME("theme_override_color_roles") + String("/") + E.item_name, PROPERTY_HINT_ENUM, color_role_hint, usage));
++				add_color_role_property(E.item_name);
+ 			} break;
+ 
+ 			case Theme::DATA_TYPE_COLOR_SCHEME: {
+-				if (data.theme_color_scheme_override.has(E.item_name)) {
+-					usage |= PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED;
+-				}
+-				p_list->push_back(PropertyInfo(Variant::OBJECT, PNAME("theme_override_color_schemes") + String("/") + E.item_name, PROPERTY_HINT_RESOURCE_TYPE, ColorScheme::get_class_static(), usage));
++				add_color_scheme_property(E.item_name);
+ 			} break;
+ 
+ 			case Theme::DATA_TYPE_CONSTANT: {
+ 				if (data.theme_constant_override.has(E.item_name)) {
+ 					usage |= PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED;
+ 				}
+-				p_list->push_back(PropertyInfo(Variant::INT, PNAME("theme_override_constants") + String("/") + E.item_name, PROPERTY_HINT_RANGE, "-16384,16384", usage));
++				add_property(PropertyInfo(Variant::INT, PNAME("theme_override_constants") + String("/") + E.item_name, PROPERTY_HINT_RANGE, "-16384,16384", usage));
+ 			} break;
+ 
+ 			case Theme::DATA_TYPE_FONT: {
+ 				if (data.theme_font_override.has(E.item_name)) {
+ 					usage |= PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED;
+ 				}
+-				p_list->push_back(PropertyInfo(Variant::OBJECT, PNAME("theme_override_fonts") + String("/") + E.item_name, PROPERTY_HINT_RESOURCE_TYPE, Font::get_class_static(), usage));
++				add_property(PropertyInfo(Variant::OBJECT, PNAME("theme_override_fonts") + String("/") + E.item_name, PROPERTY_HINT_RESOURCE_TYPE, Font::get_class_static(), usage));
+ 			} break;
+ 
+ 			case Theme::DATA_TYPE_FONT_SIZE: {
+ 				if (data.theme_font_size_override.has(E.item_name)) {
+ 					usage |= PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED;
+ 				}
+-				p_list->push_back(PropertyInfo(Variant::INT, PNAME("theme_override_font_sizes") + String("/") + E.item_name, PROPERTY_HINT_RANGE, "1,256,1,or_greater,suffix:px", usage));
++				add_property(PropertyInfo(Variant::INT, PNAME("theme_override_font_sizes") + String("/") + E.item_name, PROPERTY_HINT_RANGE, "1,256,1,or_greater,suffix:px", usage));
+ 			} break;
+ 
+ 			case Theme::DATA_TYPE_ICON: {
+ 				if (data.theme_icon_override.has(E.item_name)) {
+ 					usage |= PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED;
+ 				}
+-				p_list->push_back(PropertyInfo(Variant::OBJECT, PNAME("theme_override_icons") + String("/") + E.item_name, PROPERTY_HINT_RESOURCE_TYPE, Texture2D::get_class_static(), usage));
++				add_property(PropertyInfo(Variant::OBJECT, PNAME("theme_override_icons") + String("/") + E.item_name, PROPERTY_HINT_RESOURCE_TYPE, Texture2D::get_class_static(), usage));
+ 			} break;
+ 
+ 			case Theme::DATA_TYPE_STYLEBOX: {
+-				if (data.theme_style_override.has(E.item_name)) {
++				add_stylebox_property(E.item_name);
++				add_stylebox_scheme_property(E.item_name);
++			} break;
++
++			case Theme::DATA_TYPE_STRING: {
++				if (data.theme_string_override.has(E.item_name)) {
+ 					usage |= PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED;
+ 				}
+-				p_list->push_back(PropertyInfo(Variant::OBJECT, PNAME("theme_override_styles") + String("/") + E.item_name, PROPERTY_HINT_RESOURCE_TYPE, StyleBox::get_class_static(), usage));
+-				} break;
+-
+-				case Theme::DATA_TYPE_STRING: {
+-					if (data.theme_string_override.has(E.item_name)) {
+-						usage |= PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED;
+-					}
+-					p_list->push_back(PropertyInfo(Variant::STRING, PNAME("theme_override_strings") + String("/") + E.item_name, PROPERTY_HINT_NONE, "", usage));
+-				} break;
++				add_property(PropertyInfo(Variant::STRING, PNAME("theme_override_strings") + String("/") + E.item_name, PROPERTY_HINT_NONE, "", usage));
++			} break;
+ 
+ 			default: {
+ 				// Silences warning.
+ 			} break;
+ 		}
+ 	}
++
++	for (const KeyValue<StringName, Color> &E : data.theme_color_override) {
++		add_dynamic_color_properties(E.key);
++	}
++	for (const KeyValue<StringName, ColorRole> &E : data.theme_color_role_override) {
++		add_color_role_property(E.key);
++	}
++	for (const KeyValue<StringName, Ref<ColorScheme>> &E : data.theme_color_scheme_override) {
++		add_color_scheme_property(E.key);
++	}
++	for (const KeyValue<StringName, Ref<StyleBox>> &E : data.theme_style_override) {
++		add_stylebox_property(E.key);
++		add_stylebox_scheme_property(E.key);
++	}
++	add_color_scheme_property(SNAME("default_color_scheme"));
+ }
+ 
+ void Control::_validate_property(PropertyInfo &p_property) const {
+diff --git a/scene/main/window.cpp b/scene/main/window.cpp
+index 0b62a78e3eb728a1e0be6d35d1f56b84833f44b4..7a7fd2e513525597746c730997ca097916715321 100644
+--- a/scene/main/window.cpp
++++ b/scene/main/window.cpp
+@@ -203,117 +203,208 @@ void Window::_get_property_list(List<PropertyInfo> *p_list) const {
+ 	ERR_READ_THREAD_GUARD;
+ 
+ 	Ref<Theme> default_theme = ThemeDB::get_singleton()->get_default_theme();
++	Vector<StringName> theme_types;
++	StringName class_name = get_class_name();
++	while (class_name != StringName()) {
++		theme_types.push_back(class_name);
++		class_name = ClassDB::get_parent_class_nocheck(class_name);
++	}
++	HashSet<StringName> added_properties;
++	auto add_property = [&](const PropertyInfo &p_property) {
++		if (!added_properties.has(p_property.name)) {
++			added_properties.insert(p_property.name);
++			p_list->push_back(p_property);
++		}
++	};
++	auto add_color_property = [&](const StringName &p_name) {
++		uint32_t usage = PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_CHECKABLE;
++		if (theme_color_override.has(p_name)) {
++			usage |= PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED;
++		}
++		add_property(PropertyInfo(Variant::COLOR, PNAME("theme_override_colors") + String("/") + p_name, PROPERTY_HINT_NONE, "", usage));
++	};
++	auto add_color_role_property = [&](const StringName &p_name) {
++		uint32_t usage = PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_CHECKABLE;
++		if (theme_color_role_override.has(p_name)) {
++			usage |= PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED;
++		}
++		add_property(PropertyInfo(Variant::INT, PNAME("theme_override_color_roles") + String("/") + p_name, PROPERTY_HINT_ENUM, color_role_hint, usage));
++	};
++	auto add_color_scheme_property = [&](const StringName &p_name) {
++		uint32_t usage = PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_CHECKABLE;
++		if (theme_color_scheme_override.has(p_name)) {
++			usage |= PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED;
++		}
++		add_property(PropertyInfo(Variant::OBJECT, PNAME("theme_override_color_schemes") + String("/") + p_name, PROPERTY_HINT_RESOURCE_TYPE, ColorScheme::get_class_static(), usage));
++	};
++	auto add_dynamic_color_properties = [&](const StringName &p_name) {
++		add_color_property(p_name);
++		add_color_role_property(String(p_name) + "_role");
++		add_color_scheme_property(String(p_name) + "_scheme");
++		if (!String(p_name).ends_with("_scale")) {
++			const StringName scale_name = String(p_name) + "_scale";
++			add_color_property(scale_name);
++			add_color_role_property(String(scale_name) + "_role");
++			add_color_scheme_property(String(scale_name) + "_scheme");
++		}
++	};
++	auto add_stylebox_property = [&](const StringName &p_name) {
++		uint32_t usage = PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_CHECKABLE;
++		if (theme_style_override.has(p_name)) {
++			usage |= PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED;
++		}
++		add_property(PropertyInfo(Variant::OBJECT, PNAME("theme_override_styles") + String("/") + p_name, PROPERTY_HINT_RESOURCE_TYPE, StyleBox::get_class_static(), usage));
++	};
++	auto add_default_theme_items = [&](Theme::DataType p_data_type, List<StringName> *r_names) {
++		HashSet<StringName> added_names;
++		for (const StringName &theme_type : theme_types) {
++			List<StringName> type_names;
++			switch (p_data_type) {
++				case Theme::DATA_TYPE_COLOR: {
++					default_theme->get_color_list(theme_type, &type_names);
++				} break;
++				case Theme::DATA_TYPE_CONSTANT: {
++					default_theme->get_constant_list(theme_type, &type_names);
++				} break;
++				case Theme::DATA_TYPE_FONT: {
++					default_theme->get_font_list(theme_type, &type_names);
++				} break;
++				case Theme::DATA_TYPE_FONT_SIZE: {
++					default_theme->get_font_size_list(theme_type, &type_names);
++				} break;
++				case Theme::DATA_TYPE_ICON: {
++					default_theme->get_icon_list(theme_type, &type_names);
++				} break;
++				case Theme::DATA_TYPE_STYLEBOX: {
++					default_theme->get_stylebox_list(theme_type, &type_names);
++				} break;
++				case Theme::DATA_TYPE_COLOR_ROLE: {
++					default_theme->get_color_role_list(theme_type, &type_names);
++				} break;
++				case Theme::DATA_TYPE_COLOR_SCHEME: {
++					default_theme->get_color_scheme_list(theme_type, &type_names);
++				} break;
++				case Theme::DATA_TYPE_STRING: {
++					default_theme->get_string_list(theme_type, &type_names);
++				} break;
++				default: {
++				} break;
++			}
++			for (const StringName &name : type_names) {
++				if (!added_names.has(name)) {
++					added_names.insert(name);
++					r_names->push_back(name);
++				}
++			}
++		}
++	};
+ 
+ 	p_list->push_back(PropertyInfo(Variant::NIL, GNAME("Theme Overrides", "theme_override_"), PROPERTY_HINT_NONE, "theme_override_", PROPERTY_USAGE_GROUP));
+ 
+ 	{
+ 		List<StringName> names;
+-		default_theme->get_color_list(get_class_name(), &names);
++		add_default_theme_items(Theme::DATA_TYPE_COLOR, &names);
+ 		for (const StringName &E : names) {
+-			uint32_t usage = PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_CHECKABLE;
+-			if (theme_color_override.has(E)) {
+-				usage |= PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED;
+-			}
+-
+-			p_list->push_back(PropertyInfo(Variant::COLOR, PNAME("theme_override_colors") + String("/") + E, PROPERTY_HINT_NONE, "", usage));
++			add_dynamic_color_properties(E);
+ 		}
+ 	}
+ 	{
+ 		List<StringName> names;
+-		default_theme->get_constant_list(get_class_name(), &names);
++		add_default_theme_items(Theme::DATA_TYPE_CONSTANT, &names);
+ 		for (const StringName &E : names) {
+ 			uint32_t usage = PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_CHECKABLE;
+ 			if (theme_constant_override.has(E)) {
+ 				usage |= PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED;
+ 			}
+ 
+-			p_list->push_back(PropertyInfo(Variant::INT, PNAME("theme_override_constants") + String("/") + E, PROPERTY_HINT_RANGE, "-16384,16384", usage));
++			add_property(PropertyInfo(Variant::INT, PNAME("theme_override_constants") + String("/") + E, PROPERTY_HINT_RANGE, "-16384,16384", usage));
+ 		}
+ 	}
+ 	{
+ 		List<StringName> names;
+-		default_theme->get_font_list(get_class_name(), &names);
++		add_default_theme_items(Theme::DATA_TYPE_FONT, &names);
+ 		for (const StringName &E : names) {
+ 			uint32_t usage = PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_CHECKABLE;
+ 			if (theme_font_override.has(E)) {
+ 				usage |= PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED;
+ 			}
+ 
+-			p_list->push_back(PropertyInfo(Variant::OBJECT, PNAME("theme_override_fonts") + String("/") + E, PROPERTY_HINT_RESOURCE_TYPE, Font::get_class_static(), usage));
++			add_property(PropertyInfo(Variant::OBJECT, PNAME("theme_override_fonts") + String("/") + E, PROPERTY_HINT_RESOURCE_TYPE, Font::get_class_static(), usage));
+ 		}
+ 	}
+ 	{
+ 		List<StringName> names;
+-		default_theme->get_font_size_list(get_class_name(), &names);
++		add_default_theme_items(Theme::DATA_TYPE_FONT_SIZE, &names);
+ 		for (const StringName &E : names) {
+ 			uint32_t usage = PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_CHECKABLE;
+ 			if (theme_font_size_override.has(E)) {
+ 				usage |= PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED;
+ 			}
+ 
+-			p_list->push_back(PropertyInfo(Variant::INT, PNAME("theme_override_font_sizes") + String("/") + E, PROPERTY_HINT_RANGE, "1,256,1,or_greater,suffix:px", usage));
++			add_property(PropertyInfo(Variant::INT, PNAME("theme_override_font_sizes") + String("/") + E, PROPERTY_HINT_RANGE, "1,256,1,or_greater,suffix:px", usage));
+ 		}
+ 	}
+ 	{
+ 		List<StringName> names;
+-		default_theme->get_icon_list(get_class_name(), &names);
++		add_default_theme_items(Theme::DATA_TYPE_ICON, &names);
+ 		for (const StringName &E : names) {
+ 			uint32_t usage = PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_CHECKABLE;
+ 			if (theme_icon_override.has(E)) {
+ 				usage |= PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED;
+ 			}
+ 
+-			p_list->push_back(PropertyInfo(Variant::OBJECT, PNAME("theme_override_icons") + String("/") + E, PROPERTY_HINT_RESOURCE_TYPE, Texture2D::get_class_static(), usage));
++			add_property(PropertyInfo(Variant::OBJECT, PNAME("theme_override_icons") + String("/") + E, PROPERTY_HINT_RESOURCE_TYPE, Texture2D::get_class_static(), usage));
+ 		}
+ 	}
+ 	{
+ 		List<StringName> names;
+-		default_theme->get_stylebox_list(get_class_name(), &names);
++		add_default_theme_items(Theme::DATA_TYPE_STYLEBOX, &names);
+ 		for (const StringName &E : names) {
+-			uint32_t usage = PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_CHECKABLE;
+-			if (theme_style_override.has(E)) {
+-				usage |= PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED;
+-			}
+-
+-			p_list->push_back(PropertyInfo(Variant::OBJECT, PNAME("theme_override_styles") + String("/") + E, PROPERTY_HINT_RESOURCE_TYPE, StyleBox::get_class_static(), usage));
++			add_stylebox_property(E);
++			add_color_scheme_property(String(E) + "_scheme");
+ 		}
+ 	}
+ 	{
+ 		List<StringName> names;
+-		default_theme->get_color_role_list(get_class_name(), &names);
++		add_default_theme_items(Theme::DATA_TYPE_COLOR_ROLE, &names);
+ 		for (const StringName &E : names) {
+-			uint32_t usage = PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_CHECKABLE;
+-			if (theme_color_role_override.has(E)) {
+-				usage |= PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED;
+-			}
+-
+-			p_list->push_back(PropertyInfo(Variant::INT, PNAME("theme_override_color_roles") + String("/") + E, PROPERTY_HINT_ENUM, color_role_hint, usage));
++			add_color_role_property(E);
+ 		}
+ 	}
+ 	{
+ 		List<StringName> names;
+-		default_theme->get_color_scheme_list(get_class_name(), &names);
++		add_default_theme_items(Theme::DATA_TYPE_COLOR_SCHEME, &names);
+ 		for (const StringName &E : names) {
+-			uint32_t usage = PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_CHECKABLE;
+-			if (theme_color_scheme_override.has(E)) {
+-				usage |= PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED;
+-			}
+-
+-			p_list->push_back(PropertyInfo(Variant::OBJECT, PNAME("theme_override_color_schemes") + String("/") + E, PROPERTY_HINT_RESOURCE_TYPE, ColorScheme::get_class_static(), usage));
++			add_color_scheme_property(E);
+ 		}
+ 	}
+ 	{
+ 		List<StringName> names;
+-		default_theme->get_string_list(get_class_name(), &names);
++		add_default_theme_items(Theme::DATA_TYPE_STRING, &names);
+ 		for (const StringName &E : names) {
+ 			uint32_t usage = PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_CHECKABLE;
+ 			if (theme_string_override.has(E)) {
+ 				usage |= PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED;
+ 			}
+ 
+-			p_list->push_back(PropertyInfo(Variant::STRING, PNAME("theme_override_strings") + String("/") + E, PROPERTY_HINT_NONE, "", usage));
++			add_property(PropertyInfo(Variant::STRING, PNAME("theme_override_strings") + String("/") + E, PROPERTY_HINT_NONE, "", usage));
+ 		}
+ 	}
++
++	for (const KeyValue<StringName, Color> &E : theme_color_override) {
++		add_dynamic_color_properties(E.key);
++	}
++	for (const KeyValue<StringName, ColorRole> &E : theme_color_role_override) {
++		add_color_role_property(E.key);
++	}
++	for (const KeyValue<StringName, Ref<ColorScheme>> &E : theme_color_scheme_override) {
++		add_color_scheme_property(E.key);
++	}
++	for (const KeyValue<StringName, Ref<StyleBox>> &E : theme_style_override) {
++		add_stylebox_property(E.key);
++		add_color_scheme_property(String(E.key) + "_scheme");
++	}
++	add_color_scheme_property(SNAME("default_color_scheme"));
+ }
+ 
+ void Window::_validate_property(PropertyInfo &p_property) const {
+diff --git a/tests/scene/test_control.cpp b/tests/scene/test_control.cpp
+index c2bef0b1c531e198451788deb12693ddf570b63c..55844144c1a14402935f2f0748ba200177113f54 100644
+--- a/tests/scene/test_control.cpp
++++ b/tests/scene/test_control.cpp
+@@ -33,19 +33,90 @@
+ TEST_FORCE_LINK(test_control)
+ 
+ #include "core/input/input_map.h" // IWYU pragma: keep // Used by `SEND_GUI_ACTION` macro.
++#include "core/io/dir_access.h"
++#include "core/io/resource_loader.h"
++#include "core/io/resource_saver.h"
+ #include "scene/2d/node_2d.h"
++#include "scene/gui/button.h"
+ #include "scene/gui/control.h"
++#include "scene/gui/label.h"
+ #include "scene/main/scene_tree.h"
+ #include "scene/main/window.h"
++#include "scene/resources/packed_scene.h"
+ #include "scene/resources/style_box_flat.h"
+ #include "scene/resources/theme.h"
+ #include "tests/display_server_mock.h"
+ #include "tests/signal_watcher.h"
++#include "tests/test_utils.h"
+ 
+ #include "modules/color_scheme/color_scheme.h"
+ 
+ namespace TestControl {
+ 
++static int get_property_count(Object *p_object, const StringName &p_property, uint32_t *r_usage = nullptr) {
++	List<PropertyInfo> properties;
++	p_object->get_property_list(&properties);
++	int count = 0;
++	for (const PropertyInfo &property : properties) {
++		if (property.name == p_property) {
++			count++;
++			if (r_usage) {
++				*r_usage = property.usage;
++			}
++		}
++	}
++	return count;
++}
++
++static void check_control_dynamic_theme_override_file_roundtrip(Control *p_control, const String &p_file_prefix, const Color &p_color, ColorRole p_role, const Ref<ColorScheme> &p_color_scheme) {
++	const char *extensions[] = { "tscn", "scn" };
++	for (const char *extension : extensions) {
++		const String path = TestUtils::get_temp_path(p_file_prefix + "." + String(extension));
++		Ref<PackedScene> packed_scene = memnew(PackedScene);
++		CHECK(packed_scene->pack(p_control) == OK);
++		Error error = ResourceSaver::save(packed_scene, path);
++		CHECK(error == OK);
++		if (error == OK) {
++			Ref<PackedScene> loaded_scene = ResourceLoader::load(path, "PackedScene", ResourceFormatLoader::CacheMode::CACHE_MODE_IGNORE, &error);
++			CHECK(error == OK);
++			CHECK(loaded_scene.is_valid());
++			if (loaded_scene.is_valid()) {
++				Node *instance = loaded_scene->instantiate();
++				CHECK(instance != nullptr);
++				if (instance != nullptr) {
++					SceneTree::get_singleton()->get_root()->add_child(instance);
++					Control *roundtrip = Object::cast_to<Control>(instance);
++					CHECK(roundtrip != nullptr);
++					if (roundtrip != nullptr) {
++						CHECK(roundtrip->get_theme_color("custom_scale").is_equal_approx(p_color));
++						CHECK(roundtrip->get_theme_color_role("custom_role") == p_role);
++						Ref<ColorScheme> custom_scheme = roundtrip->get_theme_color_scheme("custom_scheme");
++						CHECK(custom_scheme.is_valid());
++						if (custom_scheme.is_valid()) {
++							CHECK(custom_scheme->get_color(ColorRole::PRIMARY).is_equal_approx(p_color_scheme->get_color(ColorRole::PRIMARY)));
++							CHECK(custom_scheme == roundtrip->get_theme_color_scheme("default_color_scheme"));
++							CHECK(custom_scheme == roundtrip->get_theme_color_scheme("custom_style_scheme"));
++						}
++						Ref<StyleBox> style = roundtrip->get_theme_stylebox("custom_style");
++						CHECK(style.is_valid());
++						StyleBoxFlat *flat_style = Object::cast_to<StyleBoxFlat>(style.ptr());
++						CHECK(flat_style != nullptr);
++						if (flat_style != nullptr) {
++							CHECK(flat_style->get_bg_color().is_equal_approx(Color("#123456")));
++						}
++					}
++					memdelete(instance);
++				}
++			}
++		}
++		DirAccess::remove_absolute(path);
++	}
++}
++
++static void check_button_dynamic_theme_override_file_roundtrip(Button *p_button, const Color &p_color, ColorRole p_role, const Ref<ColorScheme> &p_color_scheme) {
++	check_control_dynamic_theme_override_file_roundtrip(p_button, "dynamic_theme_button", p_color, p_role, p_color_scheme);
++}
++
+ TEST_CASE("[SceneTree][Control] Dynamic theme colors") {
+ 	Control *control = memnew(Control);
+ 	SceneTree::get_singleton()->get_root()->add_child(control);
+@@ -86,6 +157,154 @@ TEST_CASE("[SceneTree][Control] Dynamic theme colors") {
+ 	memdelete(control);
+ }
+ 
++TEST_CASE("[SceneTree][Control] Dynamic theme override properties serialize") {
++	Button *button = memnew(Button);
++	Ref<ColorScheme> color_scheme = memnew(ColorScheme(Color("#6750a4")));
++	Ref<StyleBoxFlat> style = memnew(StyleBoxFlat);
++	style->set_bg_color(Color("#123456"));
++	button->add_theme_color_override("custom_scale", Color(0.8, 0.6, 0.4, 0.5));
++	button->add_theme_color_role_override("custom_role", ColorRole::SECONDARY);
++	button->add_theme_color_scheme_override("custom_scheme", color_scheme);
++	button->add_theme_color_scheme_override("default_color_scheme", color_scheme);
++	button->add_theme_style_override("custom_style", style);
++	button->add_theme_color_scheme_override("custom_style_scheme", color_scheme);
++
++	uint32_t property_usage = 0;
++	CHECK(get_property_count(button, "theme_override_colors/font_color") == 1);
++	CHECK(get_property_count(button, "theme_override_color_roles/font_color_role") == 1);
++	CHECK(get_property_count(button, "theme_override_color_schemes/font_color_scheme") == 1);
++	CHECK(get_property_count(button, "theme_override_colors/font_color_scale") == 1);
++	CHECK(get_property_count(button, "theme_override_color_schemes/normal_scheme") == 1);
++	CHECK(get_property_count(button, "theme_override_color_schemes/default_color_scheme", &property_usage) == 1);
++	CHECK((property_usage & (PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED)) == (PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED));
++	CHECK(get_property_count(button, "theme_override_colors/custom_scale", &property_usage) == 1);
++	CHECK((property_usage & (PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED)) == (PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED));
++	CHECK(get_property_count(button, "theme_override_color_roles/custom_role", &property_usage) == 1);
++	CHECK((property_usage & (PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED)) == (PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED));
++	CHECK(get_property_count(button, "theme_override_color_schemes/custom_scheme", &property_usage) == 1);
++	CHECK((property_usage & (PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED)) == (PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED));
++	CHECK(get_property_count(button, "theme_override_styles/custom_style", &property_usage) == 1);
++	CHECK((property_usage & (PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED)) == (PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED));
++	CHECK(get_property_count(button, "theme_override_color_schemes/custom_style_scheme") == 1);
++
++	Ref<PackedScene> packed_scene = memnew(PackedScene);
++	CHECK(packed_scene->pack(button) == OK);
++	Node *instance = packed_scene->instantiate();
++	CHECK(instance != nullptr);
++	if (instance) {
++		SceneTree::get_singleton()->get_root()->add_child(instance);
++		Button *roundtrip = Object::cast_to<Button>(instance);
++		CHECK(roundtrip != nullptr);
++		if (roundtrip) {
++			CHECK(roundtrip->get_theme_color("custom_scale").is_equal_approx(Color(0.8, 0.6, 0.4, 0.5)));
++			CHECK(roundtrip->get_theme_color_role("custom_role") == ColorRole::SECONDARY);
++				CHECK(roundtrip->get_theme_color_scheme("custom_scheme") == color_scheme);
++				CHECK(roundtrip->get_theme_color_scheme("default_color_scheme") == color_scheme);
++				CHECK(roundtrip->get_theme_color_scheme("custom_style_scheme") == color_scheme);
++				Ref<StyleBox> roundtrip_style = roundtrip->get_theme_stylebox("custom_style");
++				StyleBoxFlat *roundtrip_flat = Object::cast_to<StyleBoxFlat>(roundtrip_style.ptr());
++				CHECK(roundtrip_flat != nullptr);
++				if (roundtrip_flat != nullptr) {
++					CHECK(roundtrip_flat->get_bg_color().is_equal_approx(Color("#123456")));
++				}
++		}
++		memdelete(instance);
++	}
++	Node *duplicate = button->duplicate();
++	CHECK(duplicate != nullptr);
++	if (duplicate) {
++		Button *duplicate_button = Object::cast_to<Button>(duplicate);
++		CHECK(duplicate_button != nullptr);
++		if (duplicate_button) {
++			CHECK(duplicate_button->get_theme_color("custom_scale").is_equal_approx(Color(0.8, 0.6, 0.4, 0.5)));
++			CHECK(duplicate_button->get_theme_color_role("custom_role") == ColorRole::SECONDARY);
++			CHECK(duplicate_button->get_theme_color_scheme("custom_scheme") == color_scheme);
++			CHECK(duplicate_button->get_theme_color_scheme("default_color_scheme") == color_scheme);
++			CHECK(duplicate_button->get_theme_color_scheme("custom_style_scheme") == color_scheme);
++		}
++		memdelete(duplicate);
++	}
++	check_button_dynamic_theme_override_file_roundtrip(button, Color(0.8, 0.6, 0.4, 0.5), ColorRole::SECONDARY, color_scheme);
++	memdelete(button);
++}
++
++TEST_CASE("[SceneTree][Control] Dynamic theme override properties include Label") {
++	Label *label = memnew(Label);
++	Ref<ColorScheme> color_scheme = memnew(ColorScheme(Color("#6750a4")));
++	Ref<StyleBoxFlat> style = memnew(StyleBoxFlat);
++	style->set_bg_color(Color("#123456"));
++	label->add_theme_color_override("custom_scale", Color(0.8, 0.6, 0.4, 0.5));
++	label->add_theme_color_role_override("custom_role", ColorRole::SECONDARY);
++	label->add_theme_color_scheme_override("custom_scheme", color_scheme);
++	label->add_theme_color_scheme_override("default_color_scheme", color_scheme);
++	label->add_theme_style_override("custom_style", style);
++	label->add_theme_color_scheme_override("custom_style_scheme", color_scheme);
++
++	uint32_t property_usage = 0;
++	CHECK(get_property_count(label, "theme_override_colors/font_color") == 1);
++	CHECK(get_property_count(label, "theme_override_color_roles/font_color_role") == 1);
++	CHECK(get_property_count(label, "theme_override_color_schemes/font_color_scheme") == 1);
++	CHECK(get_property_count(label, "theme_override_colors/font_color_scale") == 1);
++	CHECK(get_property_count(label, "theme_override_color_schemes/default_color_scheme", &property_usage) == 1);
++	CHECK((property_usage & (PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED)) == (PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED));
++	CHECK(get_property_count(label, "theme_override_colors/custom_scale", &property_usage) == 1);
++	CHECK((property_usage & (PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED)) == (PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED));
++	CHECK(get_property_count(label, "theme_override_color_roles/custom_role", &property_usage) == 1);
++	CHECK((property_usage & (PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED)) == (PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED));
++	CHECK(get_property_count(label, "theme_override_color_schemes/custom_scheme", &property_usage) == 1);
++	CHECK((property_usage & (PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED)) == (PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED));
++	CHECK(get_property_count(label, "theme_override_styles/custom_style", &property_usage) == 1);
++	CHECK((property_usage & (PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED)) == (PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED));
++	CHECK(get_property_count(label, "theme_override_color_schemes/custom_style_scheme") == 1);
++
++	Ref<PackedScene> packed_scene = memnew(PackedScene);
++	CHECK(packed_scene->pack(label) == OK);
++	Node *instance = packed_scene->instantiate();
++	CHECK(instance != nullptr);
++	if (instance != nullptr) {
++		SceneTree::get_singleton()->get_root()->add_child(instance);
++		Label *roundtrip = Object::cast_to<Label>(instance);
++		CHECK(roundtrip != nullptr);
++		if (roundtrip != nullptr) {
++			CHECK(roundtrip->get_theme_color("custom_scale").is_equal_approx(Color(0.8, 0.6, 0.4, 0.5)));
++			CHECK(roundtrip->get_theme_color_role("custom_role") == ColorRole::SECONDARY);
++			CHECK(roundtrip->get_theme_color_scheme("custom_scheme") == color_scheme);
++			CHECK(roundtrip->get_theme_color_scheme("default_color_scheme") == color_scheme);
++			CHECK(roundtrip->get_theme_color_scheme("custom_style_scheme") == color_scheme);
++			Ref<StyleBox> roundtrip_style = roundtrip->get_theme_stylebox("custom_style");
++			StyleBoxFlat *roundtrip_flat = Object::cast_to<StyleBoxFlat>(roundtrip_style.ptr());
++			CHECK(roundtrip_flat != nullptr);
++			if (roundtrip_flat != nullptr) {
++				CHECK(roundtrip_flat->get_bg_color().is_equal_approx(Color("#123456")));
++			}
++		}
++		memdelete(instance);
++	}
++	Node *duplicate = label->duplicate();
++	CHECK(duplicate != nullptr);
++	if (duplicate != nullptr) {
++		Label *duplicate_label = Object::cast_to<Label>(duplicate);
++		CHECK(duplicate_label != nullptr);
++		if (duplicate_label != nullptr) {
++			CHECK(duplicate_label->get_theme_color("custom_scale").is_equal_approx(Color(0.8, 0.6, 0.4, 0.5)));
++			CHECK(duplicate_label->get_theme_color_role("custom_role") == ColorRole::SECONDARY);
++			CHECK(duplicate_label->get_theme_color_scheme("custom_scheme") == color_scheme);
++			CHECK(duplicate_label->get_theme_color_scheme("default_color_scheme") == color_scheme);
++			CHECK(duplicate_label->get_theme_color_scheme("custom_style_scheme") == color_scheme);
++			Ref<StyleBox> duplicate_style = duplicate_label->get_theme_stylebox("custom_style");
++			StyleBoxFlat *duplicate_flat = Object::cast_to<StyleBoxFlat>(duplicate_style.ptr());
++			CHECK(duplicate_flat != nullptr);
++			if (duplicate_flat != nullptr) {
++				CHECK(duplicate_flat->get_bg_color().is_equal_approx(Color("#123456")));
++			}
++		}
++		memdelete(duplicate);
++	}
++	check_control_dynamic_theme_override_file_roundtrip(label, "dynamic_theme_label", Color(0.8, 0.6, 0.4, 0.5), ColorRole::SECONDARY, color_scheme);
++
++	memdelete(label);
++}
++
+ TEST_CASE("[SceneTree][Control] String theme overrides") {
+ 	Control *control = memnew(Control);
+ 	SceneTree::get_singleton()->get_root()->add_child(control);
+diff --git a/tests/scene/test_window.cpp b/tests/scene/test_window.cpp
+index b10cb1e6af745c076798f0991e37b98960b2a8e7..8abc3649d443e5ba57859854fd4151dee8e995b3 100644
+--- a/tests/scene/test_window.cpp
++++ b/tests/scene/test_window.cpp
+@@ -33,16 +33,88 @@
+ TEST_FORCE_LINK(test_window)
+ 
+ #include "core/input/input_map.h" // IWYU pragma: keep // Used by `SEND_GUI_MOUSE_MOTION_EVENT` macro.
++#include "core/io/dir_access.h"
++#include "core/io/resource_loader.h"
++#include "core/io/resource_saver.h"
++#include "core/object/message_queue.h"
+ #include "scene/gui/control.h"
++#include "scene/gui/dialogs.h"
+ #include "scene/main/scene_tree.h"
+ #include "scene/main/window.h"
++#include "scene/resources/packed_scene.h"
++#include "scene/resources/style_box_flat.h"
+ #include "scene/resources/theme.h"
+ #include "tests/display_server_mock.h"
++#include "tests/test_utils.h"
+ 
+ #include "modules/color_scheme/color_scheme.h"
+ 
+ namespace TestWindow {
+ 
++static int get_property_count(Object *p_object, const StringName &p_property, uint32_t *r_usage = nullptr) {
++	List<PropertyInfo> properties;
++	p_object->get_property_list(&properties);
++	int count = 0;
++	for (const PropertyInfo &property : properties) {
++		if (property.name == p_property) {
++			count++;
++			if (r_usage) {
++				*r_usage = property.usage;
++			}
++		}
++	}
++	return count;
++}
++
++static void check_window_dynamic_theme_override_file_roundtrip(Window *p_window, const String &p_file_prefix, const Color &p_color, ColorRole p_role, const Ref<ColorScheme> &p_color_scheme) {
++	const char *extensions[] = { "tscn", "scn" };
++	for (const char *extension : extensions) {
++		const String path = TestUtils::get_temp_path(p_file_prefix + "." + String(extension));
++		Ref<PackedScene> packed_scene = memnew(PackedScene);
++		CHECK(packed_scene->pack(p_window) == OK);
++		Error error = ResourceSaver::save(packed_scene, path);
++		CHECK(error == OK);
++		if (error == OK) {
++			Ref<PackedScene> loaded_scene = ResourceLoader::load(path, "PackedScene", ResourceFormatLoader::CacheMode::CACHE_MODE_IGNORE, &error);
++			CHECK(error == OK);
++			CHECK(loaded_scene.is_valid());
++			if (loaded_scene.is_valid()) {
++				Node *instance = loaded_scene->instantiate();
++				CHECK(instance != nullptr);
++				if (instance != nullptr) {
++					SceneTree::get_singleton()->get_root()->add_child(instance);
++					Window *roundtrip = Object::cast_to<Window>(instance);
++					CHECK(roundtrip != nullptr);
++					if (roundtrip != nullptr) {
++						CHECK(roundtrip->get_theme_color("custom_scale").is_equal_approx(p_color));
++						CHECK(roundtrip->get_theme_color_role("custom_role") == p_role);
++						Ref<ColorScheme> custom_scheme = roundtrip->get_theme_color_scheme("custom_scheme");
++						CHECK(custom_scheme.is_valid());
++						if (custom_scheme.is_valid()) {
++							CHECK(custom_scheme->get_color(ColorRole::PRIMARY).is_equal_approx(p_color_scheme->get_color(ColorRole::PRIMARY)));
++							CHECK(custom_scheme == roundtrip->get_theme_color_scheme("default_color_scheme"));
++							CHECK(custom_scheme == roundtrip->get_theme_color_scheme("custom_style_scheme"));
++						}
++						Ref<StyleBox> style = roundtrip->get_theme_stylebox("custom_style");
++						CHECK(style.is_valid());
++						StyleBoxFlat *flat_style = Object::cast_to<StyleBoxFlat>(style.ptr());
++						CHECK(flat_style != nullptr);
++						if (flat_style != nullptr) {
++							CHECK(flat_style->get_bg_color().is_equal_approx(Color("#123456")));
++						}
++					}
++					memdelete(instance);
++				}
++			}
++		}
++		DirAccess::remove_absolute(path);
++	}
++}
++
++static void check_dialog_dynamic_theme_override_file_roundtrip(AcceptDialog *p_dialog, const Color &p_color, ColorRole p_role, const Ref<ColorScheme> &p_color_scheme) {
++	check_window_dynamic_theme_override_file_roundtrip(p_dialog, "dynamic_theme_dialog", p_color, p_role, p_color_scheme);
++}
++
+ class NotificationControlWindow : public Control {
+ 	GDCLASS(NotificationControlWindow, Control);
+ 
+@@ -90,6 +162,148 @@ TEST_CASE("[SceneTree][Window] Dynamic theme colors") {
+ 	memdelete(window);
+ }
+ 
++TEST_CASE("[SceneTree][Window] Dynamic theme override properties serialize") {
++	AcceptDialog *dialog = memnew(AcceptDialog);
++	Ref<ColorScheme> color_scheme = memnew(ColorScheme(Color("#006495")));
++	Ref<StyleBoxFlat> style = memnew(StyleBoxFlat);
++	style->set_bg_color(Color("#123456"));
++	dialog->add_theme_color_override("custom_scale", Color(0.7, 0.5, 0.3, 0.9));
++	dialog->add_theme_color_role_override("custom_role", ColorRole::TERTIARY);
++	dialog->add_theme_color_scheme_override("custom_scheme", color_scheme);
++	dialog->add_theme_color_scheme_override("default_color_scheme", color_scheme);
++	dialog->add_theme_style_override("custom_style", style);
++	dialog->add_theme_color_scheme_override("custom_style_scheme", color_scheme);
++
++	uint32_t property_usage = 0;
++	CHECK(get_property_count(dialog, "theme_override_colors/title_color") == 1);
++	CHECK(get_property_count(dialog, "theme_override_color_roles/title_color_role") == 1);
++	CHECK(get_property_count(dialog, "theme_override_color_schemes/title_color_scheme") == 1);
++	CHECK(get_property_count(dialog, "theme_override_styles/embedded_border") == 1);
++	CHECK(get_property_count(dialog, "theme_override_color_schemes/embedded_border_scheme") == 1);
++	CHECK(get_property_count(dialog, "theme_override_styles/panel") == 1);
++	CHECK(get_property_count(dialog, "theme_override_color_schemes/default_color_scheme", &property_usage) == 1);
++	CHECK((property_usage & (PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED)) == (PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED));
++	CHECK(get_property_count(dialog, "theme_override_color_roles/custom_role", &property_usage) == 1);
++	CHECK((property_usage & (PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED)) == (PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED));
++	CHECK(get_property_count(dialog, "theme_override_color_schemes/custom_scheme", &property_usage) == 1);
++	CHECK((property_usage & (PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED)) == (PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED));
++	CHECK(get_property_count(dialog, "theme_override_styles/custom_style", &property_usage) == 1);
++	CHECK((property_usage & (PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED)) == (PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED));
++
++	Ref<PackedScene> packed_scene = memnew(PackedScene);
++	CHECK(packed_scene->pack(dialog) == OK);
++	Node *instance = packed_scene->instantiate();
++	CHECK(instance != nullptr);
++	if (instance) {
++		SceneTree::get_singleton()->get_root()->add_child(instance);
++		AcceptDialog *roundtrip = Object::cast_to<AcceptDialog>(instance);
++		CHECK(roundtrip != nullptr);
++		if (roundtrip) {
++			CHECK(roundtrip->get_theme_color("custom_scale").is_equal_approx(Color(0.7, 0.5, 0.3, 0.9)));
++			CHECK(roundtrip->get_theme_color_role("custom_role") == ColorRole::TERTIARY);
++			CHECK(roundtrip->get_theme_color_scheme("custom_scheme") == color_scheme);
++			CHECK(roundtrip->get_theme_color_scheme("default_color_scheme") == color_scheme);
++			CHECK(roundtrip->get_theme_color_scheme("custom_style_scheme") == color_scheme);
++		}
++		memdelete(instance);
++	}
++	Node *duplicate = dialog->duplicate();
++	CHECK(duplicate != nullptr);
++	if (duplicate) {
++		AcceptDialog *duplicate_dialog = Object::cast_to<AcceptDialog>(duplicate);
++		CHECK(duplicate_dialog != nullptr);
++		if (duplicate_dialog) {
++			CHECK(duplicate_dialog->get_theme_color("custom_scale").is_equal_approx(Color(0.7, 0.5, 0.3, 0.9)));
++			CHECK(duplicate_dialog->get_theme_color_role("custom_role") == ColorRole::TERTIARY);
++			CHECK(duplicate_dialog->get_theme_color_scheme("custom_scheme") == color_scheme);
++			CHECK(duplicate_dialog->get_theme_color_scheme("default_color_scheme") == color_scheme);
++			CHECK(duplicate_dialog->get_theme_color_scheme("custom_style_scheme") == color_scheme);
++		}
++		memdelete(duplicate);
++	}
++	check_dialog_dynamic_theme_override_file_roundtrip(dialog, Color(0.7, 0.5, 0.3, 0.9), ColorRole::TERTIARY, color_scheme);
++	memdelete(dialog);
++}
++
++TEST_CASE("[SceneTree][Window] Dynamic theme override properties include Window base items") {
++	Window *window = memnew(Window);
++	Ref<ColorScheme> color_scheme = memnew(ColorScheme(Color("#006495")));
++	Ref<StyleBoxFlat> style = memnew(StyleBoxFlat);
++	style->set_bg_color(Color("#123456"));
++	window->add_theme_color_role_override("custom_role", ColorRole::TERTIARY);
++	window->add_theme_color_scheme_override("custom_scheme", color_scheme);
++	window->add_theme_color_override("custom_scale", Color(0.7, 0.5, 0.3, 0.9));
++	window->add_theme_color_scheme_override("default_color_scheme", color_scheme);
++	window->add_theme_style_override("custom_style", style);
++	window->add_theme_color_scheme_override("custom_style_scheme", color_scheme);
++
++	uint32_t property_usage = 0;
++	CHECK(get_property_count(window, "theme_override_colors/title_color") == 1);
++	CHECK(get_property_count(window, "theme_override_color_roles/title_color_role") == 1);
++	CHECK(get_property_count(window, "theme_override_color_schemes/title_color_scheme") == 1);
++	CHECK(get_property_count(window, "theme_override_colors/title_color_scale") == 1);
++	CHECK(get_property_count(window, "theme_override_styles/embedded_border") == 1);
++	CHECK(get_property_count(window, "theme_override_color_schemes/embedded_border_scheme") == 1);
++	CHECK(get_property_count(window, "theme_override_color_schemes/default_color_scheme", &property_usage) == 1);
++	CHECK((property_usage & (PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED)) == (PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED));
++	CHECK(get_property_count(window, "theme_override_color_roles/custom_role", &property_usage) == 1);
++	CHECK((property_usage & (PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED)) == (PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED));
++	CHECK(get_property_count(window, "theme_override_color_schemes/custom_scheme", &property_usage) == 1);
++	CHECK((property_usage & (PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED)) == (PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED));
++	CHECK(get_property_count(window, "theme_override_colors/custom_scale", &property_usage) == 1);
++	CHECK((property_usage & (PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED)) == (PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED));
++	CHECK(get_property_count(window, "theme_override_styles/custom_style", &property_usage) == 1);
++	CHECK((property_usage & (PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED)) == (PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED));
++	CHECK(get_property_count(window, "theme_override_color_schemes/custom_style_scheme") == 1);
++
++	Ref<PackedScene> packed_scene = memnew(PackedScene);
++	CHECK(packed_scene->pack(window) == OK);
++	Node *instance = packed_scene->instantiate();
++	CHECK(instance != nullptr);
++	if (instance != nullptr) {
++		SceneTree::get_singleton()->get_root()->add_child(instance);
++		Window *roundtrip = Object::cast_to<Window>(instance);
++		CHECK(roundtrip != nullptr);
++		if (roundtrip != nullptr) {
++			CHECK(roundtrip->get_theme_color("custom_scale").is_equal_approx(Color(0.7, 0.5, 0.3, 0.9)));
++			CHECK(roundtrip->get_theme_color_role("custom_role") == ColorRole::TERTIARY);
++			CHECK(roundtrip->get_theme_color_scheme("custom_scheme") == color_scheme);
++			CHECK(roundtrip->get_theme_color_scheme("default_color_scheme") == color_scheme);
++			CHECK(roundtrip->get_theme_color_scheme("custom_style_scheme") == color_scheme);
++			Ref<StyleBox> roundtrip_style = roundtrip->get_theme_stylebox("custom_style");
++			StyleBoxFlat *roundtrip_flat = Object::cast_to<StyleBoxFlat>(roundtrip_style.ptr());
++			CHECK(roundtrip_flat != nullptr);
++			if (roundtrip_flat != nullptr) {
++				CHECK(roundtrip_flat->get_bg_color().is_equal_approx(Color("#123456")));
++			}
++		}
++		memdelete(instance);
++	}
++	Node *duplicate = window->duplicate();
++	CHECK(duplicate != nullptr);
++	if (duplicate != nullptr) {
++		Window *duplicate_window = Object::cast_to<Window>(duplicate);
++		CHECK(duplicate_window != nullptr);
++		if (duplicate_window != nullptr) {
++			CHECK(duplicate_window->get_theme_color("custom_scale").is_equal_approx(Color(0.7, 0.5, 0.3, 0.9)));
++			CHECK(duplicate_window->get_theme_color_role("custom_role") == ColorRole::TERTIARY);
++			CHECK(duplicate_window->get_theme_color_scheme("custom_scheme") == color_scheme);
++			CHECK(duplicate_window->get_theme_color_scheme("default_color_scheme") == color_scheme);
++			CHECK(duplicate_window->get_theme_color_scheme("custom_style_scheme") == color_scheme);
++			Ref<StyleBox> duplicate_style = duplicate_window->get_theme_stylebox("custom_style");
++			StyleBoxFlat *duplicate_flat = Object::cast_to<StyleBoxFlat>(duplicate_style.ptr());
++			CHECK(duplicate_flat != nullptr);
++			if (duplicate_flat != nullptr) {
++				CHECK(duplicate_flat->get_bg_color().is_equal_approx(Color("#123456")));
++			}
++		}
++		memdelete(duplicate);
++	}
++	check_window_dynamic_theme_override_file_roundtrip(window, "dynamic_theme_window", Color(0.7, 0.5, 0.3, 0.9), ColorRole::TERTIARY, color_scheme);
++
++	memdelete(window);
++}
++
+ TEST_CASE("[SceneTree][Window] String theme overrides") {
+ 	Window *window = memnew(Window);
+ 	SceneTree::get_singleton()->get_root()->add_child(window);
+
+base-commit: 5ec4857b340b6284a18b49b2eda462bd250f219a
+prerequisite-patch-id: b38459b409a3326aed65d2433e1341638171f884
+prerequisite-patch-id: bdb0fe8d6ba7fff1b900ae33d9bec552ea61724c
+prerequisite-patch-id: 4dcdddc73066f768cb97c56444abacb21bda061c
+prerequisite-patch-id: 1f2fbc55f35da3e943dcbaeeb3c9a6d798621bf3
+prerequisite-patch-id: 4dd1cec6888d5160c85be2072b9e5dd05411d007
+prerequisite-patch-id: 60110ae09a2d09796ad65e339ee0b5abc2ce541a
+prerequisite-patch-id: bdb0025d4207a7cf0e1466ca96b2824d238b3caf
+prerequisite-patch-id: 8c55a8201fec417bc2629b903ea2d630aedab1d8
+prerequisite-patch-id: 9dfaaac9d4a47edf9d1eccce8fa66b69e674a911
+prerequisite-patch-id: 17fa223ec74d20c7792e45826a4f0d8ecd7f85d7
+prerequisite-patch-id: 0fb9ef780b3f10a7e82968e44defda508734fa91
+prerequisite-patch-id: 2af824bf187ff13746bd620b1032f57d166c0114
+prerequisite-patch-id: dc8aa901272b27086c9045fc0b9335986d3a8128
+prerequisite-patch-id: 0ce30d5045f596dbc6bf72cbcd9bb16472513013
+prerequisite-patch-id: 50d820c0fb3ac27ddef8f76b133637558f8bcc8e
+prerequisite-patch-id: 69b2baab747aed9362c0ca4c161fc02e5970db44
+prerequisite-patch-id: 41b4bd5af73a2a33c2e64048b72e0d4f3c664f19
+prerequisite-patch-id: 67083f15ed3c32a690794c698729f213a5245e20
+prerequisite-patch-id: 14ad80fb2ee81b00b9194186196bba9d350bc28e
+prerequisite-patch-id: 7d791289954a2144845e9b843451c6c9717daf6a
+prerequisite-patch-id: d5e37dc01427a0639bba6123e6afee995d62ef4a
+prerequisite-patch-id: fa2f2bf9521e391400e0151a1a290fca10a3f124
+prerequisite-patch-id: 2e5d11daca8780d00fe2d10677ac0c26098fae5c
+prerequisite-patch-id: 06b6906be778d545881f82f2431b2204eb052a6c
+prerequisite-patch-id: 6f98206b25188cf56bc55e3fbad4fff5da6d6d4e
+prerequisite-patch-id: 9c598b9a701c8d9fb585255c239a2f64c998f3a0
+prerequisite-patch-id: 148113e476c059293ce209839c317a4945cc1899
+prerequisite-patch-id: 68f8ac60d0f60d3ac0bb1fe23aa79abd660c2009
+prerequisite-patch-id: 470ac52175750bf3eadc5e0286a61411eb3f6ebf
+prerequisite-patch-id: 075c9922d2a9fadb91e8c3402b4e7d2f7bf7f8a1
+prerequisite-patch-id: 3b6bc3f484f1654f8bca99626ff2507a0e17a3ca
+prerequisite-patch-id: d4fed2df8ba748ad28488271c1b2c42cc88f8c17
+prerequisite-patch-id: 6a2c61a480ce572ae1c3692257cf60463d4d3cf9
+prerequisite-patch-id: c0be036c6582ae10a9c24249190be04a37c8392a
+prerequisite-patch-id: 02e0656ba365a7fb2cad0c69ca9ecbcf05ea35f1
+prerequisite-patch-id: 6b9471813c5552c60fce6f086172833038fed2ae
+prerequisite-patch-id: 9a80815a3f443dabb008cef85de0783e1530a9c9
+prerequisite-patch-id: 6cbac35a7fd4756f09c6b54a683203752361d1b8

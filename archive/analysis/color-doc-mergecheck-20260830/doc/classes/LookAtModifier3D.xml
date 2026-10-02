@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="LookAtModifier3D" inherits="SkeletonModifier3D" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_interpolation_remaining" qualifiers="const">
+			<return type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="is_interpolating" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="is_target_within_limitation" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="bone" type="int" setter="set_bone" getter="get_bone" default="-1">
+		</member>
+		<member name="bone_name" type="String" setter="set_bone_name" getter="get_bone_name" default="&quot;&quot;">
+		</member>
+		<member name="duration" type="float" setter="set_duration" getter="get_duration" default="0.0">
+		</member>
+		<member name="ease_type" type="int" setter="set_ease_type" getter="get_ease_type" enum="Tween.EaseType" default="0">
+		</member>
+		<member name="forward_axis" type="int" setter="set_forward_axis" getter="get_forward_axis" enum="SkeletonModifier3D.BoneAxis" default="4">
+		</member>
+		<member name="origin_bone" type="int" setter="set_origin_bone" getter="get_origin_bone">
+		</member>
+		<member name="origin_bone_name" type="String" setter="set_origin_bone_name" getter="get_origin_bone_name">
+		</member>
+		<member name="origin_external_node" type="NodePath" setter="set_origin_external_node" getter="get_origin_external_node">
+		</member>
+		<member name="origin_from" type="int" setter="set_origin_from" getter="get_origin_from" enum="LookAtModifier3D.OriginFrom" default="0">
+		</member>
+		<member name="origin_offset" type="Vector3" setter="set_origin_offset" getter="get_origin_offset" default="Vector3(0, 0, 0)">
+		</member>
+		<member name="origin_safe_margin" type="float" setter="set_origin_safe_margin" getter="get_origin_safe_margin" default="0.1">
+		</member>
+		<member name="primary_damp_threshold" type="float" setter="set_primary_damp_threshold" getter="get_primary_damp_threshold">
+		</member>
+		<member name="primary_limit_angle" type="float" setter="set_primary_limit_angle" getter="get_primary_limit_angle">
+		</member>
+		<member name="primary_negative_damp_threshold" type="float" setter="set_primary_negative_damp_threshold" getter="get_primary_negative_damp_threshold">
+		</member>
+		<member name="primary_negative_limit_angle" type="float" setter="set_primary_negative_limit_angle" getter="get_primary_negative_limit_angle">
+		</member>
+		<member name="primary_positive_damp_threshold" type="float" setter="set_primary_positive_damp_threshold" getter="get_primary_positive_damp_threshold">
+		</member>
+		<member name="primary_positive_limit_angle" type="float" setter="set_primary_positive_limit_angle" getter="get_primary_positive_limit_angle">
+		</member>
+		<member name="primary_rotation_axis" type="int" setter="set_primary_rotation_axis" getter="get_primary_rotation_axis" enum="Vector3.Axis" default="1">
+		</member>
+		<member name="relative" type="bool" setter="set_relative" getter="is_relative" default="false">
+		</member>
+		<member name="secondary_damp_threshold" type="float" setter="set_secondary_damp_threshold" getter="get_secondary_damp_threshold">
+		</member>
+		<member name="secondary_limit_angle" type="float" setter="set_secondary_limit_angle" getter="get_secondary_limit_angle">
+		</member>
+		<member name="secondary_negative_damp_threshold" type="float" setter="set_secondary_negative_damp_threshold" getter="get_secondary_negative_damp_threshold">
+		</member>
+		<member name="secondary_negative_limit_angle" type="float" setter="set_secondary_negative_limit_angle" getter="get_secondary_negative_limit_angle">
+		</member>
+		<member name="secondary_positive_damp_threshold" type="float" setter="set_secondary_positive_damp_threshold" getter="get_secondary_positive_damp_threshold">
+		</member>
+		<member name="secondary_positive_limit_angle" type="float" setter="set_secondary_positive_limit_angle" getter="get_secondary_positive_limit_angle">
+		</member>
+		<member name="symmetry_limitation" type="bool" setter="set_symmetry_limitation" getter="is_limitation_symmetry">
+		</member>
+		<member name="target_node" type="NodePath" setter="set_target_node" getter="get_target_node" default="NodePath(&quot;&quot;)">
+		</member>
+		<member name="transition_type" type="int" setter="set_transition_type" getter="get_transition_type" enum="Tween.TransitionType" default="0">
+		</member>
+		<member name="use_angle_limitation" type="bool" setter="set_use_angle_limitation" getter="is_using_angle_limitation" default="false">
+		</member>
+		<member name="use_rest_for_limitation" type="bool" setter="set_use_rest_for_limitation" getter="is_using_rest_for_limitation">
+		</member>
+		<member name="use_secondary_rotation" type="bool" setter="set_use_secondary_rotation" getter="is_using_secondary_rotation" default="true">
+		</member>
+	</members>
+	<constants>
+		<constant name="ORIGIN_FROM_SELF" value="0" enum="OriginFrom">
+		</constant>
+		<constant name="ORIGIN_FROM_SPECIFIC_BONE" value="1" enum="OriginFrom">
+		</constant>
+		<constant name="ORIGIN_FROM_EXTERNAL_NODE" value="2" enum="OriginFrom">
+		</constant>
+	</constants>
+</class>

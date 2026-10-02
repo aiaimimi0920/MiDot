@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Logger" inherits="RefCounted" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="_log_error" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="function" type="String" />
+			<param index="1" name="file" type="String" />
+			<param index="2" name="line" type="int" />
+			<param index="3" name="code" type="String" />
+			<param index="4" name="rationale" type="String" />
+			<param index="5" name="editor_notify" type="bool" />
+			<param index="6" name="error_type" type="int" />
+			<param index="7" name="script_backtraces" type="ScriptBacktrace[]" />
+			<description>
+			</description>
+		</method>
+		<method name="_log_message" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="message" type="String" />
+			<param index="1" name="error" type="bool" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="ERROR_TYPE_ERROR" value="0" enum="ErrorType">
+		</constant>
+		<constant name="ERROR_TYPE_WARNING" value="1" enum="ErrorType">
+		</constant>
+		<constant name="ERROR_TYPE_SCRIPT" value="2" enum="ErrorType">
+		</constant>
+		<constant name="ERROR_TYPE_SHADER" value="3" enum="ErrorType">
+		</constant>
+	</constants>
+</class>

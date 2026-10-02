@@ -1,0 +1,485 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Spout" inherits="RefCounted" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Windows Spout sender, receiver, and shared-data bridge.
+	</brief_description>
+	<description>
+		Exposes the Spout 2 SDK to scripts on Windows x86_64. Spout can share images, OpenGL textures and framebuffers, sender metadata, and named memory buffers with other Spout applications.
+		[b]Note:[/b] The raw texture, framebuffer, and shared-texture methods accept OpenGL object identifiers. Use them only with the Compatibility renderer and a valid OpenGL context. They do not accept Vulkan or Direct3D native resource handles. A texture target is normally [code]0x0DE1[/code] ([code]GL_TEXTURE_2D[/code]).
+		A successful cross-process texture transfer requires a compatible Windows GPU, driver, and running Spout peer. Without a peer, receiver status methods return their normal disconnected values and transfer methods can return [constant FAILED].
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="adapter_name">
+			<return type="String" />
+				<description>
+					Returns the name of the currently selected graphics adapter.
+				</description>
+		</method>
+		<method name="bind_shared_texture">
+			<return type="bool" />
+				<description>
+					Binds the receiver's shared OpenGL texture. Returns [code]true[/code] on success.
+				</description>
+		</method>
+		<method name="create_memory_buffer">
+			<return type="int" enum="Error" />
+			<param index="0" name="name" type="String" />
+			<param index="1" name="length" type="int" />
+				<description>
+					Creates a named shared memory buffer of [param length] bytes. The length must be between 1 byte and 16 MiB.
+				</description>
+		</method>
+		<method name="delete_memory_buffer">
+			<return type="int" enum="Error" />
+				<description>
+					Deletes the shared memory buffer owned by this instance.
+				</description>
+		</method>
+		<method name="disable_frame_count">
+			<return type="void" />
+				<description>
+					Disables Spout frame counting.
+				</description>
+		</method>
+		<method name="disable_spout_log">
+			<return type="void" />
+				<description>
+					Disables Spout SDK logging.
+				</description>
+		</method>
+		<method name="enable_spout_log">
+			<return type="void" />
+				<description>
+					Enables Spout SDK logging.
+				</description>
+		</method>
+		<method name="enable_spout_log_file">
+			<return type="void" />
+			<param index="0" name="filename" type="String" />
+			<param index="1" name="append" type="bool" default="false" />
+				<description>
+					Enables Spout SDK logging to [param filename]. Existing content is preserved when [param append] is [code]true[/code].
+				</description>
+		</method>
+		<method name="find_sender_name">
+			<return type="bool" />
+			<param index="0" name="sender_name" type="String" />
+				<description>
+					Returns whether a sender named [param sender_name] is currently registered.
+				</description>
+		</method>
+		<method name="get_active_sender">
+			<return type="String" />
+				<description>
+					Returns the system-wide active Spout sender name, or an empty string when none is active.
+				</description>
+		</method>
+		<method name="get_adapter">
+			<return type="int" />
+				<description>
+					Returns the index of the graphics adapter selected by Spout.
+				</description>
+		</method>
+		<method name="get_adapter_name">
+			<return type="String" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="max_chars" type="int" default="256" />
+				<description>
+					Returns the graphics adapter name at [param index]. The output buffer is clamped to a safe maximum.
+				</description>
+		</method>
+		<method name="get_auto_share">
+			<return type="bool" />
+				<description>
+					Returns whether Spout automatically falls back to CPU sharing when GPU sharing is unavailable.
+				</description>
+		</method>
+		<method name="get_host_path">
+			<return type="String" />
+			<param index="0" name="sender_name" type="String" />
+			<param index="1" name="max_chars" type="int" default="256" />
+				<description>
+					Returns the executable path of the process publishing [param sender_name], or an empty string if unavailable. The output buffer is clamped to a safe maximum.
+				</description>
+		</method>
+		<method name="get_memory_buffer_size">
+			<return type="int" />
+			<param index="0" name="name" type="String" />
+				<description>
+					Returns the size in bytes of the named shared memory buffer, or [code]0[/code] if it does not exist.
+				</description>
+		</method>
+		<method name="get_num_adapters">
+			<return type="int" />
+				<description>
+					Returns the number of graphics adapters visible to Spout.
+				</description>
+		</method>
+		<method name="get_sender">
+			<return type="String" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="max_size" type="int" default="256" />
+				<description>
+					Returns the registered sender name at [param index]. The output buffer is clamped to a safe maximum.
+				</description>
+		</method>
+		<method name="get_sender_count">
+			<return type="int" />
+				<description>
+					Returns the number of registered Spout senders.
+				</description>
+		</method>
+		<method name="get_senders">
+			<return type="Array" />
+				<description>
+					Returns all registered sender names. The array size equals [method get_sender_count].
+				</description>
+		</method>
+		<method name="get_shared_texture_id">
+			<return type="int" />
+				<description>
+					Returns the OpenGL identifier of the receiver's shared texture, or [code]0[/code] when unavailable.
+				</description>
+		</method>
+		<method name="get_spout_logs">
+			<return type="String" />
+				<description>
+					Returns the current Spout SDK log contents.
+				</description>
+		</method>
+		<method name="get_spout_version">
+			<return type="int" />
+				<description>
+					Returns the numeric Spout SDK version.
+				</description>
+		</method>
+		<method name="get_vertical_sync">
+			<return type="int" />
+				<description>
+					Returns the current vertical synchronization interval reported by Spout.
+				</description>
+		</method>
+		<method name="hold_fps">
+			<return type="void" />
+			<param index="0" name="fps" type="int" />
+				<description>
+					Limits the calling thread to [param fps] frames per second. [param fps] must be positive.
+				</description>
+		</method>
+		<method name="is_frame_count_enabled">
+			<return type="bool" />
+				<description>
+					Returns whether Spout frame counting is enabled.
+				</description>
+		</method>
+		<method name="is_gldx_ready">
+			<return type="bool" />
+				<description>
+					Returns whether Spout's OpenGL/DirectX interop is ready on the current system.
+				</description>
+		</method>
+		<method name="is_initialized">
+			<return type="bool" />
+				<description>
+					Returns whether the Spout instance has initialized its sharing resources.
+				</description>
+		</method>
+		<method name="read_memory_buffer">
+			<return type="PackedByteArray" />
+			<param index="0" name="sender_name" type="String" />
+			<param index="1" name="max_length" type="int" />
+				<description>
+					Reads at most [param max_length] bytes from the named shared memory buffer. Returns only the bytes actually read, or an empty array on failure. The maximum accepted length is 16 MiB.
+				</description>
+		</method>
+		<method name="receiver_get_sender_cpu">
+			<return type="bool" />
+				<description>
+					Returns whether the connected sender uses CPU sharing.
+				</description>
+		</method>
+		<method name="receiver_get_sender_fps">
+			<return type="float" />
+				<description>
+					Returns the connected sender's measured frame rate.
+				</description>
+		</method>
+		<method name="receiver_get_sender_frame">
+			<return type="float" />
+				<description>
+					Returns the connected sender's current frame number.
+				</description>
+		</method>
+		<method name="receiver_get_sender_gldx">
+			<return type="bool" />
+				<description>
+					Returns whether the connected sender uses OpenGL/DirectX interop.
+				</description>
+		</method>
+		<method name="receiver_get_sender_name">
+			<return type="String" />
+				<description>
+					Returns the connected sender name, or an empty string when disconnected.
+				</description>
+		</method>
+		<method name="receiver_get_sender_size">
+			<return type="Vector2" />
+				<description>
+					Returns the connected sender dimensions, or [constant Vector2.ZERO] when unavailable.
+				</description>
+		</method>
+		<method name="receiver_is_connected">
+			<return type="bool" />
+				<description>
+					Returns whether a sender is currently connected.
+				</description>
+		</method>
+		<method name="receiver_is_frame_new">
+			<return type="bool" />
+				<description>
+					Returns whether the most recently received frame is new.
+				</description>
+		</method>
+		<method name="receiver_is_updated">
+			<return type="bool" />
+				<description>
+					Returns whether the connected sender name or dimensions changed.
+				</description>
+		</method>
+		<method name="receiver_receive_image">
+			<return type="int" enum="Error" />
+			<param index="0" name="image" type="Image" />
+			<param index="1" name="invert" type="bool" default="false" />
+			<param index="2" name="host_fbo" type="int" default="0" />
+			<param index="3" name="gl_format" type="int" default="6408" />
+				<description>
+					Receives the connected sender into [param image]. On success, the image is replaced with the received dimensions and pixel data. Supported [param gl_format] values are [code]6408[/code] (RGBA), [code]32993[/code] (BGRA), [code]6407[/code] (RGB), and [code]32992[/code] (BGR).
+				</description>
+		</method>
+		<method name="receiver_receive_texture">
+			<return type="int" enum="Error" />
+			<param index="0" name="texture_id" type="int" default="0" />
+			<param index="1" name="texture_target" type="int" default="0" />
+			<param index="2" name="invert" type="bool" default="false" />
+			<param index="3" name="host_fbo" type="int" default="0" />
+				<description>
+					Receives into an existing OpenGL texture. Pass both [param texture_id] and [param texture_target], or pass [code]0[/code] for both to update receiver state without copying to a texture. This method is only valid with the Compatibility renderer.
+				</description>
+		</method>
+		<method name="receiver_release_receiver">
+			<return type="void" />
+				<description>
+					Disconnects the receiver and releases its resources.
+				</description>
+		</method>
+		<method name="receiver_set_receiver_name">
+			<return type="void" />
+			<param index="0" name="sender_name" type="String" default="&quot;&quot;" />
+				<description>
+					Selects [param sender_name] for receiving. An empty name lets Spout select the active sender.
+				</description>
+		</method>
+		<method name="sender_get_cpu">
+			<return type="bool" />
+				<description>
+					Returns whether this sender is using CPU sharing.
+				</description>
+		</method>
+		<method name="sender_get_fps">
+			<return type="float" />
+				<description>
+					Returns this sender's measured frame rate.
+				</description>
+		</method>
+		<method name="sender_get_frame">
+			<return type="float" />
+				<description>
+					Returns this sender's current frame number.
+				</description>
+		</method>
+		<method name="sender_get_gldx">
+			<return type="bool" />
+				<description>
+					Returns whether this sender uses OpenGL/DirectX interop.
+				</description>
+		</method>
+		<method name="sender_get_name">
+			<return type="String" />
+				<description>
+					Returns this instance's sender name.
+				</description>
+		</method>
+		<method name="sender_release_sender">
+			<return type="void" />
+			<param index="0" name="msec" type="int" default="0" />
+				<description>
+					Releases this sender after an optional [param msec] delay.
+				</description>
+		</method>
+		<method name="sender_send_fbo">
+			<return type="int" enum="Error" />
+			<param index="0" name="fbo_id" type="int" />
+				<description>
+					Sends the OpenGL texture attached to framebuffer [param fbo_id], using [member send_size]. This method is only valid with the Compatibility renderer.
+				</description>
+		</method>
+		<method name="sender_send_image">
+			<return type="int" enum="Error" />
+			<param index="0" name="image" type="Image" />
+			<param index="1" name="invert" type="bool" default="false" />
+			<param index="2" name="gl_format" type="int" default="6408" />
+				<description>
+					Sends [param image] through Spout. Supported [param gl_format] values are [code]6408[/code] (RGBA), [code]32993[/code] (BGRA), [code]6407[/code] (RGB), and [code]32992[/code] (BGR). On success, [member send_size] is updated to the image dimensions.
+				</description>
+		</method>
+		<method name="sender_send_texture">
+			<return type="int" enum="Error" />
+			<param index="0" name="texture_id" type="int" />
+			<param index="1" name="texture_target" type="int" />
+			<param index="2" name="invert" type="bool" default="true" />
+			<param index="3" name="host_fbo" type="int" default="0" />
+				<description>
+					Sends an existing OpenGL texture using [member send_size]. [param texture_target] is normally [code]0x0DE1[/code] ([code]GL_TEXTURE_2D[/code]). This method is only valid with the Compatibility renderer.
+				</description>
+		</method>
+		<method name="sender_set_sender_name">
+			<return type="void" />
+			<param index="0" name="sender_name" type="String" default="&quot;&quot;" />
+				<description>
+					Sets the sender name. The default name is [code]Godot_Spout[/code].
+				</description>
+		</method>
+		<method name="set_active_sender">
+			<return type="int" enum="Error" />
+			<param index="0" name="sender_name" type="String" />
+				<description>
+					Makes [param sender_name] the system-wide active sender. Returns [constant ERR_INVALID_PARAMETER] for an empty name.
+				</description>
+		</method>
+		<method name="set_auto_share">
+			<return type="void" />
+			<param index="0" name="is_auto" type="bool" default="true" />
+				<description>
+					Enables or disables automatic CPU-sharing fallback.
+				</description>
+		</method>
+		<method name="set_frame_count">
+			<return type="void" />
+			<param index="0" name="enabled" type="bool" />
+				<description>
+					Enables or disables Spout frame counting.
+				</description>
+		</method>
+		<method name="set_frame_sync">
+			<return type="void" />
+			<param index="0" name="sender_name" type="String" />
+				<description>
+					Signals the named Spout frame synchronization event without waiting.
+				</description>
+		</method>
+		<method name="set_spout_log_level">
+			<return type="void" />
+			<param index="0" name="level" type="int" enum="Spout.SpoutLogLevel" />
+				<description>
+					Sets the minimum severity recorded by the Spout SDK logger.
+				</description>
+		</method>
+		<method name="set_vertical_sync">
+			<return type="int" enum="Error" />
+			<param index="0" name="sync" type="bool" default="true" />
+				<description>
+					Enables or disables vertical synchronization. Returns [constant OK] when the setting was applied.
+				</description>
+		</method>
+		<method name="show_spout_logs">
+			<return type="void" />
+				<description>
+					Opens the Spout log folder in Windows Explorer.
+				</description>
+		</method>
+		<method name="spout_log">
+			<return type="void" />
+			<param index="0" name="format" type="String" />
+				<description>
+					Writes a message at the SDK's default log level.
+				</description>
+		</method>
+		<method name="spout_log_error">
+			<return type="void" />
+			<param index="0" name="format" type="String" />
+				<description>
+					Writes an error-level message to the Spout log.
+				</description>
+		</method>
+		<method name="spout_log_fatal">
+			<return type="void" />
+			<param index="0" name="format" type="String" />
+				<description>
+					Writes a fatal-level message to the Spout log.
+				</description>
+		</method>
+		<method name="spout_log_notice">
+			<return type="void" />
+			<param index="0" name="format" type="String" />
+				<description>
+					Writes a notice-level message to the Spout log.
+				</description>
+		</method>
+		<method name="spout_log_verbose">
+			<return type="void" />
+			<param index="0" name="format" type="String" />
+				<description>
+					Writes a verbose-level message to the Spout log.
+				</description>
+		</method>
+		<method name="spout_log_warning">
+			<return type="void" />
+			<param index="0" name="format" type="String" />
+				<description>
+					Writes a warning-level message to the Spout log.
+				</description>
+		</method>
+		<method name="unbind_shared_texture">
+			<return type="bool" />
+				<description>
+					Unbinds the receiver's shared OpenGL texture. Returns [code]true[/code] on success.
+				</description>
+		</method>
+		<method name="write_memory_buffer">
+			<return type="int" enum="Error" />
+			<param index="0" name="sender_name" type="String" />
+			<param index="1" name="data" type="PackedByteArray" />
+			<param index="2" name="length" type="int" />
+				<description>
+					Writes [param length] bytes from [param data] to the named shared memory buffer. The length must not exceed the data size or 16 MiB.
+				</description>
+		</method>
+	</methods>
+	<members>
+			<member name="send_size" type="Vector2" setter="set_send_size" getter="get_send_size" default="Vector2(100, 100)">
+				Dimensions used by raw OpenGL framebuffer and texture sends. Both components must be positive and within the engine's image size limits.
+			</member>
+	</members>
+	<constants>
+			<constant name="SPOUT_LOG_SILENT" value="0" enum="SpoutLogLevel">
+				Disables Spout SDK log output.
+			</constant>
+			<constant name="SPOUT_LOG_VERBOSE" value="1" enum="SpoutLogLevel">
+				Records all verbose messages.
+			</constant>
+			<constant name="SPOUT_LOG_NOTICE" value="2" enum="SpoutLogLevel">
+				Records notice and higher-severity messages.
+			</constant>
+			<constant name="SPOUT_LOG_WARNING" value="3" enum="SpoutLogLevel">
+				Records warning and higher-severity messages.
+			</constant>
+			<constant name="SPOUT_LOG_ERROR" value="4" enum="SpoutLogLevel">
+				Records error and fatal messages.
+			</constant>
+			<constant name="SPOUT_LOG_FATAL" value="5" enum="SpoutLogLevel">
+				Records fatal messages only.
+			</constant>
+	</constants>
+</class>

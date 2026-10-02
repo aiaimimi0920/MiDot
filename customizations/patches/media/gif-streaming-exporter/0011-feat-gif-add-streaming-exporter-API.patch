@@ -1,0 +1,592 @@
+From dca2b738065d7e602a621ed2d97bbcb984dc94ac Mon Sep 17 00:00:00 2001
+From: aiaimimi0920 <153103332+aiaimimi0920@users.noreply.github.com>
+Date: Sun, 30 Aug 2026 19:46:58 +0800
+Subject: [PATCH] feat(gif): add streaming exporter API
+
+Preserve the legacy begin/write/end workflow while reusing the maintained giflib encoder and fixing alpha blending, memory safety, dithering, and loop control.
+
+Godot-Patch-Topic: media.gif-streaming-exporter
+---
+ modules/gif/config.py                   |   2 +-
+ modules/gif/doc_classes/GifExporter.xml |  44 +++++
+ modules/gif/doc_classes/ImageFrames.xml |   3 +-
+ modules/gif/gif_exporter.cpp            | 214 ++++++++++++++++++++++++
+ modules/gif/gif_exporter.h              |  62 +++++++
+ modules/gif/image_frames.cpp            |   7 +-
+ modules/gif/image_frames.h              |   2 +-
+ modules/gif/register_types.cpp          |   2 +
+ tests/modules/gif/test_gif_exporter.cpp | 121 ++++++++++++++
+ 9 files changed, 451 insertions(+), 6 deletions(-)
+ create mode 100644 modules/gif/doc_classes/GifExporter.xml
+ create mode 100644 modules/gif/gif_exporter.cpp
+ create mode 100644 modules/gif/gif_exporter.h
+ create mode 100644 tests/modules/gif/test_gif_exporter.cpp
+
+diff --git a/modules/gif/config.py b/modules/gif/config.py
+index 03ac6f61a46abd4914067a3af5ef119a14561c65..c6c46afbe9a38baf4329f508d18681c76d2cbe45 100644
+--- a/modules/gif/config.py
++++ b/modules/gif/config.py
+@@ -14,4 +14,4 @@ def get_doc_path():
+ 
+ 
+ def get_doc_classes():
+-    return ["ImageFrames"]
++    return ["ImageFrames", "GifExporter"]
+diff --git a/modules/gif/doc_classes/GifExporter.xml b/modules/gif/doc_classes/GifExporter.xml
+new file mode 100644
+index 0000000000000000000000000000000000000000..dd58cccb9ac897a480f8120d79a5824695dbd756
+--- /dev/null
++++ b/modules/gif/doc_classes/GifExporter.xml
+@@ -0,0 +1,44 @@
++<?xml version="1.0" encoding="UTF-8" ?>
++<class name="GifExporter" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
++	<brief_description>
++		Compatibility API for incrementally building animated GIF files.
++	</brief_description>
++	<description>
++		[GifExporter] preserves the legacy [method begin_export], [method write_frame], and [method end_export] workflow while using the modern GIF module internally. Frame delays use GIF hundredths of a second. Images are converted to RGBA8, composited over the supplied background color, quantized to the requested bit depth, and optionally Floyd-Steinberg dithered.
++		Call [method end_export] to observe write errors. Destroying an active exporter attempts to finish it for compatibility, but cannot report failure.
++	</description>
++	<tutorials>
++	</tutorials>
++	<methods>
++		<method name="begin_export">
++			<return type="bool" />
++			<param index="0" name="file_path" type="String" />
++			<param index="1" name="width" type="int" />
++			<param index="2" name="height" type="int" />
++			<param index="3" name="frame_delay" type="float" />
++			<param index="4" name="loop_count" type="int" default="0" />
++			<param index="5" name="bit_depth" type="int" default="8" />
++			<param index="6" name="dither" type="bool" default="false" />
++			<description>
++				Starts an export to [param file_path]. [param frame_delay] is the default delay in hundredths of a second, [param loop_count] is [code]0[/code] for infinite looping, and [param bit_depth] must be from [code]1[/code] to [code]8[/code]. Returns [code]false[/code] for invalid arguments or if an export is already active.
++			</description>
++		</method>
++		<method name="end_export">
++			<return type="bool" />
++			<description>
++				Writes all buffered frames and finishes the active export. Returns [code]false[/code] if no export is active, no frames were added, or the file cannot be written. A failed write remains active so it can be retried.
++			</description>
++		</method>
++		<method name="write_frame">
++			<return type="bool" />
++			<param index="0" name="frame" type="Image" />
++			<param index="1" name="background_color" type="Color" />
++			<param index="2" name="frame_delay" type="float" />
++			<param index="3" name="bit_depth" type="int" default="8" />
++			<param index="4" name="dither" type="bool" default="false" />
++			<description>
++				Buffers [param frame] using [param frame_delay] in hundredths of a second. A delay of [code]0[/code] uses the default passed to [method begin_export]. The image must match the export dimensions. Alpha is composited over [param background_color].
++			</description>
++		</method>
++	</methods>
++</class>
+diff --git a/modules/gif/doc_classes/ImageFrames.xml b/modules/gif/doc_classes/ImageFrames.xml
+index d0fcd8a6b8f028def8f5007b2550ad7ef1cce2a6..20abd3c6d2f9cc27d97864865088cde123d5587a 100644
+--- a/modules/gif/doc_classes/ImageFrames.xml
++++ b/modules/gif/doc_classes/ImageFrames.xml
+@@ -76,8 +76,9 @@
+ 			<return type="int" enum="Error" />
+ 			<param index="0" name="filepath" type="String" />
+ 			<param index="1" name="color_count" type="int" default="256" />
++			<param index="2" name="loop_count" type="int" default="0" />
+ 			<description>
+-				Saves the frames to [param filepath] as a GIF. Multiple frames produce an infinitely looping animation and preserve durations with GIF's hundredth-of-a-second precision.
++				Saves the frames to [param filepath] as a GIF. Multiple frames repeat [param loop_count] times, where [code]0[/code] loops forever, and preserve durations with GIF's hundredth-of-a-second precision.
+ 				[param color_count] is clamped from [code]2[/code] to [code]256[/code] and rounded up to a power of two. Images that do not fit exactly in the palette use deterministic RGB quantization. Pixels with alpha below [code]0.5[/code] are transparent.
+ 			</description>
+ 		</method>
+diff --git a/modules/gif/gif_exporter.cpp b/modules/gif/gif_exporter.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..6b2cf7d27ad79bd4ac6067c800872d06fce6fc3b
+--- /dev/null
++++ b/modules/gif/gif_exporter.cpp
+@@ -0,0 +1,214 @@
++/**************************************************************************/
++/*  gif_exporter.cpp                                                      */
++/**************************************************************************/
++/*                         This file is part of:                          */
++/*                             GODOT ENGINE                               */
++/*                        https://godotengine.org                          */
++/**************************************************************************/
++/* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
++/* Copyright (c) 2007-2014 Juan Linietsky, Ariel Manzur.                  */
++/*                                                                        */
++/* Permission is hereby granted, free of charge, to any person obtaining */
++/* a copy of this software and associated documentation files (the       */
++/* "Software"), to deal in the Software without restriction, including   */
++/* without limitation the rights to use, copy, modify, merge, publish,   */
++/* distribute, sublicense, and/or sell copies of the Software, and to    */
++/* permit persons to whom the Software is furnished to do so, subject to */
++/* the following conditions:                                             */
++/*                                                                        */
++/* The above copyright notice and this permission notice shall be        */
++/* included in all copies or substantial portions of the Software.       */
++/*                                                                        */
++/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,       */
++/* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF    */
++/* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.*/
++/* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY  */
++/* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,   */
++/* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
++/* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
++/**************************************************************************/
++
++#include "gif_exporter.h"
++
++#include "core/config/project_settings.h"
++#include "core/object/class_db.h"
++
++static uint8_t _quantize_channel(float p_value, int p_levels) {
++	if (p_levels <= 1) {
++		return 0;
++	}
++	const int level = CLAMP(int(Math::round(CLAMP(p_value, 0.0f, 255.0f) * (p_levels - 1) / 255.0f)), 0, p_levels - 1);
++	return uint8_t(level * 255 / (p_levels - 1));
++}
++
++Ref<Image> GifExporter::_prepare_frame(const Ref<Image> &p_frame, const Color &p_background_color, int p_bit_depth, bool p_dither) const {
++	ERR_FAIL_COND_V(p_frame.is_null() || p_frame->is_empty(), Ref<Image>());
++	ERR_FAIL_COND_V(p_frame->get_width() != width || p_frame->get_height() != height, Ref<Image>());
++
++	Ref<Image> source = p_frame->duplicate();
++	ERR_FAIL_COND_V(source.is_null(), Ref<Image>());
++	if (source->is_compressed()) {
++		ERR_FAIL_COND_V(source->decompress() != OK, Ref<Image>());
++	}
++	source->convert(Image::FORMAT_RGBA8);
++
++	const PackedByteArray source_data = source->get_data();
++	PackedByteArray output_data;
++	output_data.resize(source_data.size());
++
++	const int red_bits = (p_bit_depth + 2) / 3;
++	const int green_bits = (p_bit_depth + 1) / 3;
++	const int blue_bits = p_bit_depth / 3;
++	const int red_levels = 1 << red_bits;
++	const int green_levels = 1 << green_bits;
++	const int blue_levels = 1 << blue_bits;
++
++	Vector<float> red_error;
++	Vector<float> green_error;
++	Vector<float> blue_error;
++	Vector<float> next_red_error;
++	Vector<float> next_green_error;
++	Vector<float> next_blue_error;
++	if (p_dither) {
++		const int error_width = width + 2;
++		red_error.resize(error_width);
++		green_error.resize(error_width);
++		blue_error.resize(error_width);
++		next_red_error.resize(error_width);
++		next_green_error.resize(error_width);
++		next_blue_error.resize(error_width);
++		red_error.fill(0.0f);
++		green_error.fill(0.0f);
++		blue_error.fill(0.0f);
++		next_red_error.fill(0.0f);
++		next_green_error.fill(0.0f);
++		next_blue_error.fill(0.0f);
++	}
++
++	const uint8_t *src = source_data.ptr();
++	uint8_t *dst = output_data.ptrw();
++	for (int y = 0; y < height; y++) {
++		if (p_dither) {
++			next_red_error.fill(0.0f);
++			next_green_error.fill(0.0f);
++			next_blue_error.fill(0.0f);
++		}
++
++		for (int x = 0; x < width; x++) {
++			const int index = (y * width + x) * 4;
++			const int alpha = src[index + 3];
++			float red = (src[index] * alpha + p_background_color.get_r8() * (255 - alpha) + 127) / 255.0f;
++			float green = (src[index + 1] * alpha + p_background_color.get_g8() * (255 - alpha) + 127) / 255.0f;
++			float blue = (src[index + 2] * alpha + p_background_color.get_b8() * (255 - alpha) + 127) / 255.0f;
++			if (p_dither) {
++				red += red_error[x + 1];
++				green += green_error[x + 1];
++				blue += blue_error[x + 1];
++			}
++
++			const uint8_t quantized_red = _quantize_channel(red, red_levels);
++			const uint8_t quantized_green = _quantize_channel(green, green_levels);
++			const uint8_t quantized_blue = _quantize_channel(blue, blue_levels);
++			dst[index] = quantized_red;
++			dst[index + 1] = quantized_green;
++			dst[index + 2] = quantized_blue;
++			dst[index + 3] = 255;
++
++			if (p_dither) {
++				const float red_diff = red - quantized_red;
++				const float green_diff = green - quantized_green;
++				const float blue_diff = blue - quantized_blue;
++				red_error.write[x + 2] += red_diff * 7.0f / 16.0f;
++				green_error.write[x + 2] += green_diff * 7.0f / 16.0f;
++				blue_error.write[x + 2] += blue_diff * 7.0f / 16.0f;
++				next_red_error.write[x] += red_diff * 3.0f / 16.0f;
++				next_green_error.write[x] += green_diff * 3.0f / 16.0f;
++				next_blue_error.write[x] += blue_diff * 3.0f / 16.0f;
++				next_red_error.write[x + 1] += red_diff * 5.0f / 16.0f;
++				next_green_error.write[x + 1] += green_diff * 5.0f / 16.0f;
++				next_blue_error.write[x + 1] += blue_diff * 5.0f / 16.0f;
++				next_red_error.write[x + 2] += red_diff / 16.0f;
++				next_green_error.write[x + 2] += green_diff / 16.0f;
++				next_blue_error.write[x + 2] += blue_diff / 16.0f;
++			}
++		}
++
++		if (p_dither) {
++			SWAP(red_error, next_red_error);
++			SWAP(green_error, next_green_error);
++			SWAP(blue_error, next_blue_error);
++		}
++	}
++
++	return Image::create_from_data(width, height, false, Image::FORMAT_RGBA8, output_data);
++}
++
++void GifExporter::_reset() {
++	image_frames.unref();
++	output_path.clear();
++	width = 0;
++	height = 0;
++	loop_count = 0;
++	max_color_count = 256;
++	default_frame_delay = 1.0f;
++	exporting = false;
++}
++
++bool GifExporter::begin_export(const String &p_file_path, int p_width, int p_height, float p_frame_delay, int p_loop_count, int p_bit_depth, bool p_dither) {
++	(void)p_dither; // Legacy GifBegin accepted this option but applied dithering per frame.
++	ERR_FAIL_COND_V_MSG(exporting, false, "A GIF export is already active.");
++	ERR_FAIL_COND_V_MSG(p_file_path.is_empty(), false, "GIF export path must not be empty.");
++	ERR_FAIL_COND_V_MSG(p_width <= 0 || p_height <= 0 || p_width > Image::MAX_WIDTH || p_height > Image::MAX_HEIGHT, false, "GIF dimensions are invalid.");
++	ERR_FAIL_COND_V_MSG(!Math::is_finite(p_frame_delay) || p_frame_delay < 0.0f, false, "GIF frame delay must be non-negative.");
++	ERR_FAIL_COND_V_MSG(p_loop_count < 0 || p_loop_count > UINT16_MAX, false, "GIF loop count must be between 0 and 65535.");
++	ERR_FAIL_COND_V_MSG(p_bit_depth < 1 || p_bit_depth > 8, false, "GIF bit depth must be between 1 and 8.");
++
++	image_frames.instantiate();
++	output_path = ProjectSettings::get_singleton()->globalize_path(p_file_path);
++	width = p_width;
++	height = p_height;
++	loop_count = p_loop_count;
++	max_color_count = 1 << p_bit_depth;
++	default_frame_delay = p_frame_delay;
++	exporting = true;
++	return true;
++}
++
++bool GifExporter::write_frame(const Ref<Image> &p_frame, const Color &p_background_color, float p_frame_delay, int p_bit_depth, bool p_dither) {
++	ERR_FAIL_COND_V_MSG(!exporting, false, "No GIF export is active.");
++	ERR_FAIL_COND_V_MSG(!Math::is_finite(p_frame_delay) || p_frame_delay < 0.0f, false, "GIF frame delay must be non-negative.");
++	ERR_FAIL_COND_V_MSG(p_bit_depth < 1 || p_bit_depth > 8, false, "GIF bit depth must be between 1 and 8.");
++
++	Ref<Image> prepared_frame = _prepare_frame(p_frame, p_background_color, p_bit_depth, p_dither);
++	ERR_FAIL_COND_V_MSG(prepared_frame.is_null(), false, "GIF frame must be a valid image matching the export dimensions.");
++
++	const float delay_hundredths = p_frame_delay > 0.0f ? p_frame_delay : default_frame_delay;
++	const float duration_seconds = MAX(delay_hundredths, 1.0f) / 100.0f;
++	image_frames->add_frame(prepared_frame, duration_seconds);
++	max_color_count = MAX(max_color_count, 1 << p_bit_depth);
++	return true;
++}
++
++bool GifExporter::end_export() {
++	ERR_FAIL_COND_V_MSG(!exporting, false, "No GIF export is active.");
++	ERR_FAIL_COND_V_MSG(image_frames->get_frame_count() == 0, false, "Cannot finish a GIF export without frames.");
++
++	const Error error = image_frames->save_gif(output_path, max_color_count, loop_count);
++	if (error != OK) {
++		return false;
++	}
++	_reset();
++	return true;
++}
++
++void GifExporter::_bind_methods() {
++	ClassDB::bind_method(D_METHOD("begin_export", "file_path", "width", "height", "frame_delay", "loop_count", "bit_depth", "dither"), &GifExporter::begin_export, DEFVAL(0), DEFVAL(8), DEFVAL(false));
++	ClassDB::bind_method(D_METHOD("write_frame", "frame", "background_color", "frame_delay", "bit_depth", "dither"), &GifExporter::write_frame, DEFVAL(8), DEFVAL(false));
++	ClassDB::bind_method(D_METHOD("end_export"), &GifExporter::end_export);
++}
++
++GifExporter::~GifExporter() {
++	if (exporting && image_frames.is_valid() && image_frames->get_frame_count() > 0) {
++		end_export();
++	}
++}
+diff --git a/modules/gif/gif_exporter.h b/modules/gif/gif_exporter.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..387e9b25e5ad11ca4b79c4da06137338cfca28aa
+--- /dev/null
++++ b/modules/gif/gif_exporter.h
+@@ -0,0 +1,62 @@
++/**************************************************************************/
++/*  gif_exporter.h                                                        */
++/**************************************************************************/
++/*                         This file is part of:                          */
++/*                             GODOT ENGINE                               */
++/*                        https://godotengine.org                          */
++/**************************************************************************/
++/* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
++/* Copyright (c) 2007-2014 Juan Linietsky, Ariel Manzur.                  */
++/*                                                                        */
++/* Permission is hereby granted, free of charge, to any person obtaining */
++/* a copy of this software and associated documentation files (the       */
++/* "Software"), to deal in the Software without restriction, including   */
++/* without limitation the rights to use, copy, modify, merge, publish,   */
++/* distribute, sublicense, and/or sell copies of the Software, and to    */
++/* permit persons to whom the Software is furnished to do so, subject to */
++/* the following conditions:                                             */
++/*                                                                        */
++/* The above copyright notice and this permission notice shall be        */
++/* included in all copies or substantial portions of the Software.       */
++/*                                                                        */
++/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,       */
++/* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF    */
++/* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.*/
++/* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY  */
++/* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,   */
++/* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
++/* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
++/**************************************************************************/
++
++#pragma once
++
++#include "image_frames.h"
++
++#include "core/io/image.h"
++#include "core/object/ref_counted.h"
++
++class GifExporter : public RefCounted {
++	GDCLASS(GifExporter, RefCounted);
++
++	Ref<ImageFrames> image_frames;
++	String output_path;
++	int width = 0;
++	int height = 0;
++	int loop_count = 0;
++	int max_color_count = 256;
++	float default_frame_delay = 1.0f;
++	bool exporting = false;
++
++	Ref<Image> _prepare_frame(const Ref<Image> &p_frame, const Color &p_background_color, int p_bit_depth, bool p_dither) const;
++	void _reset();
++
++protected:
++	static void _bind_methods();
++
++public:
++	bool begin_export(const String &p_file_path, int p_width, int p_height, float p_frame_delay, int p_loop_count = 0, int p_bit_depth = 8, bool p_dither = false);
++	bool write_frame(const Ref<Image> &p_frame, const Color &p_background_color, float p_frame_delay, int p_bit_depth = 8, bool p_dither = false);
++	bool end_export();
++
++	~GifExporter();
++};
+diff --git a/modules/gif/image_frames.cpp b/modules/gif/image_frames.cpp
+index fc595a96cfc7c1edb356f3b663539cf5bc252938..623fcc967584b1cd5f1be6a3ba54496b4c99b90f 100644
+--- a/modules/gif/image_frames.cpp
++++ b/modules/gif/image_frames.cpp
+@@ -193,8 +193,9 @@ static Error _close_gif(GifFileType *p_gif, Error p_result) {
+ 	return p_result;
+ }
+ 
+-Error ImageFrames::save_gif(const String &p_filepath, int p_color_count) {
++Error ImageFrames::save_gif(const String &p_filepath, int p_color_count, int p_loop_count) {
+ 	ERR_FAIL_COND_V_MSG(get_frame_count() == 0, ERR_CANT_CREATE, "ImageFrames must have at least one frame.");
++	ERR_FAIL_COND_V_MSG(p_loop_count < 0 || p_loop_count > UINT16_MAX, ERR_INVALID_PARAMETER, "GIF loop count must be between 0 and 65535.");
+ 
+ 	// GIF allows to add images of different sizes,
+ 	// but we need to determine the canvas size that could contain all frames.
+@@ -220,7 +221,7 @@ Error ImageFrames::save_gif(const String &p_filepath, int p_color_count) {
+ 
+ 	if (get_frame_count() > 1) {
+ 		static const char application_id[] = "NETSCAPE2.0";
+-		const uint8_t loop_data[3] = { 1, 0, 0 }; // Loop forever.
++		const uint8_t loop_data[3] = { 1, uint8_t(p_loop_count & 0xFF), uint8_t((p_loop_count >> 8) & 0xFF) };
+ 		if (EGifPutExtensionLeader(gif, APPLICATION_EXT_FUNC_CODE) == GIF_ERROR ||
+ 				EGifPutExtensionBlock(gif, 11, application_id) == GIF_ERROR ||
+ 				EGifPutExtensionBlock(gif, 3, loop_data) == GIF_ERROR ||
+@@ -338,7 +339,7 @@ void ImageFrames::clear() {
+ void ImageFrames::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("load", "path", "max_frames"), &ImageFrames::load, DEFVAL(0));
+ 	ClassDB::bind_method(D_METHOD("load_gif_from_buffer", "data", "max_frames"), &ImageFrames::load_gif_from_buffer, DEFVAL(0));
+-	ClassDB::bind_method(D_METHOD("save_gif", "filepath", "color_count"), &ImageFrames::save_gif, DEFVAL(256));
++	ClassDB::bind_method(D_METHOD("save_gif", "filepath", "color_count", "loop_count"), &ImageFrames::save_gif, DEFVAL(256), DEFVAL(0));
+ 	ClassDB::bind_method(D_METHOD("add_frame", "image", "duration"), &ImageFrames::add_frame, DEFVAL(0.05));
+ 	ClassDB::bind_method(D_METHOD("remove_frame", "index"), &ImageFrames::remove_frame);
+ 
+diff --git a/modules/gif/image_frames.h b/modules/gif/image_frames.h
+index 3bcb2c1805ec454122eeb8c1ad8d1070e8473547..1a54c0ec06e421230f02b56c7555dd00b79971ce 100644
+--- a/modules/gif/image_frames.h
++++ b/modules/gif/image_frames.h
+@@ -54,7 +54,7 @@ public:
+ 	Error load(const String &p_path, int p_max_frames = 0);
+ 	Error load_gif_from_buffer(const PackedByteArray &p_data, int p_max_frames = 0);
+ 
+-	Error save_gif(const String &p_path, int p_color_count = 256);
++	Error save_gif(const String &p_path, int p_color_count = 256, int p_loop_count = 0);
+ 
+ 	void add_frame(const Ref<Image> &p_image, float p_duration);
+ 	void remove_frame(int p_idx);
+diff --git a/modules/gif/register_types.cpp b/modules/gif/register_types.cpp
+index e32e2e4fb6f2569b3cabfcba4482a76552de6969..5d672a61f3a1274d27656ce37b56099bd971487e 100644
+--- a/modules/gif/register_types.cpp
++++ b/modules/gif/register_types.cpp
+@@ -30,6 +30,7 @@
+ 
+ #include "register_types.h"
+ 
++#include "gif_exporter.h"
+ #include "image_frames.h"
+ #include "image_frames_loader.h"
+ #include "image_frames_loader_gif.h"
+@@ -62,6 +63,7 @@ void initialize_gif_module(ModuleInitializationLevel p_level) {
+ 		ImageFramesLoader::add_image_frames_format_loader(image_frames_loader_gif);
+ 
+ 		GDREGISTER_CLASS(ImageFrames);
++		GDREGISTER_CLASS(GifExporter);
+ 	}
+ #ifdef TOOLS_ENABLED
+ 	if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
+diff --git a/tests/modules/gif/test_gif_exporter.cpp b/tests/modules/gif/test_gif_exporter.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..31e4b62fb233b62fc6b164f8808e08bb1ec654e9
+--- /dev/null
++++ b/tests/modules/gif/test_gif_exporter.cpp
+@@ -0,0 +1,121 @@
++/**************************************************************************/
++/*  test_gif_exporter.cpp                                                 */
++/**************************************************************************/
++/*                         This file is part of:                          */
++/*                             GODOT ENGINE                               */
++/*                        https://godotengine.org                          */
++/**************************************************************************/
++/* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
++/* Copyright (c) 2007-2014 Juan Linietsky, Ariel Manzur.                  */
++/*                                                                        */
++/* Permission is hereby granted, free of charge, to any person obtaining */
++/* a copy of this software and associated documentation files (the       */
++/* "Software"), to deal in the Software without restriction, including   */
++/* without limitation the rights to use, copy, modify, merge, publish,   */
++/* distribute, sublicense, and/or sell copies of the Software, and to    */
++/* permit persons to whom the Software is furnished to do so, subject to */
++/* the following conditions:                                             */
++/*                                                                        */
++/* The above copyright notice and this permission notice shall be        */
++/* included in all copies or substantial portions of the Software.       */
++/*                                                                        */
++/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,       */
++/* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF    */
++/* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.*/
++/* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY  */
++/* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,   */
++/* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
++/* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
++/**************************************************************************/
++
++#include "tests/test_macros.h"
++
++TEST_FORCE_LINK(test_gif_exporter)
++
++#include "modules/modules_enabled.gen.h"
++
++#ifdef MODULE_GIF_ENABLED
++
++#include "core/io/dir_access.h"
++#include "core/io/file_access.h"
++#include "core/object/class_db.h"
++#include "tests/test_utils.h"
++
++#include "modules/gif/gif_exporter.h"
++#include "modules/gif/image_frames.h"
++
++namespace TestGifExporter {
++
++TEST_CASE("[GIF] GifExporter writes compatible animated files") {
++	CHECK(ClassDB::class_exists(SNAME("GifExporter")));
++	const String path = TestUtils::get_temp_path("gif_exporter_compat.gif");
++	if (FileAccess::exists(path)) {
++		DirAccess::remove_file_or_error(path);
++	}
++
++	Ref<GifExporter> exporter;
++	exporter.instantiate();
++	REQUIRE(exporter->begin_export(path, 2, 1, 5.0f, 3, 8, false));
++
++	PackedByteArray pixels;
++	pixels.resize(8);
++	uint8_t *data = pixels.ptrw();
++	data[0] = 255;
++	data[1] = 0;
++	data[2] = 0;
++	data[3] = 0;
++	data[4] = 0;
++	data[5] = 0;
++	data[6] = 255;
++	data[7] = 255;
++	Ref<Image> frame = Image::create_from_data(2, 1, false, Image::FORMAT_RGBA8, pixels);
++	REQUIRE(exporter->write_frame(frame, Color(0, 1, 0), 5.0f, 8, false));
++	REQUIRE(exporter->write_frame(frame, Color(0, 1, 0), 10.0f, 4, true));
++	REQUIRE(exporter->end_export());
++
++	Ref<ImageFrames> loaded;
++	loaded.instantiate();
++	REQUIRE(loaded->load(path) == OK);
++	REQUIRE(loaded->get_frame_count() == 2);
++	CHECK(loaded->get_frame_duration(0) == doctest::Approx(0.05));
++	CHECK(loaded->get_frame_duration(1) == doctest::Approx(0.10));
++	CHECK(loaded->get_frame_image(0)->get_pixel(0, 0).is_equal_approx(Color(0, 1, 0, 1)));
++	CHECK(loaded->get_frame_image(0)->get_pixel(1, 0).is_equal_approx(Color(0, 0, 1, 1)));
++
++	Ref<FileAccess> file = FileAccess::open(path, FileAccess::READ);
++	REQUIRE(file.is_valid());
++	PackedByteArray encoded = file->get_buffer(file->get_length());
++	bool loop_count_found = false;
++	for (int i = 0; i + 2 < encoded.size(); i++) {
++		if (encoded[i] == 0x01 && encoded[i + 1] == 0x03 && encoded[i + 2] == 0x00) {
++			loop_count_found = true;
++			break;
++		}
++	}
++	CHECK(loop_count_found);
++	file.unref();
++	DirAccess::remove_file_or_error(path);
++}
++
++TEST_CASE("[GIF] GifExporter rejects invalid state and dimensions") {
++	Ref<GifExporter> exporter;
++	exporter.instantiate();
++	ERR_PRINT_OFF;
++	CHECK_FALSE(exporter->end_export());
++	CHECK_FALSE(exporter->begin_export("res://invalid.gif", 0, 1, 5.0f));
++	const bool began_export = exporter->begin_export("res://unused.gif", 2, 2, 5.0f);
++	CHECK(began_export);
++	if (!began_export) {
++		ERR_PRINT_ON;
++		return;
++	}
++
++	Ref<Image> wrong_size = Image::create_empty(1, 1, false, Image::FORMAT_RGBA8);
++	CHECK_FALSE(exporter->write_frame(wrong_size, Color(), 5.0f));
++	CHECK_FALSE(exporter->end_export());
++	ERR_PRINT_ON;
++}
++
++} // namespace TestGifExporter
++
++#endif // MODULE_GIF_ENABLED
+
+base-commit: 5ec4857b340b6284a18b49b2eda462bd250f219a
+prerequisite-patch-id: b38459b409a3326aed65d2433e1341638171f884
+prerequisite-patch-id: bdb0fe8d6ba7fff1b900ae33d9bec552ea61724c
+prerequisite-patch-id: 4dcdddc73066f768cb97c56444abacb21bda061c
+prerequisite-patch-id: 1f2fbc55f35da3e943dcbaeeb3c9a6d798621bf3
+prerequisite-patch-id: 4dd1cec6888d5160c85be2072b9e5dd05411d007
+prerequisite-patch-id: 60110ae09a2d09796ad65e339ee0b5abc2ce541a
+prerequisite-patch-id: bdb0025d4207a7cf0e1466ca96b2824d238b3caf
+prerequisite-patch-id: 8c55a8201fec417bc2629b903ea2d630aedab1d8
+prerequisite-patch-id: 9dfaaac9d4a47edf9d1eccce8fa66b69e674a911
+prerequisite-patch-id: 17fa223ec74d20c7792e45826a4f0d8ecd7f85d7

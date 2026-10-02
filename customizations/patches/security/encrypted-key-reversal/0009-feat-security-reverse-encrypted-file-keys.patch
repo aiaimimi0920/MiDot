@@ -1,0 +1,198 @@
+From 728cc9a6bd8f293dbb79236d203e47ff308fddbf Mon Sep 17 00:00:00 2001
+From: aiaimimi0920 <153103332+aiaimimi0920@users.noreply.github.com>
+Date: Sun, 30 Aug 2026 12:54:33 +0800
+Subject: [PATCH] feat(security): reverse encrypted file keys
+
+Make custom exports incompatible with stock Godot key ordering so generic extraction tools cannot reuse the configured key directly.
+
+Godot-Patch-Topic: security.encrypted-key-reversal
+---
+ core/io/file_access_encrypted.cpp  | 10 ++--
+ core/io/file_access_encrypted.h    |  2 +-
+ doc/classes/FileAccess.xml         |  2 +
+ tests/core/io/test_file_access.cpp | 87 ++++++++++++++++++++++++++++++
+ 4 files changed, 96 insertions(+), 5 deletions(-)
+
+diff --git a/core/io/file_access_encrypted.cpp b/core/io/file_access_encrypted.cpp
+index e4bbe875818a96eaded2d062105212874bd2abad..34da993866b5dbe2232361fb3ba239717d59ef1d 100644
+--- a/core/io/file_access_encrypted.cpp
++++ b/core/io/file_access_encrypted.cpp
+@@ -32,9 +32,11 @@
+ 
+ #include "core/variant/variant.h"
+ 
+-Error FileAccessEncrypted::open_and_parse(Ref<FileAccess> p_base, const Vector<uint8_t> &p_key, Mode p_mode, bool p_with_magic, const Vector<uint8_t> &p_iv) {
++Error FileAccessEncrypted::open_and_parse(Ref<FileAccess> p_base, const Vector<uint8_t> &p_raw_key, Mode p_mode, bool p_with_magic, const Vector<uint8_t> &p_iv) {
+ 	ERR_FAIL_COND_V_MSG(file.is_valid(), ERR_ALREADY_IN_USE, vformat("Can't open file while another file from path '%s' is open.", file->get_path_absolute()));
+-	ERR_FAIL_COND_V(p_key.size() != 32, ERR_INVALID_PARAMETER);
++	ERR_FAIL_COND_V(p_raw_key.size() != 32, ERR_INVALID_PARAMETER);
++	Vector<uint8_t> key_bytes = p_raw_key;
++	key_bytes.reverse();
+ 
+ 	pos = 0;
+ 	eofed = false;
+@@ -44,7 +46,7 @@ Error FileAccessEncrypted::open_and_parse(Ref<FileAccess> p_base, const Vector<u
+ 		data.clear();
+ 		writing = true;
+ 		file = p_base;
+-		key = p_key;
++		key = key_bytes;
+ 		if (p_iv.is_empty()) {
+ 			iv.resize(16);
+ 			Error err = CryptoCore::generate_random(iv.ptrw(), 16);
+@@ -56,7 +58,7 @@ Error FileAccessEncrypted::open_and_parse(Ref<FileAccess> p_base, const Vector<u
+ 
+ 	} else if (p_mode == MODE_READ) {
+ 		writing = false;
+-		key = p_key;
++		key = key_bytes;
+ 
+ 		if (use_magic) {
+ 			uint32_t magic = p_base->get_32();
+diff --git a/core/io/file_access_encrypted.h b/core/io/file_access_encrypted.h
+index 9dc4333dd5776e1d18b9578c7953d6c1f889ca42..ab7a78c8d3d0759a6805b8d251859f0adffef17f 100644
+--- a/core/io/file_access_encrypted.h
++++ b/core/io/file_access_encrypted.h
+@@ -60,7 +60,7 @@ private:
+ 	void _close();
+ 
+ public:
+-	Error open_and_parse(Ref<FileAccess> p_base, const Vector<uint8_t> &p_key, Mode p_mode, bool p_with_magic = true, const Vector<uint8_t> &p_iv = Vector<uint8_t>());
++	Error open_and_parse(Ref<FileAccess> p_base, const Vector<uint8_t> &p_raw_key, Mode p_mode, bool p_with_magic = true, const Vector<uint8_t> &p_iv = Vector<uint8_t>());
+ 	Error open_and_parse_password(Ref<FileAccess> p_base, const String &p_key, Mode p_mode);
+ 
+ 	Vector<uint8_t> get_iv() const { return iv; }
+diff --git a/doc/classes/FileAccess.xml b/doc/classes/FileAccess.xml
+index 01f25880ba8543d1248871a6f13290352bd48334..c8c4e51b87a5a6de45fe58540718260098ae66ca 100644
+--- a/doc/classes/FileAccess.xml
++++ b/doc/classes/FileAccess.xml
+@@ -381,6 +381,7 @@
+ 			<description>
+ 				Creates a new [FileAccess] object and opens an encrypted file in write or read mode. You need to pass a binary key to encrypt/decrypt it.
+ 				[b]Note:[/b] The provided key must be 32 bytes long.
++				[b]Compatibility:[/b] This custom engine reverses the 32 key bytes before encryption and decryption. Files created with this method are not compatible with an unmodified Godot build using the same key.
+ 				Returns [code]null[/code] if opening the file failed. You can use [method get_open_error] to check the error that occurred.
+ 			</description>
+ 		</method>
+@@ -391,6 +392,7 @@
+ 			<param index="2" name="pass" type="String" />
+ 			<description>
+ 				Creates a new [FileAccess] object and opens an encrypted file in write or read mode. You need to pass a password to encrypt/decrypt it.
++				[b]Compatibility:[/b] This custom engine reverses the password-derived key before encryption and decryption. Files created with this method are not compatible with an unmodified Godot build using the same password.
+ 				Returns [code]null[/code] if opening the file failed. You can use [method get_open_error] to check the error that occurred.
+ 			</description>
+ 		</method>
+diff --git a/tests/core/io/test_file_access.cpp b/tests/core/io/test_file_access.cpp
+index 038eaa4b7699107cbdb63f4565454069ee577027..806d3ea2128c16603613e1c0cc07c787af9bffb7 100644
+--- a/tests/core/io/test_file_access.cpp
++++ b/tests/core/io/test_file_access.cpp
+@@ -32,12 +32,99 @@
+ 
+ TEST_FORCE_LINK(test_file_access)
+ 
++#include "core/crypto/crypto_core.h"
+ #include "core/io/dir_access.h"
+ #include "core/io/file_access.h"
++#include "core/io/file_access_encrypted.h"
+ #include "tests/test_utils.h"
+ 
+ namespace TestFileAccess {
+ 
++TEST_CASE("[FileAccess] Encrypted files reverse raw key bytes") {
++	const String path = TestUtils::get_temp_path("encrypted_reversed_key.bin");
++	if (FileAccess::exists(path)) {
++		DirAccess::remove_file_or_error(path);
++	}
++
++	Vector<uint8_t> raw_key;
++	raw_key.resize(32);
++	for (int i = 0; i < raw_key.size(); i++) {
++		raw_key.write[i] = i + 1;
++	}
++
++	Vector<uint8_t> iv;
++	iv.resize(16);
++	for (int i = 0; i < iv.size(); i++) {
++		iv.write[i] = 0xA0 + i;
++	}
++
++	const uint8_t plaintext[16] = {
++		'G', 'o', 'd', 'o', 't', 'K', 'e', 'y',
++		'O', 'r', 'd', 'e', 'r', 'V', '1', '!'
++	};
++
++	Ref<FileAccess> base = FileAccess::open(path, FileAccess::WRITE);
++	REQUIRE(base.is_valid());
++	Ref<FileAccessEncrypted> encrypted;
++	encrypted.instantiate();
++	REQUIRE(encrypted->open_and_parse(base, raw_key, FileAccessEncrypted::MODE_WRITE_AES256, false, iv) == OK);
++	base.unref();
++	encrypted->store_buffer(plaintext, sizeof(plaintext));
++	encrypted->close();
++	encrypted.unref();
++
++	Ref<FileAccess> encrypted_base = FileAccess::open(path, FileAccess::READ);
++	REQUIRE(encrypted_base.is_valid());
++	Ref<FileAccessEncrypted> decrypted;
++	decrypted.instantiate();
++	REQUIRE(decrypted->open_and_parse(encrypted_base, raw_key, FileAccessEncrypted::MODE_READ, false) == OK);
++	encrypted_base.unref();
++	Vector<uint8_t> roundtrip;
++	roundtrip.resize(sizeof(plaintext));
++	REQUIRE(decrypted->get_buffer(roundtrip.ptrw(), roundtrip.size()) == uint64_t(roundtrip.size()));
++	for (int i = 0; i < roundtrip.size(); i++) {
++		CHECK(roundtrip[i] == plaintext[i]);
++	}
++	decrypted->close();
++	decrypted.unref();
++
++	Ref<FileAccess> raw_file = FileAccess::open(path, FileAccess::READ);
++	REQUIRE(raw_file.is_valid());
++	uint8_t stored_hash[16];
++	REQUIRE(raw_file->get_buffer(stored_hash, sizeof(stored_hash)) == sizeof(stored_hash));
++	CHECK(raw_file->get_64() == sizeof(plaintext));
++	uint8_t stored_iv[16];
++	REQUIRE(raw_file->get_buffer(stored_iv, sizeof(stored_iv)) == sizeof(stored_iv));
++	for (int i = 0; i < iv.size(); i++) {
++		CHECK(stored_iv[i] == iv[i]);
++	}
++	Vector<uint8_t> ciphertext;
++	ciphertext.resize(sizeof(plaintext));
++	REQUIRE(raw_file->get_buffer(ciphertext.ptrw(), ciphertext.size()) == uint64_t(ciphertext.size()));
++	raw_file.unref();
++
++	Vector<uint8_t> reversed_key = raw_key;
++	reversed_key.reverse();
++	Vector<uint8_t> reversed_key_plaintext = ciphertext;
++	REQUIRE(CryptoCore::decrypt_cfb(ciphertext.ptr(), reversed_key_plaintext.ptrw(), ciphertext.size(), reversed_key.ptr(), reversed_key.size(), stored_iv) == OK);
++	for (int i = 0; i < reversed_key_plaintext.size(); i++) {
++		CHECK(reversed_key_plaintext[i] == plaintext[i]);
++	}
++
++	Vector<uint8_t> original_key_plaintext = ciphertext;
++	REQUIRE(CryptoCore::decrypt_cfb(ciphertext.ptr(), original_key_plaintext.ptrw(), ciphertext.size(), raw_key.ptr(), raw_key.size(), stored_iv) == OK);
++	bool original_key_matches = true;
++	for (int i = 0; i < original_key_plaintext.size(); i++) {
++		if (original_key_plaintext[i] != plaintext[i]) {
++			original_key_matches = false;
++			break;
++		}
++	}
++	CHECK_FALSE(original_key_matches);
++
++	DirAccess::remove_file_or_error(path);
++}
++
+ TEST_CASE("[FileAccess] CSV read") {
+ 	Ref<FileAccess> f = FileAccess::open(TestUtils::get_data_path("testdata.csv"), FileAccess::READ);
+ 	REQUIRE(f.is_valid());
+
+base-commit: 5ec4857b340b6284a18b49b2eda462bd250f219a
+prerequisite-patch-id: b38459b409a3326aed65d2433e1341638171f884
+prerequisite-patch-id: bdb0fe8d6ba7fff1b900ae33d9bec552ea61724c
+prerequisite-patch-id: 4dcdddc73066f768cb97c56444abacb21bda061c
+prerequisite-patch-id: 1f2fbc55f35da3e943dcbaeeb3c9a6d798621bf3
+prerequisite-patch-id: 4dd1cec6888d5160c85be2072b9e5dd05411d007
+prerequisite-patch-id: 60110ae09a2d09796ad65e339ee0b5abc2ce541a
+prerequisite-patch-id: bdb0025d4207a7cf0e1466ca96b2824d238b3caf
+prerequisite-patch-id: 8c55a8201fec417bc2629b903ea2d630aedab1d8

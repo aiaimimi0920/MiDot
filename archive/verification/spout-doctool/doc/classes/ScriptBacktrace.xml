@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ScriptBacktrace" inherits="RefCounted" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="format" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="indent_all" type="int" default="0" />
+			<param index="1" name="indent_frames" type="int" default="4" />
+			<description>
+			</description>
+		</method>
+		<method name="get_frame_count" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_frame_file" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_frame_function" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_frame_line" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_global_variable_count" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_global_variable_name" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="variable_index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_global_variable_value" qualifiers="const">
+			<return type="Variant" />
+			<param index="0" name="variable_index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_language_name" qualifiers="const">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="get_local_variable_count" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="frame_index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_local_variable_name" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="frame_index" type="int" />
+			<param index="1" name="variable_index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_local_variable_value" qualifiers="const">
+			<return type="Variant" />
+			<param index="0" name="frame_index" type="int" />
+			<param index="1" name="variable_index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_member_variable_count" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="frame_index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_member_variable_name" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="frame_index" type="int" />
+			<param index="1" name="variable_index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_member_variable_value" qualifiers="const">
+			<return type="Variant" />
+			<param index="0" name="frame_index" type="int" />
+			<param index="1" name="variable_index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="is_empty" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>

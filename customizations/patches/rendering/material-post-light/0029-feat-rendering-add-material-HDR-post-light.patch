@@ -1,0 +1,274 @@
+From 3090ee48efce30f8936e7721cc8421e851f6a1a4 Mon Sep 17 00:00:00 2001
+From: aiaimimi0920 <153103332+aiaimimi0920@users.noreply.github.com>
+Date: Mon, 7 Sep 2026 10:34:46 +0800
+Subject: [PATCH] feat(rendering): add material HDR post-light
+
+Preserve nonlinear material ordering after native light accumulation. Keep mutable material data private to each fragment and exclude fragment-private values from vertex interpolation limits.
+
+Godot-Patch-Topic: rendering.material-post-light
+---
+ .../scene_shader_forward_clustered.cpp        |  7 ++++
+ .../scene_forward_clustered.glsl              | 37 +++++++++++++++++++
+ servers/rendering/shader_compiler.cpp         |  7 ++++
+ servers/rendering/shader_language.cpp         |  7 +++-
+ servers/rendering/shader_language.h           |  2 +
+ servers/rendering/shader_preprocessor.cpp     |  1 +
+ servers/rendering/shader_types.cpp            | 15 ++++++++
+ 7 files changed, 75 insertions(+), 1 deletion(-)
+
+diff --git a/servers/rendering/renderer_rd/forward_clustered/scene_shader_forward_clustered.cpp b/servers/rendering/renderer_rd/forward_clustered/scene_shader_forward_clustered.cpp
+index eda7d9fba6ce1c4bf3caa19f8ef788eaabbf9332..fc8febca3c16206870dc8379493615cbf8f919d1 100644
+--- a/servers/rendering/renderer_rd/forward_clustered/scene_shader_forward_clustered.cpp
++++ b/servers/rendering/renderer_rd/forward_clustered/scene_shader_forward_clustered.cpp
+@@ -96,6 +96,7 @@ void SceneShaderForwardClustered::ShaderData::set_code(const String &p_code) {
+ 	actions.entry_point_stages["vertex"] = ShaderCompiler::STAGE_VERTEX;
+ 	actions.entry_point_stages["fragment"] = ShaderCompiler::STAGE_FRAGMENT;
+ 	actions.entry_point_stages["light"] = ShaderCompiler::STAGE_FRAGMENT;
++	actions.entry_point_stages["post_light"] = ShaderCompiler::STAGE_FRAGMENT;
+ 
+ 	actions.render_mode_values["blend_add"] = Pair<int *, int>(&blend_mode, BLEND_MODE_ADD);
+ 	actions.render_mode_values["blend_mix"] = Pair<int *, int>(&blend_mode, BLEND_MODE_MIX);
+@@ -772,6 +773,11 @@ void SceneShaderForwardClustered::init(const String p_defines) {
+ 		actions.renames["AO"] = "ao";
+ 		actions.renames["AO_LIGHT_AFFECT"] = "ao_light_affect";
+ 		actions.renames["EMISSION"] = "emission";
++		actions.renames["POST_LIGHT_COLOR"] = "post_light_color";
++		actions.renames["POST_LIGHT_DIFFUSE"] = "post_light_raw_diffuse";
++		actions.renames["POST_LIGHT_SPECULAR"] = "post_light_raw_specular";
++		actions.renames["POST_LIGHT_DIRECT"] = "post_light_direct";
++		actions.renames["MATERIAL_LIGHT_DATA"] = "material_light_data";
+ 		actions.renames["POINT_COORD"] = "point_coord";
+ 		actions.renames["INSTANCE_CUSTOM"] = "instance_custom";
+ 		actions.renames["SCREEN_UV"] = "screen_uv";
+@@ -813,6 +819,7 @@ void SceneShaderForwardClustered::init(const String p_defines) {
+ 		actions.renames["SPECULAR_LIGHT"] = "specular_light_highp";
+ 
+ 		actions.usage_defines["NORMAL"] = "#define NORMAL_USED\n";
++		actions.usage_defines["MATERIAL_LIGHT_DATA"] = "#define MATERIAL_LIGHT_DATA_USED\n";
+ 		actions.usage_defines["TANGENT"] = "#define TANGENT_USED\n";
+ 		actions.usage_defines["BINORMAL"] = "@TANGENT";
+ 		actions.usage_defines["RIM"] = "#define LIGHT_RIM_USED\n";
+diff --git a/servers/rendering/renderer_rd/shaders/forward_clustered/scene_forward_clustered.glsl b/servers/rendering/renderer_rd/shaders/forward_clustered/scene_forward_clustered.glsl
+index 0f33e2e6026f076c455121e310b6a205f6bed592..d0961e45c38bba613d55a544252a27c42cb9ba09 100644
+--- a/servers/rendering/renderer_rd/shaders/forward_clustered/scene_forward_clustered.glsl
++++ b/servers/rendering/renderer_rd/shaders/forward_clustered/scene_forward_clustered.glsl
+@@ -996,6 +996,11 @@ layout(set = MATERIAL_UNIFORM_SET, binding = 0, std140) uniform MaterialUniforms
+ /* clang-format on */
+ #endif
+ 
++#ifdef MATERIAL_LIGHT_DATA_USED
++// Private to this fragment invocation, shared by all custom-light calls.
++vec4 material_light_data;
++#endif
++
+ #GLOBALS
+ 
+ #ifdef MODE_RENDER_DEPTH
+@@ -1166,6 +1171,9 @@ vec3 encode24(vec3 v) {
+ #endif // MODE_RENDER_NORMAL_ROUGHNESS
+ 
+ void fragment_shader(in SceneData scene_data) {
++#ifdef MATERIAL_LIGHT_DATA_USED
++	material_light_data = vec4(0.0);
++#endif
+ 	uint instance_index = instance_index_interp;
+ 
+ #ifdef PREMUL_ALPHA_USED
+@@ -3125,6 +3133,12 @@ void fragment_shader(in SceneData scene_data) {
+ //nothing happens, so a tree-ssa optimizer will result in no fragment shader :)
+ #else
+ 
++#ifdef POST_LIGHT_CODE_USED
++	// Preserve the custom-light accumulators before native material scaling.
++	vec3 post_light_raw_diffuse = vec3(diffuse_light);
++	vec3 post_light_raw_specular = vec3(direct_specular_light);
++#endif
++
+ 	// multiply by albedo
+ 	diffuse_light *= albedo; // ambient must be multiplied by albedo at the end
+ 
+@@ -3141,6 +3155,19 @@ void fragment_shader(in SceneData scene_data) {
+ 	fog = vec4(unpackHalf2x16(fog_rg), unpackHalf2x16(fog_ba));
+ #endif //!FOG_DISABLED
+ 
++#ifdef POST_LIGHT_CODE_USED
++	vec3 post_light_direct = vec3(diffuse_light + direct_specular_light);
++#ifdef MODE_UNSHADED
++	vec3 post_light_original = vec3(albedo);
++#else
++	vec3 post_light_original = vec3(emission + ambient_light + diffuse_light + direct_specular_light + indirect_specular_light);
++#endif
++	vec3 post_light_color = post_light_original;
++	{
++#CODE : POST_LIGHT
++	}
++#endif
++
+ #ifdef MODE_SEPARATE_SPECULAR
+ 
+ #ifdef MODE_UNSHADED
+@@ -3156,6 +3183,12 @@ void fragment_shader(in SceneData scene_data) {
+ 	specular_buffer = vec4(direct_specular_light + indirect_specular_light, metallic);
+ #endif
+ 
++#ifdef POST_LIGHT_CODE_USED
++	// Keep the original specular attachment; place the material correction in
++	// diffuse so their pre-screen-effect sum equals the post-light result.
++	diffuse_buffer.rgb += post_light_color - post_light_original;
++#endif
++
+ #ifndef FOG_DISABLED
+ 	diffuse_buffer.rgb = diffuse_buffer.rgb * fog.a + fog.rgb;
+ 	specular_buffer.rgb = specular_buffer.rgb * fog.a;
+@@ -3172,6 +3205,10 @@ void fragment_shader(in SceneData scene_data) {
+ //frag_color = vec4(1.0);
+ #endif //USE_NO_SHADING
+ 
++#ifdef POST_LIGHT_CODE_USED
++	frag_color.rgb = post_light_color;
++#endif
++
+ #ifndef FOG_DISABLED
+ 	frag_color.rgb = frag_color.rgb * fog.a + fog.rgb;
+ #endif //!FOG_DISABLED
+diff --git a/servers/rendering/shader_compiler.cpp b/servers/rendering/shader_compiler.cpp
+index 6ec1b8ace22bcac66e55937666ed88106bf534ef..565479f91ed600e73968c00dd59c36f57876f6bd 100644
+--- a/servers/rendering/shader_compiler.cpp
++++ b/servers/rendering/shader_compiler.cpp
+@@ -1646,6 +1646,13 @@ Error ShaderCompiler::compile(RSE::ShaderMode p_mode, const String &p_code, Iden
+ 		return err;
+ 	}
+ 
++	if (p_mode == RSE::SHADER_SPATIAL && !p_actions->entry_point_stages.has("post_light")) {
++		for (const SL::ShaderNode::Function &entry : parser.get_shader()->vfunctions) {
++			ERR_FAIL_COND_V_MSG(entry.name == "post_light", ERR_UNAVAILABLE,
++					"post_light() is not supported by this renderer; refusing to omit the material HDR stage.");
++		}
++	}
++
+ 	r_gen_code.defines.clear();
+ 	r_gen_code.code.clear();
+ 	for (int i = 0; i < STAGE_MAX; i++) {
+diff --git a/servers/rendering/shader_language.cpp b/servers/rendering/shader_language.cpp
+index 7edc2be1702430686624b21b267347a200ccae55..5d4aac1c6019cf5748d7d164cc8c689a652f14eb 100644
+--- a/servers/rendering/shader_language.cpp
++++ b/servers/rendering/shader_language.cpp
+@@ -6576,7 +6576,7 @@ ShaderLanguage::Node *ShaderLanguage::_parse_expression(BlockNode *p_block, cons
+ 													break;
+ 												case ShaderNode::Varying::STAGE_FRAGMENT:
+ 													if (!is_out_arg) {
+-														if (current_function != varying_function_names.fragment && current_function != varying_function_names.light) {
++														if (current_function != varying_function_names.fragment && current_function != varying_function_names.light && current_function != varying_function_names.post_light) {
+ 															error = true;
+ 														}
+ 													} else if (current_function != varying_function_names.fragment) { // inout/out
+@@ -11194,6 +11194,11 @@ Error ShaderLanguage::_parse_shader(const HashMap<StringName, FunctionInfo> &p_f
+ 	}
+ 
+ 	for (const KeyValue<StringName, ShaderNode::Varying> &kv : shader->varyings) {
++		// Fragment-to-light/post-light values are private fragment storage, not
++		// vertex outputs. Match ShaderCompiler's varying-location allocation.
++		if (kv.value.stage == ShaderNode::Varying::STAGE_FRAGMENT) {
++			continue;
++		}
+ 		if (kv.value.stage != ShaderNode::Varying::STAGE_FRAGMENT && (kv.value.type > TYPE_BVEC4 && kv.value.type < TYPE_FLOAT) && kv.value.interpolation != INTERPOLATION_FLAT) {
+ 			_set_tkpos(kv.value.tkpos);
+ 			_set_error(vformat(RTR("Varying with integer data type must be declared with `%s` interpolation qualifier."), "flat"));
+diff --git a/servers/rendering/shader_language.h b/servers/rendering/shader_language.h
+index 8311fcf4e1680c446e1a8f8243f4b4c8eea40589..848d8f557d39b26a772fbe541e5dbf866e94ae75 100644
+--- a/servers/rendering/shader_language.h
++++ b/servers/rendering/shader_language.h
+@@ -358,10 +358,12 @@ public:
+ 		StringName fragment;
+ 		StringName vertex;
+ 		StringName light;
++		StringName post_light;
+ 		VaryingFunctionNames() {
+ 			fragment = "fragment";
+ 			vertex = "vertex";
+ 			light = "light";
++			post_light = "post_light";
+ 		}
+ 	};
+ 
+diff --git a/servers/rendering/shader_preprocessor.cpp b/servers/rendering/shader_preprocessor.cpp
+index 2cdb1442d1fea9b8c68046f44e5ab3e5f1fba988..178e379f3d670151bee332f21a8b4a76d7d5b25e 100644
+--- a/servers/rendering/shader_preprocessor.cpp
++++ b/servers/rendering/shader_preprocessor.cpp
+@@ -1354,6 +1354,7 @@ Error ShaderPreprocessor::preprocess(const String &p_code, const String &p_filen
+ 
+ 		if (rendering_method == "forward_plus") {
+ 			insert_builtin_define("CURRENT_RENDERER", _MKSTR(2), pp_state);
++			insert_builtin_define("HAS_MATERIAL_POST_LIGHT", _MKSTR(1), pp_state);
+ 		} else if (rendering_method == "mobile") {
+ 			insert_builtin_define("CURRENT_RENDERER", _MKSTR(1), pp_state);
+ 		} else { // gl_compatibility
+diff --git a/servers/rendering/shader_types.cpp b/servers/rendering/shader_types.cpp
+index c4954fbc6c806e8d8d90aa6ac61ad787e5c40a46..d4070aa14ffb902238009274b1badb297054269c 100644
+--- a/servers/rendering/shader_types.cpp
++++ b/servers/rendering/shader_types.cpp
+@@ -194,6 +194,7 @@ ShaderTypes::ShaderTypes() {
+ 	shader_modes[RSE::SHADER_SPATIAL].functions["fragment"].built_ins["FOG"] = ShaderLanguage::TYPE_VEC4; // TODO consider adding to light shader
+ 	shader_modes[RSE::SHADER_SPATIAL].functions["fragment"].built_ins["RADIANCE"] = ShaderLanguage::TYPE_VEC4;
+ 	shader_modes[RSE::SHADER_SPATIAL].functions["fragment"].built_ins["IRRADIANCE"] = ShaderLanguage::TYPE_VEC4;
++	shader_modes[RSE::SHADER_SPATIAL].functions["fragment"].built_ins["MATERIAL_LIGHT_DATA"] = ShaderLanguage::TYPE_VEC4;
+ 	shader_modes[RSE::SHADER_SPATIAL].functions["fragment"].can_discard = true;
+ 	shader_modes[RSE::SHADER_SPATIAL].functions["fragment"].main_function = true;
+ 
+@@ -228,12 +229,26 @@ ShaderTypes::ShaderTypes() {
+ 	shader_modes[RSE::SHADER_SPATIAL].functions["light"].built_ins["ROUGHNESS"] = constt(ShaderLanguage::TYPE_FLOAT);
+ 	shader_modes[RSE::SHADER_SPATIAL].functions["light"].built_ins["DIFFUSE_LIGHT"] = ShaderLanguage::TYPE_VEC3;
+ 	shader_modes[RSE::SHADER_SPATIAL].functions["light"].built_ins["SPECULAR_LIGHT"] = ShaderLanguage::TYPE_VEC3;
++	shader_modes[RSE::SHADER_SPATIAL].functions["light"].built_ins["MATERIAL_LIGHT_DATA"] = ShaderLanguage::TYPE_VEC4;
+ 	shader_modes[RSE::SHADER_SPATIAL].functions["light"].built_ins["ALPHA"] = ShaderLanguage::TYPE_FLOAT;
+ 	shader_modes[RSE::SHADER_SPATIAL].functions["light"].built_ins["SCREEN_UV"] = constt(ShaderLanguage::TYPE_VEC2);
+ 
+ 	shader_modes[RSE::SHADER_SPATIAL].functions["light"].can_discard = true;
+ 	shader_modes[RSE::SHADER_SPATIAL].functions["light"].main_function = true;
+ 
++	// Material-local HDR processing after direct-light accumulation, before fog.
++	// Fragment varyings are read-only here, as they are in light().
++	shader_modes[RSE::SHADER_SPATIAL].functions["post_light"].main_function = true;
++	shader_modes[RSE::SHADER_SPATIAL].functions["post_light"].built_ins["POST_LIGHT_COLOR"] = ShaderLanguage::TYPE_VEC3;
++	shader_modes[RSE::SHADER_SPATIAL].functions["post_light"].built_ins["POST_LIGHT_DIFFUSE"] = constt(ShaderLanguage::TYPE_VEC3);
++	shader_modes[RSE::SHADER_SPATIAL].functions["post_light"].built_ins["POST_LIGHT_SPECULAR"] = constt(ShaderLanguage::TYPE_VEC3);
++	shader_modes[RSE::SHADER_SPATIAL].functions["post_light"].built_ins["POST_LIGHT_DIRECT"] = constt(ShaderLanguage::TYPE_VEC3);
++	shader_modes[RSE::SHADER_SPATIAL].functions["post_light"].built_ins["MATERIAL_LIGHT_DATA"] = constt(ShaderLanguage::TYPE_VEC4);
++	shader_modes[RSE::SHADER_SPATIAL].functions["post_light"].built_ins["FRAGCOORD"] = constt(ShaderLanguage::TYPE_VEC4);
++	shader_modes[RSE::SHADER_SPATIAL].functions["post_light"].built_ins["UV"] = constt(ShaderLanguage::TYPE_VEC2);
++	shader_modes[RSE::SHADER_SPATIAL].functions["post_light"].built_ins["UV2"] = constt(ShaderLanguage::TYPE_VEC2);
++	shader_modes[RSE::SHADER_SPATIAL].functions["post_light"].built_ins["SCREEN_UV"] = constt(ShaderLanguage::TYPE_VEC2);
++
+ 	// spatial render modes
+ 	{
+ 		shader_modes[RSE::SHADER_SPATIAL].modes.push_back({ PNAME("blend"), "mix", "add", "sub", "mul", "premul_alpha" });
+
+base-commit: 5ec4857b340b6284a18b49b2eda462bd250f219a
+prerequisite-patch-id: b38459b409a3326aed65d2433e1341638171f884
+prerequisite-patch-id: bdb0fe8d6ba7fff1b900ae33d9bec552ea61724c
+prerequisite-patch-id: 4dcdddc73066f768cb97c56444abacb21bda061c
+prerequisite-patch-id: 1f2fbc55f35da3e943dcbaeeb3c9a6d798621bf3
+prerequisite-patch-id: 4dd1cec6888d5160c85be2072b9e5dd05411d007
+prerequisite-patch-id: 60110ae09a2d09796ad65e339ee0b5abc2ce541a
+prerequisite-patch-id: bdb0025d4207a7cf0e1466ca96b2824d238b3caf
+prerequisite-patch-id: 8c55a8201fec417bc2629b903ea2d630aedab1d8
+prerequisite-patch-id: 9dfaaac9d4a47edf9d1eccce8fa66b69e674a911
+prerequisite-patch-id: 17fa223ec74d20c7792e45826a4f0d8ecd7f85d7
+prerequisite-patch-id: 0fb9ef780b3f10a7e82968e44defda508734fa91
+prerequisite-patch-id: 2af824bf187ff13746bd620b1032f57d166c0114
+prerequisite-patch-id: dc8aa901272b27086c9045fc0b9335986d3a8128
+prerequisite-patch-id: 0ce30d5045f596dbc6bf72cbcd9bb16472513013
+prerequisite-patch-id: 50d820c0fb3ac27ddef8f76b133637558f8bcc8e
+prerequisite-patch-id: 69b2baab747aed9362c0ca4c161fc02e5970db44
+prerequisite-patch-id: 41b4bd5af73a2a33c2e64048b72e0d4f3c664f19
+prerequisite-patch-id: 67083f15ed3c32a690794c698729f213a5245e20
+prerequisite-patch-id: 14ad80fb2ee81b00b9194186196bba9d350bc28e
+prerequisite-patch-id: 7d791289954a2144845e9b843451c6c9717daf6a
+prerequisite-patch-id: d5e37dc01427a0639bba6123e6afee995d62ef4a
+prerequisite-patch-id: fa2f2bf9521e391400e0151a1a290fca10a3f124
+prerequisite-patch-id: 2e5d11daca8780d00fe2d10677ac0c26098fae5c
+prerequisite-patch-id: 06b6906be778d545881f82f2431b2204eb052a6c
+prerequisite-patch-id: 6f98206b25188cf56bc55e3fbad4fff5da6d6d4e
+prerequisite-patch-id: 9c598b9a701c8d9fb585255c239a2f64c998f3a0
+prerequisite-patch-id: 148113e476c059293ce209839c317a4945cc1899
+prerequisite-patch-id: 68f8ac60d0f60d3ac0bb1fe23aa79abd660c2009

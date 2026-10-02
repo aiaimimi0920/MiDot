@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="XRHandModifier3D" inherits="SkeletonModifier3D" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="bone_update" type="int" setter="set_bone_update" getter="get_bone_update" enum="XRHandModifier3D.BoneUpdate" default="0">
+		</member>
+		<member name="hand_tracker" type="StringName" setter="set_hand_tracker" getter="get_hand_tracker" default="&amp;&quot;/user/hand_tracker/left&quot;">
+		</member>
+	</members>
+	<constants>
+		<constant name="BONE_UPDATE_FULL" value="0" enum="BoneUpdate">
+		</constant>
+		<constant name="BONE_UPDATE_ROTATION_ONLY" value="1" enum="BoneUpdate">
+		</constant>
+		<constant name="BONE_UPDATE_MAX" value="2" enum="BoneUpdate">
+		</constant>
+	</constants>
+</class>

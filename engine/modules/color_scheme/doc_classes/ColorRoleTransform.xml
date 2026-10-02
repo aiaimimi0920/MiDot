@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ColorRoleTransform" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+		Resolves and transforms a semantic color from a [ColorScheme].
+	</brief_description>
+	<description>
+		[ColorRoleTransform] preserves the personal Material color-role transformation workflow without replacing Godot's global [enum ColorRole] enum. It resolves [member color_role] from a [ColorScheme], or uses [member static_color] for [constant COLOR_ROLE_STATIC], then applies scaling, inversion, darkening, lightening, interpolation, and optional clamping in that order.
+		A transform can interpolate toward [member lerp_color], a second semantic role, or another [ColorRoleTransform]. Cyclic transform references are rejected while resolving.
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="resolve" qualifiers="const">
+			<return type="Color" />
+			<param index="0" name="color_scheme" type="ColorScheme" />
+			<description>
+				Resolves the configured color. [param color_scheme] may be [code]null[/code] only when the base color and interpolation target are both static.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="clamp" type="bool" setter="set_clamp" getter="is_clamp_enabled" default="false">
+			Clamps the final color components to the [code]0.0[/code] through [code]1.0[/code] range.
+		</member>
+		<member name="color_role" type="int" setter="set_color_role" getter="get_color_role" enum="ColorRole" default="0">
+			Semantic role used as the base color. [constant COLOR_ROLE_STATIC] selects [member static_color].
+		</member>
+		<member name="color_scale" type="Color" setter="set_color_scale" getter="get_color_scale" default="Color(1, 1, 1, 1)">
+			Component-wise multiplier applied before the other transforms.
+		</member>
+		<member name="darkened_amount" type="float" setter="set_darkened_amount" getter="get_darkened_amount" default="0.0">
+			Amount passed to [method Color.darkened].
+		</member>
+		<member name="inverted" type="bool" setter="set_inverted" getter="is_inverted" default="false">
+			If [code]true[/code], applies [method Color.inverted] after scaling.
+		</member>
+		<member name="lerp_color" type="Color" setter="set_lerp_color" getter="get_lerp_color" default="Color(1, 1, 1, 1)">
+			Static interpolation target and fallback for [constant COLOR_ROLE_STATIC].
+		</member>
+		<member name="lerp_color_role" type="int" setter="set_lerp_color_role" getter="get_lerp_color_role" enum="ColorRole" default="0">
+			Semantic interpolation target used when [member lerp_color_role_enabled] is [code]true[/code] and [member lerp_transform] is empty.
+		</member>
+		<member name="lerp_color_role_enabled" type="bool" setter="set_lerp_color_role_enabled" getter="is_lerp_color_role_enabled" default="false">
+			Uses [member lerp_color_role] instead of [member lerp_color] as the interpolation target.
+		</member>
+		<member name="lerp_transform" type="ColorRoleTransform" setter="set_lerp_transform" getter="get_lerp_transform">
+			Optional transformed interpolation target. This takes precedence over [member lerp_color_role].
+		</member>
+		<member name="lerp_weight" type="float" setter="set_lerp_weight" getter="get_lerp_weight" default="0.0">
+			Interpolation weight from the transformed base color to the configured target.
+		</member>
+		<member name="lightened_amount" type="float" setter="set_lightened_amount" getter="get_lightened_amount" default="0.0">
+			Amount passed to [method Color.lightened] after darkening.
+		</member>
+		<member name="static_color" type="Color" setter="set_static_color" getter="get_static_color" default="Color(1, 1, 1, 1)">
+			Base color used when [member color_role] is [constant COLOR_ROLE_STATIC].
+		</member>
+	</members>
+</class>

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="OpenXRPlaneTracker" inherits="OpenXRSpatialEntityTracker" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="clear_mesh_data">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="get_indices" qualifiers="const">
+			<return type="PackedInt32Array" />
+			<description>
+			</description>
+		</method>
+		<method name="get_mesh">
+			<return type="Mesh" />
+			<description>
+			</description>
+		</method>
+		<method name="get_mesh_offset" qualifiers="const">
+			<return type="Transform3D" />
+			<description>
+			</description>
+		</method>
+		<method name="get_shape">
+			<return type="Shape3D" />
+			<param index="0" name="thickness" type="float" default="0.01" />
+			<description>
+			</description>
+		</method>
+		<method name="get_vertices" qualifiers="const">
+			<return type="PackedVector2Array" />
+			<description>
+			</description>
+		</method>
+		<method name="set_mesh_data">
+			<return type="void" />
+			<param index="0" name="origin" type="Transform3D" />
+			<param index="1" name="vertices" type="PackedVector2Array" />
+			<param index="2" name="indices" type="PackedInt32Array" default="PackedInt32Array()" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="bounds_size" type="Vector2" setter="set_bounds_size" getter="get_bounds_size" default="Vector2(0, 0)">
+		</member>
+		<member name="plane_alignment" type="int" setter="set_plane_alignment" getter="get_plane_alignment" enum="OpenXRSpatialComponentPlaneAlignmentList.PlaneAlignment" default="0">
+		</member>
+		<member name="plane_label" type="String" setter="set_plane_label" getter="get_plane_label" default="&quot;&quot;">
+		</member>
+	</members>
+	<signals>
+		<signal name="mesh_changed">
+			<description>
+			</description>
+		</signal>
+	</signals>
+</class>

@@ -1,0 +1,414 @@
+From 973ba8c6ea34d36755ef5d62044e92561728bc0a Mon Sep 17 00:00:00 2001
+From: aiaimimi0920 <153103332+aiaimimi0920@users.noreply.github.com>
+Date: Thu, 7 Mar 2024 01:56:22 +0800
+Subject: [PATCH] #cache code
+
+---
+ scene/gui/code_edit.cpp       |  15 ++++
+ scene/gui/code_edit.h         |  15 ++++
+ scene/gui/text_edit.cpp       |  18 ++++-
+ scene/gui/text_edit.h         |  17 ++++-
+ scene/main/window.cpp         |   3 +
+ scene/main/window.h           |   3 +
+ scene/theme/default_theme.cpp | 130 +++++++++++++++++++++++-----------
+ 7 files changed, 158 insertions(+), 43 deletions(-)
+
+diff --git a/scene/gui/code_edit.cpp b/scene/gui/code_edit.cpp
+index 975eb2eb1e6387610a461196b710d5943d14c510..348108a2d58785d879f10a94628eecffd65d9fd4 100644
+--- a/scene/gui/code_edit.cpp
++++ b/scene/gui/code_edit.cpp
+@@ -2751,6 +2751,21 @@ void CodeEdit::_bind_methods() {
+ 
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_CONSTANT, CodeEdit, line_spacing);
+ 
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, CodeEdit, code_folding_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, CodeEdit, folded_code_region_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, CodeEdit, breakpoint_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, CodeEdit, bookmark_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, CodeEdit, executing_line_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, CodeEdit, line_number_color_scale);
++	BIND_THEME_ITEM_CUSTOM(Theme::DATA_TYPE_COLOR, CodeEdit, code_completion_scroll_color_scale, "completion_scroll_color_scale");
++	BIND_THEME_ITEM_CUSTOM(Theme::DATA_TYPE_COLOR, CodeEdit, code_completion_scroll_hovered_color_scale, "completion_scroll_hovered_color_scale");
++	BIND_THEME_ITEM_CUSTOM(Theme::DATA_TYPE_COLOR, CodeEdit, code_completion_background_color_scale, "completion_background_color_scale");
++	BIND_THEME_ITEM_CUSTOM(Theme::DATA_TYPE_COLOR, CodeEdit, code_completion_selected_color_scale, "completion_selected_color_scale");
++	BIND_THEME_ITEM_CUSTOM(Theme::DATA_TYPE_COLOR, CodeEdit, code_completion_existing_color_scale, "completion_existing_color_scale");
++	BIND_THEME_ITEM_EXT(Theme::DATA_TYPE_COLOR, CodeEdit, code_hint_color_scale, "font_color_scale", "TooltipLabel");
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, CodeEdit, line_length_guideline_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, CodeEdit, brace_mismatch_color_scale);
++
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_SCHEME, CodeEdit, code_folding_color_scheme);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_SCHEME, CodeEdit, folded_code_region_color_scheme);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_SCHEME, CodeEdit, breakpoint_color_scheme);
+diff --git a/scene/gui/code_edit.h b/scene/gui/code_edit.h
+index a4cd0dea8c8685729bfea5e8ffa0c5b040dbdb73..3c9d21db0bf853d6307e460c61709b1a414d12aa 100644
+--- a/scene/gui/code_edit.h
++++ b/scene/gui/code_edit.h
+@@ -285,6 +285,21 @@ private:
+ 		int font_size = 16;
+ 		int line_spacing = 1;
+ 
++		Color code_folding_color_scale;
++		Color folded_code_region_color_scale;
++		Color breakpoint_color_scale;
++		Color bookmark_color_scale;
++		Color executing_line_color_scale;
++		Color line_number_color_scale;
++		Color code_completion_scroll_color_scale;
++		Color code_completion_scroll_hovered_color_scale;
++		Color code_completion_background_color_scale;
++		Color code_completion_selected_color_scale;
++		Color code_completion_existing_color_scale;
++		Color code_hint_color_scale;
++		Color line_length_guideline_color_scale;
++		Color brace_mismatch_color_scale;
++
+ 		ColorRole code_folding_color_role;
+ 		ColorRole folded_code_region_color_role;
+ 		ColorRole breakpoint_color_role;
+diff --git a/scene/gui/text_edit.cpp b/scene/gui/text_edit.cpp
+index 145e7dab12baf59189207ed10a05d234224fb08d..b8c54668a61b8f390db9137473dfae47990aab8a 100644
+--- a/scene/gui/text_edit.cpp
++++ b/scene/gui/text_edit.cpp
+@@ -6484,6 +6484,20 @@ void TextEdit::_bind_methods() {
+ 	/* Theme items */
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_SCHEME, TextEdit, default_color_scheme);
+ 
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, TextEdit, search_result_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, TextEdit, search_result_border_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, TextEdit, caret_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, TextEdit, caret_background_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, TextEdit, font_selected_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, TextEdit, selection_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, TextEdit, font_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, TextEdit, font_readonly_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, TextEdit, font_placeholder_color_scale);
++	BIND_THEME_ITEM_CUSTOM(Theme::DATA_TYPE_COLOR, TextEdit, outline_color_scale, "font_outline_color_scale");
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, TextEdit, background_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, TextEdit, current_line_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, TextEdit, word_highlighted_color_scale);
++
+ 	/* Search */
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, TextEdit, search_result_color);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, TextEdit, search_result_border_color);
+@@ -6529,7 +6543,7 @@ void TextEdit::_bind_methods() {
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_SCHEME, TextEdit, font_color_scheme);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_SCHEME, TextEdit, font_readonly_color_scheme);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_SCHEME, TextEdit, font_placeholder_color_scheme);
+-	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_SCHEME, TextEdit, outline_color_scheme);
++	BIND_THEME_ITEM_CUSTOM(Theme::DATA_TYPE_COLOR_SCHEME, TextEdit, outline_color_scheme, "font_outline_color_scheme");
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_SCHEME, TextEdit, background_color_scheme);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_SCHEME, TextEdit, current_line_color_scheme);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_SCHEME, TextEdit, word_highlighted_color_scheme);
+@@ -6543,7 +6557,7 @@ void TextEdit::_bind_methods() {
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_ROLE, TextEdit, font_color_role);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_ROLE, TextEdit, font_readonly_color_role);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_ROLE, TextEdit, font_placeholder_color_role);
+-	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_ROLE, TextEdit, outline_color_role);
++	BIND_THEME_ITEM_CUSTOM(Theme::DATA_TYPE_COLOR_ROLE, TextEdit, outline_color_role, "font_outline_color_role");
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_ROLE, TextEdit, background_color_role);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_ROLE, TextEdit, current_line_color_role);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_ROLE, TextEdit, word_highlighted_color_role);
+diff --git a/scene/gui/text_edit.h b/scene/gui/text_edit.h
+index 726f2cba3c0dac9dd5202fad88aa51eabf927e8a..c74ee94c194cbaef60aaa662539244a63dc75d54 100644
+--- a/scene/gui/text_edit.h
++++ b/scene/gui/text_edit.h
+@@ -545,6 +545,21 @@ private:
+ 
+ 		Ref<ColorScheme> default_color_scheme;
+ 
++
++		Color search_result_color_scale;
++		Color search_result_border_color_scale;
++		Color caret_color_scale;
++		Color caret_background_color_scale;
++		Color font_selected_color_scale;
++		Color selection_color_scale;
++		Color font_color_scale;
++		Color font_readonly_color_scale;
++		Color font_placeholder_color_scale;
++		Color outline_color_scale;
++		Color background_color_scale;
++		Color current_line_color_scale;
++		Color word_highlighted_color_scale;
++
+ 		/* Search */
+ 		Color search_result_color = Color(1, 1, 1);
+ 		Color search_result_border_color = Color(1, 1, 1);
+@@ -608,7 +623,7 @@ private:
+ 		Ref<ColorScheme> background_color_scheme;
+ 		Ref<ColorScheme> current_line_color_scheme;
+ 		Ref<ColorScheme> word_highlighted_color_scheme;
+-		
++
+ 	} theme_cache;
+ 
+ 	bool window_has_focus = true;
+diff --git a/scene/main/window.cpp b/scene/main/window.cpp
+index 1ad3e8ea8d08de7b6695c0710e324a33556e2978..efe87d33b4330da56edbc62238d5fc311ee60e03 100644
+--- a/scene/main/window.cpp
++++ b/scene/main/window.cpp
+@@ -3229,6 +3229,9 @@ void Window::_bind_methods() {
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_CONSTANT, Window, close_v_offset);
+ 
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_CONSTANT, Window, resize_margin);
++
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, Window, title_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, Window, title_outline_modulate_scale);
+ }
+ 
+ Window::Window() {
+diff --git a/scene/main/window.h b/scene/main/window.h
+index 59ceb90e35a82d096567e2356f7cb59987ca0ac1..d1b6839976df8b4af9c35287dec3d3edbae86e10 100644
+--- a/scene/main/window.h
++++ b/scene/main/window.h
+@@ -206,6 +206,9 @@ private:
+ 		Ref<StyleBox> embedded_border;
+ 		Ref<StyleBox> embedded_unfocused_border;
+ 
++		Color title_color_scale;
++		Color title_outline_modulate_scale;
++
+ 		Ref<Font> title_font;
+ 		int title_font_size = 0;
+ 		Color title_color;
+diff --git a/scene/theme/default_theme.cpp b/scene/theme/default_theme.cpp
+index 9c1927de4e0a4866c017657e298a654deeefdfcc..e071bf54143ebacc90a35c6de050439c89caf8b9 100644
+--- a/scene/theme/default_theme.cpp
++++ b/scene/theme/default_theme.cpp
+@@ -165,7 +165,8 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 	}
+ 
+ 	// Panel
+-	theme->set_stylebox("panel", "Panel", make_flat_stylebox(style_normal_color, 0, 0, 0, 0));
++
++	theme->set_stylebox("panel", "Panel", make_color_role_flat_stylebox(ColorRole::PRIMARY, style_normal_color, 0, 0, 0, 0));
+ 
+ 	// ColorRect
+ 	theme->set_color_scheme("default_color_scheme", "ColorRect", default_color_scheme);
+@@ -669,7 +670,7 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 
+ 	// LineEdit
+ 
+-	Ref<StyleBoxFlat> style_line_edit = make_flat_stylebox(style_normal_color);
++	Ref<StyleBoxFlat> style_line_edit = make_color_role_flat_stylebox(ColorRole::PRIMARY, style_normal_color);
+ 	// Add a line at the bottom to make LineEdits distinguishable from Buttons.
+ 	style_line_edit->set_border_width(SIDE_BOTTOM, 2);
+ 	style_line_edit->set_border_color(style_pressed_color);
+@@ -677,7 +678,7 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 
+ 	theme->set_stylebox("focus", "LineEdit", focus);
+ 
+-	Ref<StyleBoxFlat> style_line_edit_read_only = make_flat_stylebox(style_disabled_color);
++	Ref<StyleBoxFlat> style_line_edit_read_only = make_color_role_flat_stylebox(ColorRole::PRIMARY, style_disabled_color);
+ 	// Add a line at the bottom to make LineEdits distinguishable from Buttons.
+ 	style_line_edit_read_only->set_border_width(SIDE_BOTTOM, 2);
+ 	style_line_edit_read_only->set_border_color(style_pressed_color * Color(1, 1, 1, 0.5));
+@@ -736,8 +737,8 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 
+ 	// ProgressBar
+ 
+-	theme->set_stylebox("background", "ProgressBar", make_flat_stylebox(style_disabled_color, 2, 2, 2, 2, 6));
+-	theme->set_stylebox("fill", "ProgressBar", make_flat_stylebox(style_progress_color, 2, 2, 2, 2, 6));
++	theme->set_stylebox("background", "ProgressBar", make_color_role_flat_stylebox(ColorRole::PRIMARY, style_disabled_color, 2, 2, 2, 2, 6));
++	theme->set_stylebox("fill", "ProgressBar", make_color_role_flat_stylebox(ColorRole::PRIMARY, style_progress_color, 2, 2, 2, 2, 6));
+ 
+ 	theme->set_font("font", "ProgressBar", Ref<Font>());
+ 	theme->set_font_size("font_size", "ProgressBar", -1);
+@@ -766,6 +767,22 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 
+ 	theme->set_color_scheme("default_color_scheme", "TextEdit", default_color_scheme);
+ 
++
++	theme->set_color("background_color_scale", "TextEdit", Color(0, 0, 0, 0));
++	theme->set_color("font_color_scale", "TextEdit", control_font_color);
++	theme->set_color("font_selected_color_scale", "TextEdit", Color(0, 0, 0, 0));
++	theme->set_color("font_readonly_color_scale", "TextEdit", control_font_disabled_color);
++	theme->set_color("font_placeholder_color_scale", "TextEdit", control_font_placeholder_color);
++	theme->set_color("font_outline_color_scale", "TextEdit", Color(1, 1, 1));
++	theme->set_color("selection_color_scale", "TextEdit", control_selection_color);
++	theme->set_color("current_line_color_scale", "TextEdit", Color(0.25, 0.25, 0.26, 0.8));
++	theme->set_color("caret_color_scale", "TextEdit", control_font_color);
++	theme->set_color("caret_background_color_scale", "TextEdit", Color(0, 0, 0));
++	theme->set_color("word_highlighted_color_scale", "TextEdit", Color(0.5, 0.5, 0.5, 0.25));
++	theme->set_color("search_result_color_scale", "TextEdit", Color(0.3, 0.3, 0.3));
++	theme->set_color("search_result_border_color_scale", "TextEdit", Color(0.3, 0.3, 0.3, 0.4));
++
++
+ 	theme->set_icon("tab", "TextEdit", icons["text_edit_tab"]);
+ 	theme->set_icon("space", "TextEdit", icons["text_edit_space"]);
+ 
+@@ -781,24 +798,24 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 	theme->set_color_scheme("font_color_scheme", "TextEdit", Ref<ColorScheme>());
+ 	theme->set_color_scheme("font_readonly_color_scheme", "TextEdit", Ref<ColorScheme>());
+ 	theme->set_color_scheme("font_placeholder_color_scheme", "TextEdit", Ref<ColorScheme>());
+-	theme->set_color_scheme("outline_color_scheme", "TextEdit", Ref<ColorScheme>());
++	theme->set_color_scheme("font_outline_color_scheme", "TextEdit", Ref<ColorScheme>());
+ 	theme->set_color_scheme("background_color_scheme", "TextEdit", Ref<ColorScheme>());
+ 	theme->set_color_scheme("current_line_color_scheme", "TextEdit", Ref<ColorScheme>());
+ 	theme->set_color_scheme("word_highlighted_color_scheme", "TextEdit", Ref<ColorScheme>());
+ 
+-	theme->set_color_role("search_result_color_role", "TextEdit", ColorRole::PRIMARY);
+-	theme->set_color_role("search_result_border_color_role", "TextEdit", ColorRole::PRIMARY);
++	theme->set_color_role("search_result_color_role", "TextEdit", ColorRole::ON_PRIMARY);
++	theme->set_color_role("search_result_border_color_role", "TextEdit", ColorRole::ON_PRIMARY);
+ 	theme->set_color_role("caret_color_role", "TextEdit", ColorRole::PRIMARY);
+-	theme->set_color_role("caret_background_color_role", "TextEdit", ColorRole::PRIMARY);
+-	theme->set_color_role("font_selected_color_role", "TextEdit", ColorRole::PRIMARY);
+-	theme->set_color_role("selection_color_role", "TextEdit", ColorRole::PRIMARY);
+-	theme->set_color_role("font_color_role", "TextEdit", ColorRole::PRIMARY);
+-	theme->set_color_role("font_readonly_color_role", "TextEdit", ColorRole::PRIMARY);
+-	theme->set_color_role("font_placeholder_color_role", "TextEdit", ColorRole::PRIMARY);
+-	theme->set_color_role("outline_color_role", "TextEdit", ColorRole::OUTLINE);
+-	theme->set_color_role("background_color_role", "TextEdit", ColorRole::PRIMARY);
+-	theme->set_color_role("current_line_color_role", "TextEdit", ColorRole::PRIMARY);
+-	theme->set_color_role("word_highlighted_color_role", "TextEdit", ColorRole::PRIMARY);
++	theme->set_color_role("caret_background_color_role", "TextEdit", ColorRole::ON_PRIMARY);
++	theme->set_color_role("font_selected_color_role", "TextEdit", ColorRole::ON_PRIMARY);
++	theme->set_color_role("selection_color_role", "TextEdit", ColorRole::ON_PRIMARY);
++	theme->set_color_role("font_color_role", "TextEdit", ColorRole::ON_PRIMARY);
++	theme->set_color_role("font_readonly_color_role", "TextEdit", ColorRole::ON_PRIMARY);
++	theme->set_color_role("font_placeholder_color_role", "TextEdit", ColorRole::ON_PRIMARY);
++	theme->set_color_role("font_outline_color_role", "TextEdit", ColorRole::OUTLINE);
++	theme->set_color_role("background_color_role", "TextEdit", ColorRole::ON_PRIMARY);
++	theme->set_color_role("current_line_color_role", "TextEdit", ColorRole::ON_PRIMARY);
++	theme->set_color_role("word_highlighted_color_role", "TextEdit", ColorRole::ON_PRIMARY);
+ 
+ 	theme->set_color("background_color", "TextEdit", Color(0, 0, 0, 0));
+ 	theme->set_color("font_color", "TextEdit", control_font_color);
+@@ -823,7 +840,7 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 	theme->set_stylebox("normal", "CodeEdit", style_line_edit);
+ 	theme->set_stylebox("focus", "CodeEdit", focus);
+ 	theme->set_stylebox("read_only", "CodeEdit", style_line_edit_read_only);
+-	theme->set_stylebox("completion", "CodeEdit", make_flat_stylebox(style_normal_color, 0, 0, 0, 0));
++	theme->set_stylebox("completion", "CodeEdit", make_color_role_flat_stylebox(ColorRole::PRIMARY, style_normal_color, 0, 0, 0, 0));
+ 
+ 	theme->set_color_scheme("default_color_scheme", "CodeEdit", default_color_scheme);
+ 
+@@ -858,6 +875,7 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 	theme->set_color_scheme("breakpoint_color_scheme", "CodeEdit", Ref<ColorScheme>());
+ 	theme->set_color_scheme("executing_line_color_scheme", "CodeEdit", Ref<ColorScheme>());
+ 	theme->set_color_scheme("current_line_color_scheme", "CodeEdit", Ref<ColorScheme>());
++
+ 	theme->set_color_scheme("code_folding_color_scheme", "CodeEdit", Ref<ColorScheme>());
+ 	theme->set_color_scheme("folded_code_region_color_scheme", "CodeEdit", Ref<ColorScheme>());
+ 	theme->set_color_scheme("caret_color_scheme", "CodeEdit", Ref<ColorScheme>());
+@@ -875,17 +893,17 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 	theme->set_color_role("completion_existing_color_role", "CodeEdit", ColorRole::PRIMARY);
+ 	theme->set_color_role("completion_scroll_color_role", "CodeEdit", ColorRole::PRIMARY);
+ 	theme->set_color_role("completion_scroll_hovered_color_role", "CodeEdit", ColorRole::PRIMARY);
+-	theme->set_color_role("font_color_role", "CodeEdit", ColorRole::PRIMARY);
+-	theme->set_color_role("font_selected_color_role", "CodeEdit", ColorRole::PRIMARY);
+-	theme->set_color_role("font_readonly_color_role", "CodeEdit", ColorRole::PRIMARY);
+-	theme->set_color_role("font_placeholder_color_role", "CodeEdit", ColorRole::PRIMARY);
+-	theme->set_color_role("font_outline_color_role", "CodeEdit", ColorRole::PRIMARY);
+-	theme->set_color_role("selection_color_role", "CodeEdit", ColorRole::PRIMARY);
+-	theme->set_color_role("bookmark_color_role", "CodeEdit", ColorRole::PRIMARY);
+-	theme->set_color_role("breakpoint_color_role", "CodeEdit", ColorRole::PRIMARY);
+-	theme->set_color_role("executing_line_color_role", "CodeEdit", ColorRole::PRIMARY);
++	theme->set_color_role("font_color_role", "CodeEdit", ColorRole::ON_PRIMARY);
++	theme->set_color_role("font_selected_color_role", "CodeEdit", ColorRole::ON_PRIMARY);
++	theme->set_color_role("font_readonly_color_role", "CodeEdit", ColorRole::ON_PRIMARY);
++	theme->set_color_role("font_placeholder_color_role", "CodeEdit", ColorRole::ON_PRIMARY);
++	theme->set_color_role("font_outline_color_role", "CodeEdit", ColorRole::ON_PRIMARY);
++	theme->set_color_role("selection_color_role", "CodeEdit", ColorRole::ON_PRIMARY);
++	theme->set_color_role("bookmark_color_role", "CodeEdit", ColorRole::ON_PRIMARY);
++	theme->set_color_role("breakpoint_color_role", "CodeEdit", ColorRole::ON_PRIMARY);
++	theme->set_color_role("executing_line_color_role", "CodeEdit", ColorRole::ON_PRIMARY);
+ 	theme->set_color_role("current_line_color_role", "CodeEdit", ColorRole::PRIMARY);
+-	theme->set_color_role("code_folding_color_role", "CodeEdit", ColorRole::PRIMARY);
++	theme->set_color_role("code_folding_color_role", "CodeEdit", ColorRole::ON_PRIMARY);
+ 	theme->set_color_role("folded_code_region_color_role", "CodeEdit", ColorRole::PRIMARY);
+ 	theme->set_color_role("caret_color_role", "CodeEdit", ColorRole::PRIMARY);
+ 	theme->set_color_role("caret_background_color_role", "CodeEdit", ColorRole::PRIMARY);
+@@ -896,6 +914,34 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 	theme->set_color_role("search_result_color_role", "CodeEdit", ColorRole::PRIMARY);
+ 	theme->set_color_role("search_result_border_color_role", "CodeEdit", ColorRole::PRIMARY);
+ 
++
++	theme->set_color("background_color_scale", "CodeEdit", Color(0, 0, 0, 0));
++	theme->set_color("completion_background_color_scale", "CodeEdit", Color(0.17, 0.16, 0.2));
++	theme->set_color("completion_selected_color_scale", "CodeEdit", Color(0.26, 0.26, 0.27));
++	theme->set_color("completion_existing_color_scale", "CodeEdit", Color(0.87, 0.87, 0.87, 0.13));
++	theme->set_color("completion_scroll_color_scale", "CodeEdit", control_font_pressed_color * Color(1, 1, 1, 0.29));
++	theme->set_color("completion_scroll_hovered_color_scale", "CodeEdit", control_font_pressed_color * Color(1, 1, 1, 0.4));
++	theme->set_color("font_color_scale", "CodeEdit", control_font_color);
++	theme->set_color("font_selected_color_scale", "CodeEdit", Color(0, 0, 0, 0));
++	theme->set_color("font_readonly_color_scale", "CodeEdit", Color(control_font_color.r, control_font_color.g, control_font_color.b, 0.5f));
++	theme->set_color("font_placeholder_color_scale", "CodeEdit", control_font_placeholder_color);
++	theme->set_color("font_outline_color_scale", "CodeEdit", Color(1, 1, 1));
++	theme->set_color("selection_color_scale", "CodeEdit", control_selection_color);
++	theme->set_color("bookmark_color_scale", "CodeEdit", Color(0.5, 0.64, 1, 0.8));
++	theme->set_color("breakpoint_color_scale", "CodeEdit", Color(0.9, 0.29, 0.3));
++	theme->set_color("executing_line_color_scale", "CodeEdit", Color(0.98, 0.89, 0.27));
++	theme->set_color("current_line_color_scale", "CodeEdit", Color(0.25, 0.25, 0.26, 0.8));
++	theme->set_color("code_folding_color_scale", "CodeEdit", Color(0.8, 0.8, 0.8, 0.8));
++	theme->set_color("folded_code_region_color_scale", "CodeEdit", Color(0.68, 0.46, 0.77, 0.2));
++	theme->set_color("caret_color_scale", "CodeEdit", control_font_color);
++	theme->set_color("caret_background_color_scale", "CodeEdit", Color(0, 0, 0));
++	theme->set_color("brace_mismatch_color_scale", "CodeEdit", Color(1, 0.2, 0.2));
++	theme->set_color("line_number_color_scale", "CodeEdit", Color(0.67, 0.67, 0.67, 0.4));
++	theme->set_color("word_highlighted_color_scale", "CodeEdit", Color(0.8, 0.9, 0.9, 0.15));
++	theme->set_color("line_length_guideline_color_scale", "CodeEdit", Color(0.3, 0.5, 0.8, 0.1));
++	theme->set_color("search_result_color_scale", "CodeEdit", Color(0.3, 0.3, 0.3));
++	theme->set_color("search_result_border_color_scale", "CodeEdit", Color(0.3, 0.3, 0.3, 0.4));
++
+ 	theme->set_color("background_color", "CodeEdit", Color(0, 0, 0, 0));
+ 	theme->set_color("completion_background_color", "CodeEdit", Color(0.17, 0.16, 0.2));
+ 	theme->set_color("completion_selected_color", "CodeEdit", Color(0.26, 0.26, 0.27));
+@@ -931,11 +977,12 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 
+ 	Ref<Texture2D> empty_icon = memnew(ImageTexture);
+ 
+-	const Ref<StyleBoxFlat> style_h_scrollbar = make_flat_stylebox(style_normal_color, 0, 4, 0, 4, 10);
+-	const Ref<StyleBoxFlat> style_v_scrollbar = make_flat_stylebox(style_normal_color, 4, 0, 4, 0, 10);
+-	Ref<StyleBoxFlat> style_scrollbar_grabber = make_flat_stylebox(style_progress_color, 4, 4, 4, 4, 10);
+-	Ref<StyleBoxFlat> style_scrollbar_grabber_highlight = make_flat_stylebox(style_focus_color, 4, 4, 4, 4, 10);
+-	Ref<StyleBoxFlat> style_scrollbar_grabber_pressed = make_flat_stylebox(style_focus_color * Color(0.75, 0.75, 0.75), 4, 4, 4, 4, 10);
++	const Ref<StyleBoxFlat> style_h_scrollbar = make_color_role_flat_stylebox(ColorRole::PRIMARY, style_normal_color, 0, 4, 0, 4, 10);
++	const Ref<StyleBoxFlat> style_v_scrollbar = make_color_role_flat_stylebox(ColorRole::PRIMARY, style_normal_color, 4, 0, 4, 0, 10);
++	Ref<StyleBoxFlat> style_scrollbar_grabber = make_color_role_flat_stylebox(ColorRole::PRIMARY, style_progress_color, 4, 4, 4, 4, 10);
++	Ref<StyleBoxFlat> style_scrollbar_grabber_highlight = make_color_role_flat_stylebox(ColorRole::PRIMARY, style_focus_color, 4, 4, 4, 4, 10);
++	Ref<StyleBoxFlat> style_scrollbar_grabber_pressed = make_color_role_flat_stylebox(ColorRole::PRIMARY, style_focus_color * Color(0.75, 0.75, 0.75), 4, 4, 4, 4, 10);
++
+ 
+ 	// HScrollBar
+ 
+@@ -967,9 +1014,9 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 	theme->set_icon("decrement_highlight", "VScrollBar", empty_icon);
+ 	theme->set_icon("decrement_pressed", "VScrollBar", empty_icon);
+ 
+-	const Ref<StyleBoxFlat> style_slider = make_flat_stylebox(style_normal_color, 4, 4, 4, 4, 4);
+-	const Ref<StyleBoxFlat> style_slider_grabber = make_flat_stylebox(style_progress_color, 4, 4, 4, 4, 4);
+-	const Ref<StyleBoxFlat> style_slider_grabber_highlight = make_flat_stylebox(style_focus_color, 4, 4, 4, 4, 4);
++	const Ref<StyleBoxFlat> style_slider = make_color_role_flat_stylebox(ColorRole::PRIMARY,style_normal_color, 4, 4, 4, 4, 4);
++	const Ref<StyleBoxFlat> style_slider_grabber = make_color_role_flat_stylebox(ColorRole::PRIMARY,style_progress_color, 4, 4, 4, 4, 4);
++	const Ref<StyleBoxFlat> style_slider_grabber_highlight = make_color_role_flat_stylebox(ColorRole::PRIMARY,style_focus_color, 4, 4, 4, 4, 4);
+ 
+ 	// HSlider
+ 
+@@ -1011,11 +1058,14 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 
+ 	// Window
+ 
+-	theme->set_stylebox("embedded_border", "Window", sb_expand(make_flat_stylebox(style_popup_color, 10, 28, 10, 8), 8, 32, 8, 6));
+-	theme->set_stylebox("embedded_unfocused_border", "Window", sb_expand(make_flat_stylebox(style_popup_hover_color, 10, 28, 10, 8), 8, 32, 8, 6));
++	theme->set_stylebox("embedded_border", "Window", sb_expand(make_color_role_flat_stylebox(ColorRole::PRIMARY,style_popup_color, 10, 28, 10, 8), 8, 32, 8, 6));
++	theme->set_stylebox("embedded_unfocused_border", "Window", sb_expand(make_color_role_flat_stylebox(ColorRole::PRIMARY,style_popup_hover_color, 10, 28, 10, 8), 8, 32, 8, 6));
+ 	
+ 	theme->set_color_scheme("default_color_scheme", "Window", default_color_scheme);
+ 
++	theme->set_color("title_color_scale", "Window", control_font_color);
++	theme->set_color("title_outline_modulate_scale", "Window", Color(1, 1, 1));
++
+ 	theme->set_color_scheme("title_color_scheme", "Window", Ref<ColorScheme>());
+ 	theme->set_color_scheme("title_outline_modulate_scheme", "Window", Ref<ColorScheme>());
+ 
+@@ -1038,7 +1088,7 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 	// Dialogs
+ 
+ 	// AcceptDialog is currently the base dialog, so this defines styles for all extending nodes.
+-	theme->set_stylebox("panel", "AcceptDialog", make_flat_stylebox(style_popup_color, Math::round(8 * scale), Math::round(8 * scale), Math::round(8 * scale), Math::round(8 * scale)));
++	theme->set_stylebox("panel", "AcceptDialog", make_color_role_flat_stylebox(ColorRole::PRIMARY,style_popup_color, Math::round(8 * scale), Math::round(8 * scale), Math::round(8 * scale), Math::round(8 * scale)));
+ 	theme->set_constant("buttons_separation", "AcceptDialog", Math::round(10 * scale));
+ 
+ 	// File Dialog

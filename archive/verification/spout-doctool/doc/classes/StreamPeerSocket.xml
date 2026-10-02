@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="StreamPeerSocket" inherits="StreamPeer" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="disconnect_from_host">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="get_status" qualifiers="const">
+			<return type="int" enum="StreamPeerSocket.Status" />
+			<description>
+			</description>
+		</method>
+		<method name="poll">
+			<return type="int" enum="Error" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="STATUS_NONE" value="0" enum="Status">
+		</constant>
+		<constant name="STATUS_CONNECTING" value="1" enum="Status">
+		</constant>
+		<constant name="STATUS_CONNECTED" value="2" enum="Status">
+		</constant>
+		<constant name="STATUS_ERROR" value="3" enum="Status">
+		</constant>
+	</constants>
+</class>

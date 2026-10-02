@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VirtualJoystick" inherits="Control" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="action_down" type="StringName" setter="set_action_down" getter="get_action_down" default="&amp;&quot;ui_down&quot;">
+		</member>
+		<member name="action_left" type="StringName" setter="set_action_left" getter="get_action_left" default="&amp;&quot;ui_left&quot;">
+		</member>
+		<member name="action_right" type="StringName" setter="set_action_right" getter="get_action_right" default="&amp;&quot;ui_right&quot;">
+		</member>
+		<member name="action_up" type="StringName" setter="set_action_up" getter="get_action_up" default="&amp;&quot;ui_up&quot;">
+		</member>
+		<member name="clampzone_ratio" type="float" setter="set_clampzone_ratio" getter="get_clampzone_ratio" default="1.0">
+		</member>
+		<member name="deadzone_ratio" type="float" setter="set_deadzone_ratio" getter="get_deadzone_ratio" default="0.0">
+		</member>
+		<member name="initial_offset_ratio" type="Vector2" setter="set_initial_offset_ratio" getter="get_initial_offset_ratio" default="Vector2(0.5, 0.5)">
+		</member>
+		<member name="joystick_mode" type="int" setter="set_joystick_mode" getter="get_joystick_mode" enum="VirtualJoystick.JoystickMode" default="0">
+		</member>
+		<member name="joystick_size" type="float" setter="set_joystick_size" getter="get_joystick_size" default="100.0">
+		</member>
+		<member name="tip_size" type="float" setter="set_tip_size" getter="get_tip_size" default="50.0">
+		</member>
+		<member name="visibility_mode" type="int" setter="set_visibility_mode" getter="get_visibility_mode" enum="VirtualJoystick.VisibilityMode" default="0">
+		</member>
+	</members>
+	<signals>
+		<signal name="flick_canceled">
+			<description>
+			</description>
+		</signal>
+		<signal name="flicked">
+			<param index="0" name="input_vector" type="Vector2" />
+			<description>
+			</description>
+		</signal>
+		<signal name="pressed">
+			<description>
+			</description>
+		</signal>
+		<signal name="released">
+			<param index="0" name="input_vector" type="Vector2" />
+			<description>
+			</description>
+		</signal>
+		<signal name="tapped">
+			<description>
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="JOYSTICK_FIXED" value="0" enum="JoystickMode">
+		</constant>
+		<constant name="JOYSTICK_DYNAMIC" value="1" enum="JoystickMode">
+		</constant>
+		<constant name="JOYSTICK_FOLLOWING" value="2" enum="JoystickMode">
+		</constant>
+		<constant name="VISIBILITY_ALWAYS" value="0" enum="VisibilityMode">
+		</constant>
+		<constant name="VISIBILITY_WHEN_TOUCHED" value="1" enum="VisibilityMode">
+		</constant>
+	</constants>
+	<theme_items>
+		<theme_item name="normal_joystick" data_type="style" type="StyleBox">
+		</theme_item>
+		<theme_item name="normal_tip" data_type="style" type="StyleBox">
+		</theme_item>
+		<theme_item name="pressed_joystick" data_type="style" type="StyleBox">
+		</theme_item>
+		<theme_item name="pressed_tip" data_type="style" type="StyleBox">
+		</theme_item>
+	</theme_items>
+</class>

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Process" inherits="RefCounted" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="close_stdin">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="create" qualifiers="static">
+			<return type="Process" />
+			<param index="0" name="path" type="String" />
+			<param index="1" name="arguments" type="PackedStringArray" default="PackedStringArray()" />
+			<param index="2" name="working_directory" type="String" default="&quot;&quot;" />
+			<param index="3" name="open_stdin" type="bool" default="false" />
+			<description>
+			</description>
+		</method>
+		<method name="get_available_stderr_lines" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_available_stdout_lines" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_exit_status" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_id" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_stderr_line">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="get_stdout_line">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="kill">
+			<return type="void" />
+			<param index="0" name="force" type="bool" default="false" />
+			<description>
+			</description>
+		</method>
+		<method name="write">
+			<return type="bool" />
+			<param index="0" name="input" type="String" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>

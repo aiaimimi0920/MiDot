@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SpineAnimationMix" inherits="Resource" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="from" type="String" setter="set_from" getter="get_from" default="&quot;&quot;">
+		</member>
+		<member name="mix" type="float" setter="set_mix" getter="get_mix" default="0.0">
+		</member>
+		<member name="to" type="String" setter="set_to" getter="get_to" default="&quot;&quot;">
+		</member>
+	</members>
+</class>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="PanoramaSkyMaterial" inherits="Material" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="energy_multiplier" type="float" setter="set_energy_multiplier" getter="get_energy_multiplier" default="1.0">
+		</member>
+		<member name="filter" type="bool" setter="set_filtering_enabled" getter="is_filtering_enabled" default="true">
+		</member>
+		<member name="panorama" type="Texture2D" setter="set_panorama" getter="get_panorama">
+		</member>
+	</members>
+</class>

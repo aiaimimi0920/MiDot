@@ -1,0 +1,205 @@
+From e3ac8905e66965a049dcfc19fb775e1d66091cda Mon Sep 17 00:00:00 2001
+From: aiaimimi0920 <153103332+aiaimimi0920@users.noreply.github.com>
+Date: Sun, 30 Aug 2026 22:32:31 +0800
+Subject: [PATCH] feat(gui): add button state layers
+
+Keep Material hover, pressed, and focus overlays separate from the base button style.
+
+Godot-Patch-Topic: ui.button-state-layers
+---
+ doc/classes/Button.xml      | 18 ++++++++++++++---
+ scene/gui/button.cpp        | 37 ++++++++++++++++++++++++++++++++++
+ scene/gui/button.h          |  5 +++++
+ tests/scene/test_button.cpp | 40 +++++++++++++++++++++++++++++++++++++
+ 4 files changed, 97 insertions(+), 3 deletions(-)
+
+diff --git a/doc/classes/Button.xml b/doc/classes/Button.xml
+index e8a5464aa21c3a9d965bde003bb16941b6cac360..63508bc1c7a6eb4b6680145ce8ae2725455e358f 100644
+--- a/doc/classes/Button.xml
++++ b/doc/classes/Button.xml
+@@ -152,9 +152,21 @@
+ 		<theme_item name="disabled_mirrored" data_type="style" type="StyleBox">
+ 			[StyleBox] used when the [Button] is disabled (for right-to-left layouts).
+ 		</theme_item>
+-		<theme_item name="focus" data_type="style" type="StyleBox">
+-			[StyleBox] used when the [Button] is focused. The [theme_item focus] [StyleBox] is displayed [i]over[/i] the base [StyleBox], so a partially transparent [StyleBox] should be used to ensure the base [StyleBox] remains visible. A [StyleBox] that represents an outline or an underline works well for this purpose. To disable the focus visual effect, assign a [StyleBoxEmpty] resource. Note that disabling the focus visual effect will harm keyboard/controller navigation usability, so this is not recommended for accessibility reasons.
+-		</theme_item>
++			<theme_item name="focus" data_type="style" type="StyleBox">
++				[StyleBox] used when the [Button] is focused. The [theme_item focus] [StyleBox] is displayed [i]over[/i] the base [StyleBox], so a partially transparent [StyleBox] should be used to ensure the base [StyleBox] remains visible. A [StyleBox] that represents an outline or an underline works well for this purpose. To disable the focus visual effect, assign a [StyleBoxEmpty] resource. Note that disabling the focus visual effect will harm keyboard/controller navigation usability, so this is not recommended for accessibility reasons.
++			</theme_item>
++			<theme_item name="state_focus_layer" data_type="style" type="StyleBox">
++				Optional Material-style state layer drawn over the base and focus style boxes when the [Button] is focused and no hover or pressed state layer is active.
++			</theme_item>
++			<theme_item name="state_hover_layer" data_type="style" type="StyleBox">
++				Optional Material-style state layer drawn over the base style box while the [Button] is hovered.
++			</theme_item>
++			<theme_item name="state_hover_pressed_layer" data_type="style" type="StyleBox">
++				Optional Material-style state layer drawn while the [Button] is both hovered and pressed. If absent, [theme_item state_pressed_layer] is used.
++			</theme_item>
++			<theme_item name="state_pressed_layer" data_type="style" type="StyleBox">
++				Optional Material-style state layer drawn over the base style box while the [Button] is pressed.
++			</theme_item>
+ 		<theme_item name="hover" data_type="style" type="StyleBox">
+ 			[StyleBox] used when the [Button] is being hovered.
+ 		</theme_item>
+diff --git a/scene/gui/button.cpp b/scene/gui/button.cpp
+index 7fad8abd123e4bd77687f05674691738686a5160..9d224739de492c1a49662a7c8a0097b8cf967dde 100644
+--- a/scene/gui/button.cpp
++++ b/scene/gui/button.cpp
+@@ -153,6 +153,35 @@ Ref<StyleBox> Button::_get_current_stylebox() const {
+ 	return stylebox;
+ }
+ 
++Ref<StyleBox> Button::_get_current_state_layer_stylebox() const {
++	Ref<StyleBox> stylebox;
++	switch (get_draw_mode()) {
++		case DRAW_NORMAL:
++		case DRAW_DISABLED:
++			break;
++
++		case DRAW_HOVER_PRESSED: {
++			if (has_theme_stylebox(SNAME("state_hover_pressed_layer"))) {
++				stylebox = theme_cache.state_hover_pressed_layer;
++				break;
++			}
++		}
++			[[fallthrough]];
++		case DRAW_PRESSED:
++			stylebox = theme_cache.state_pressed_layer;
++			break;
++
++		case DRAW_HOVER:
++			stylebox = theme_cache.state_hover_layer;
++			break;
++	}
++
++	if (stylebox.is_null() && has_focus(true)) {
++		stylebox = theme_cache.state_focus_layer;
++	}
++	return stylebox;
++}
++
+ String Button::_get_accessibility_name() const {
+ 	const String &ac_name = Control::_get_accessibility_name();
+ 	if (!xl_text.is_empty() && ac_name.is_empty()) {
+@@ -228,6 +257,10 @@ void Button::_notification(int p_what) {
+ 			if (has_focus(true)) {
+ 				theme_cache.focus->draw(ci, Rect2(Point2(), size));
+ 			}
++			Ref<StyleBox> state_layer = _get_current_state_layer_stylebox();
++			if (state_layer.is_valid()) {
++				state_layer->draw(ci, Rect2(Point2(), size));
++			}
+ 
+ 			Ref<Texture2D> _icon = icon;
+ 			if (_icon.is_null() && has_theme_icon(SNAME("icon"))) {
+@@ -846,6 +879,10 @@ void Button::_bind_methods() {
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_STYLEBOX, Button, disabled);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_STYLEBOX, Button, disabled_mirrored);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_STYLEBOX, Button, focus);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_STYLEBOX, Button, state_hover_layer);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_STYLEBOX, Button, state_pressed_layer);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_STYLEBOX, Button, state_hover_pressed_layer);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_STYLEBOX, Button, state_focus_layer);
+ 
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, Button, font_color);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, Button, font_focus_color);
+diff --git a/scene/gui/button.h b/scene/gui/button.h
+index 37e7da8def03ec135797d565f147fdcb17e84c3e..23c824064ddb1f883dd541dd362fa553a510fa8a 100644
+--- a/scene/gui/button.h
++++ b/scene/gui/button.h
+@@ -68,6 +68,10 @@ private:
+ 		Ref<StyleBox> disabled;
+ 		Ref<StyleBox> disabled_mirrored;
+ 		Ref<StyleBox> focus;
++		Ref<StyleBox> state_hover_layer;
++		Ref<StyleBox> state_pressed_layer;
++		Ref<StyleBox> state_hover_pressed_layer;
++		Ref<StyleBox> state_focus_layer;
+ 
+ 		Size2 max_style_size;
+ 		float style_margin_left = 0;
+@@ -116,6 +120,7 @@ protected:
+ 
+ 	Size2 _fit_icon_size(const Size2 &p_size) const;
+ 	Ref<StyleBox> _get_current_stylebox() const;
++	Ref<StyleBox> _get_current_state_layer_stylebox() const;
+ 	Size2 _get_largest_stylebox_size() const;
+ 	void _notification(int p_what);
+ 	static void _bind_methods();
+diff --git a/tests/scene/test_button.cpp b/tests/scene/test_button.cpp
+index 7960fdc87c5080dcb5701237e269fda123d1d6c8..34f6478168c15519d01c478e05a8ff6171dc394d 100644
+--- a/tests/scene/test_button.cpp
++++ b/tests/scene/test_button.cpp
+@@ -35,10 +35,22 @@ TEST_FORCE_LINK(test_button)
+ #include "scene/gui/button.h"
+ #include "scene/main/scene_tree.h"
+ #include "scene/main/window.h"
++#include "scene/resources/style_box.h"
+ #include "tests/display_server_mock.h"
+ 
+ namespace TestButton {
+ 
++class TestableButton : public Button {
++public:
++	void update_theme_cache() {
++		_update_theme_item_cache();
++	}
++
++	Ref<StyleBox> get_current_state_layer_stylebox() const {
++		return _get_current_state_layer_stylebox();
++	}
++};
++
+ TEST_CASE("[SceneTree][Button] is_hovered()") {
+ 	// Create new button instance.
+ 	Button *button = memnew(Button);
+@@ -64,4 +76,32 @@ TEST_CASE("[SceneTree][Button] is_hovered()") {
+ 	memdelete(button);
+ }
+ 
++TEST_CASE("[SceneTree][Button] resolves optional Material state layers") {
++	TestableButton *button = memnew(TestableButton);
++	Window *root = SceneTree::get_singleton()->get_root();
++	root->add_child(button);
++	button->set_size(Size2i(50, 50));
++
++	Ref<StyleBoxEmpty> focus_layer;
++	focus_layer.instantiate();
++	focus_layer->set_content_margin(SIDE_LEFT, 11.0f);
++	Ref<StyleBoxEmpty> pressed_layer;
++	pressed_layer.instantiate();
++	pressed_layer->set_content_margin(SIDE_LEFT, 22.0f);
++	button->add_theme_style_override(SNAME("state_focus_layer"), focus_layer);
++	button->add_theme_style_override(SNAME("state_pressed_layer"), pressed_layer);
++	button->update_theme_cache();
++	CHECK(button->get_theme_stylebox(SNAME("state_focus_layer"))->get_margin(SIDE_LEFT) == doctest::Approx(11.0f));
++	CHECK(button->get_theme_stylebox(SNAME("state_pressed_layer"))->get_margin(SIDE_LEFT) == doctest::Approx(22.0f));
++
++	button->grab_focus();
++	CHECK(button->get_current_state_layer_stylebox()->get_margin(SIDE_LEFT) == doctest::Approx(11.0f));
++
++	button->set_toggle_mode(true);
++	button->set_pressed_no_signal(true);
++	CHECK(button->get_current_state_layer_stylebox()->get_margin(SIDE_LEFT) == doctest::Approx(22.0f));
++
++	memdelete(button);
++}
++
+ } // namespace TestButton
+
+base-commit: 5ec4857b340b6284a18b49b2eda462bd250f219a
+prerequisite-patch-id: b38459b409a3326aed65d2433e1341638171f884
+prerequisite-patch-id: bdb0fe8d6ba7fff1b900ae33d9bec552ea61724c
+prerequisite-patch-id: 4dcdddc73066f768cb97c56444abacb21bda061c
+prerequisite-patch-id: 1f2fbc55f35da3e943dcbaeeb3c9a6d798621bf3
+prerequisite-patch-id: 4dd1cec6888d5160c85be2072b9e5dd05411d007
+prerequisite-patch-id: 60110ae09a2d09796ad65e339ee0b5abc2ce541a
+prerequisite-patch-id: bdb0025d4207a7cf0e1466ca96b2824d238b3caf
+prerequisite-patch-id: 8c55a8201fec417bc2629b903ea2d630aedab1d8
+prerequisite-patch-id: 9dfaaac9d4a47edf9d1eccce8fa66b69e674a911
+prerequisite-patch-id: 17fa223ec74d20c7792e45826a4f0d8ecd7f85d7
+prerequisite-patch-id: 0fb9ef780b3f10a7e82968e44defda508734fa91
+prerequisite-patch-id: 2af824bf187ff13746bd620b1032f57d166c0114
+prerequisite-patch-id: dc8aa901272b27086c9045fc0b9335986d3a8128
+prerequisite-patch-id: 0ce30d5045f596dbc6bf72cbcd9bb16472513013

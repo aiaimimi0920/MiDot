@@ -1,0 +1,26 @@
+From c1115c453435978e35ff15570efeb433871bfa87 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E9=9B=85=E8=A7=85=E5=A8=B1=5C=E7=93=B6=E5=AD=90?=
+ <pingzi@yamiyu.com>
+Date: Fri, 20 Oct 2023 20:08:01 +0800
+Subject: [PATCH] =?UTF-8?q?=E5=85=88=E4=B8=8D=E4=BD=BF=E7=94=A8=20dev=5Fbu?=
+ =?UTF-8?q?ild=3Dyes=20=E6=89=93=E5=8C=85?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ SConstruct | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/SConstruct b/SConstruct
+index 0ea28c3a3343be3eba0431821644fd3e4ad2912d..534d5bd95d2bb52ecdcbc21c6ec58e54c840b428 100644
+--- a/SConstruct
++++ b/SConstruct
+@@ -508,7 +508,6 @@ if selected_platform in platform_list:
+     CXXFLAGS = env.get("CXXFLAGS", "")
+     env["CXXFLAGS"] = ""
+     env.Append(CXXFLAGS=str(CXXFLAGS).split())
+-    env.Append(CCFLAGS=["/FS"])
+ 
+     LINKFLAGS = env.get("LINKFLAGS", "")
+     env["LINKFLAGS"] = ""

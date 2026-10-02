@@ -1,0 +1,4856 @@
+From a99bfbe5fb9a43d94c21c959a8a34914e8517def Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E9=9B=85=E8=A7=85=E5=A8=B1=5C=E7=93=B6=E5=AD=90?=
+ <pingzi@yamiyu.com>
+Date: Mon, 4 Sep 2023 15:50:31 +0800
+Subject: [PATCH] =?UTF-8?q?#2=20=E5=90=88=E5=B9=B6https://github.com/Xwdit?=
+ =?UTF-8?q?/godot=20yololive=E7=9A=84=E6=8F=90=E4=BA=A4=EF=BC=9Afdf6479711?=
+ =?UTF-8?q?62a2ba41f0d1b14d41a013551c0640=20=2098df62578caedac851eb0c70af5?=
+ =?UTF-8?q?93b757d37d557=20=20a2c5e55565ece21aed7c5ff080540f79d53aefd4=20?=
+ =?UTF-8?q?=2063d026054cecb9f1c72b9209b00a2d6d9189c45d=20=20=205ba966b4d87?=
+ =?UTF-8?q?288616b8b9a574919fd5cf1590483=20=20=20=20679e71e71080433b7176c1?=
+ =?UTF-8?q?fc33734455f5e24336=20=20=20=20=2004a8979967ac4b335ae13d72e5edbf?=
+ =?UTF-8?q?6a7368f6f5=20=20=20=20=20323476eca485aed1a29248bf622e1ad3d22f6b?=
+ =?UTF-8?q?8d=20=20=20=20=207401d2368282bcfce9c6e60641eb008e47cf9cea=20=20?=
+ =?UTF-8?q?=20=2036bcaac1de50bf96d2f47c3fc40fa235312f41a7=20=E5=9F=BA?=
+ =?UTF-8?q?=E6=9C=AC=E4=B8=8A=E6=98=AFJun=208,=202023=20=E5=89=8D=E7=9A=84?=
+ =?UTF-8?q?=E6=89=80=E6=9C=89=E6=8F=90=E4=BA=A4?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ core/object/script_language.cpp               |  111 +
+ core/object/script_language.h                 |    1 +
+ doc/classes/EditorInterface.xml               |    5 +
+ doc/classes/Script.xml                        |   76 +
+ editor/editor_interface.cpp                   |    6 +-
+ editor/editor_interface.h                     |    2 +-
+ editor/editor_node.cpp                        |    5 +-
+ editor/editor_node.h                          |    2 +-
+ modules/gdscript/gdscript_editor.cpp          |   16 +-
+ modules/gdscript/gdscript_helper.cpp          |  153 ++
+ modules/gdscript/gdscript_helper.h            |  129 ++
+ modules/gdscript/register_types.cpp           |    3 +
+ modules/spout/SCsub                           |   10 +
+ modules/spout/config.py                       |   11 +
+ modules/spout/doc_classes/Spout.xml           |  556 +++++
+ modules/spout/register_types.cpp              |   12 +
+ modules/spout/register_types.h                |    9 +
+ modules/spout/spout_gd.cpp                    |  479 +++++
+ modules/spout/spout_gd.h                      |  161 ++
+ .../spout-library/Binaries/x64/SpoutLibrary.h |  486 +++++
+ thirdparty/spout-library/SpoutLibrary.cpp     | 1815 +++++++++++++++++
+ thirdparty/spout-library/SpoutLibrary.h       |  486 +++++
+ 22 files changed, 4518 insertions(+), 16 deletions(-)
+ create mode 100644 modules/gdscript/gdscript_helper.cpp
+ create mode 100644 modules/gdscript/gdscript_helper.h
+ create mode 100644 modules/spout/SCsub
+ create mode 100644 modules/spout/config.py
+ create mode 100644 modules/spout/doc_classes/Spout.xml
+ create mode 100644 modules/spout/register_types.cpp
+ create mode 100644 modules/spout/register_types.h
+ create mode 100644 modules/spout/spout_gd.cpp
+ create mode 100644 modules/spout/spout_gd.h
+ create mode 100644 thirdparty/spout-library/Binaries/x64/SpoutLibrary.h
+ create mode 100644 thirdparty/spout-library/SpoutLibrary.cpp
+ create mode 100644 thirdparty/spout-library/SpoutLibrary.h
+
+diff --git a/core/object/script_language.cpp b/core/object/script_language.cpp
+index 011f4203ea7e5119e2d80ff463cd7e070685e22c..a94599848f8b3b23b812ed945b918f05704867e6 100644
+--- a/core/object/script_language.cpp
++++ b/core/object/script_language.cpp
+@@ -126,6 +126,116 @@ PropertyInfo Script::get_class_category() const {
+ 
+ #endif // TOOLS_ENABLED
+ 
++TypedArray<Dictionary> Script::_get_script_documentation_list() {
++#ifdef TOOLS_ENABLED
++	Vector<DocData::ClassDoc> classes = get_documentation();
++	TypedArray<Dictionary> doc_dicts;
++	for (int idx = 0; idx < classes.size(); idx++) {
++		DocData::ClassDoc p_class = classes[idx];
++		Dictionary dict;
++		dict["name"] = p_class.name;
++		dict["inherits"] = p_class.inherits;
++		dict["brief_description"] = p_class.brief_description.strip_edges();
++		dict["description"] = p_class.description.strip_edges();
++
++		TypedArray<Dictionary> tutorials;
++		for (int i = 0; i < p_class.tutorials.size(); i++) {
++			Dictionary tutorial;
++			tutorial["title"] = p_class.tutorials[i].title;
++			tutorial["link"] = p_class.tutorials[i].link;
++			tutorials.append(tutorial);
++		}
++		dict["tutorials"] = tutorials;
++
++		TypedArray<Dictionary> enums;
++		for (const KeyValue<String, String> &E : p_class.enums) {
++			Dictionary _enum;
++			_enum["name"] = E.key;
++			_enum["description"] = E.value;
++			enums.append(_enum);
++		}
++		dict["enums"] = enums;
++
++		TypedArray<Dictionary> constants;
++		for (int i = 0; i < p_class.constants.size(); i++) {
++			Dictionary constant;
++			constant["name"] = p_class.constants[i].name;
++			constant["value"] = p_class.constants[i].value;
++			constant["enumeration"] = p_class.constants[i].enumeration;
++			constant["description"] = p_class.constants[i].description.strip_edges();
++			constants.append(constant);
++		}
++		dict["constants"] = constants;
++
++		TypedArray<Dictionary> signals;
++		for (int i = 0; i < p_class.signals.size(); i++) {
++			Dictionary signal;
++			signal["name"] = p_class.signals[i].name;
++			signal["return_type"] = p_class.signals[i].return_type;
++			signal["qualifiers"] = p_class.signals[i].qualifiers;
++			signal["description"] = p_class.signals[i].description.strip_edges();
++
++			TypedArray<Dictionary> arguments;
++			for (int j = 0; j < p_class.signals[i].arguments.size(); j++) {
++				Dictionary argument;
++				argument["name"] = p_class.signals[i].arguments[j].name;
++				if (p_class.signals[i].arguments[j].type != "") {
++					argument["type"] = p_class.signals[i].arguments[j].type;
++				} else {
++					argument["type"] = "Variant";
++				}
++				argument["default_value"] = p_class.signals[i].arguments[j].default_value;
++				arguments.push_back(argument);
++			}
++			signal["arguments"] = arguments;
++			signals.append(signal);
++		}
++		dict["signals"] = signals;
++
++		TypedArray<Dictionary> variables;
++		for (int i = 0; i < p_class.properties.size(); i++) {
++			Dictionary var;
++			var["name"] = p_class.properties[i].name;
++			var["type"] = p_class.properties[i].type;
++			var["enumeration"] = p_class.properties[i].enumeration;
++			var["description"] = p_class.properties[i].description.strip_edges();
++			var["default_value"] = p_class.properties[i].default_value;
++			var["setter"] = p_class.properties[i].setter;
++			var["getter"] = p_class.properties[i].getter;
++			variables.append(var);
++		}
++		dict["variables"] = variables;
++
++		TypedArray<Dictionary> methods;
++		for (int i = 0; i < p_class.methods.size(); i++) {
++			Dictionary method;
++			method["name"] = p_class.methods[i].name;
++			method["return_type"] = p_class.methods[i].return_type;
++			method["qualifiers"] = p_class.methods[i].qualifiers;
++			method["description"] = p_class.methods[i].description.strip_edges();
++
++			TypedArray<Dictionary> arguments;
++			for (int j = 0; j < p_class.methods[i].arguments.size(); j++) {
++				Dictionary argument;
++				argument["name"] = p_class.methods[i].arguments[j].name;
++				argument["type"] = p_class.methods[i].arguments[j].type;
++				argument["default_value"] = p_class.methods[i].arguments[j].default_value;
++				arguments.push_back(argument);
++			}
++			method["arguments"] = arguments;
++			methods.append(method);
++		}
++		dict["methods"] = methods;
++
++		doc_dicts.append(dict);
++	}
++
++	return doc_dicts;
++#endif // TOOLS_ENABLED
++
++	return TypedArray<Dictionary>();
++}
++
+ void Script::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("can_instantiate"), &Script::can_instantiate);
+ 	//ClassDB::bind_method(D_METHOD("instance_create","base_object"),&Script::instance_create);
+@@ -143,6 +253,7 @@ void Script::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("get_script_method_list"), &Script::_get_script_method_list);
+ 	ClassDB::bind_method(D_METHOD("get_script_signal_list"), &Script::_get_script_signal_list);
+ 	ClassDB::bind_method(D_METHOD("get_script_constant_map"), &Script::_get_script_constant_map);
++	ClassDB::bind_method(D_METHOD("get_script_documentation_list"), &Script::_get_script_documentation_list);
+ 	ClassDB::bind_method(D_METHOD("get_property_default_value", "property"), &Script::_get_property_default_value);
+ 
+ 	ClassDB::bind_method(D_METHOD("is_tool"), &Script::is_tool);
+diff --git a/core/object/script_language.h b/core/object/script_language.h
+index 3e4041d1733e982029c12fab92f1d7e4680fac81..7fba11e7023148939cc75ac48ed7f2053e2a15ca 100644
+--- a/core/object/script_language.h
++++ b/core/object/script_language.h
+@@ -120,6 +120,7 @@ protected:
+ 	TypedArray<Dictionary> _get_script_property_list();
+ 	TypedArray<Dictionary> _get_script_method_list();
+ 	TypedArray<Dictionary> _get_script_signal_list();
++	TypedArray<Dictionary> _get_script_documentation_list();
+ 	Dictionary _get_script_constant_map();
+ 
+ public:
+diff --git a/doc/classes/EditorInterface.xml b/doc/classes/EditorInterface.xml
+index d0de09e4512e236547f9b464f3f0abcf2bd844aa..8b9f2fd3f59494e7d06539c4b1ca06ae08d87708 100644
+--- a/doc/classes/EditorInterface.xml
++++ b/doc/classes/EditorInterface.xml
+@@ -225,6 +225,11 @@
+ 		<method name="open_scene_from_path">
+ 			<return type="void" />
+ 			<param index="0" name="scene_filepath" type="String" />
++			<param index="1" name="ignore_broken_deps" type="bool" default="false" />
++			<param index="2" name="set_inherited" type="bool" default="false" />
++			<param index="3" name="clear_errors" type="bool" default="true" />
++			<param index="4" name="force_open_imported" type="bool" default="false" />
++			<param index="5" name="silent_change_tab" type="bool" default="false" />
+ 			<description>
+ 				Opens the scene at the given path.
+ 			</description>
+diff --git a/doc/classes/Script.xml b/doc/classes/Script.xml
+index 28d763585d3fcfe3dca899ec960a6c058327882a..09162b0fa85269ffc94ea319394a923f5766c3a4 100644
+--- a/doc/classes/Script.xml
++++ b/doc/classes/Script.xml
+@@ -43,6 +43,82 @@
+ 				Returns a dictionary containing constant names and their values.
+ 			</description>
+ 		</method>
++		<method name="get_script_documentation_list">
++			<return type="Dictionary[]" />
++			<description>
++				Returns an array of dictionary containing the documentation of this script and its subclasses.
++				Each dictionary contains the following structure:
++				[codeblock]
++				{
++				    "name": "",
++				    "inherits": "",
++				    "brief_description": "",
++				    "description": "",
++				    "tutorials": [
++				        {
++				            "title": "",
++				            "link": ""
++				        }
++				    ],
++				    "enums": [
++				        {
++				            "name": "",
++				            "description": ""
++				        }
++				    ],
++				    "constants": [
++				        {
++				            "name": "",
++				            "value": "",
++				            "enumeration": "",
++				            "description": ""
++				        }
++				    ],
++				    "signals": [
++				        {
++				            "name": "",
++				            "return_type": "",
++				            "qualifiers": "",
++				            "description": "",
++				            "arguments": [
++				                {
++				                    "name": "",
++				                    "type": "",
++				                    "default_value": ""
++				                }
++				            ]
++				        }
++				    ],
++				    "variables": [
++				        {
++				            "name": "",
++				            "type": "",
++				            "enumeration": "",
++				            "description": "",
++				            "default_value": "",
++				            "setter": "",
++				            "getter": ""
++				        }
++				    ],
++				    "methods": [
++				        {
++				            "name": "",
++				            "return_type": "",
++				            "qualifiers": "",
++				            "description": "",
++				            "arguments": [
++				                {
++				                    "name": "",
++				                    "type": "",
++				                    "default_value": ""
++				                }
++				            ]
++				        }
++				    ]
++				}
++				[/codeblock]
++			</description>
++		</method>
+ 		<method name="get_script_method_list">
+ 			<return type="Dictionary[]" />
+ 			<description>
+diff --git a/editor/editor_interface.cpp b/editor/editor_interface.cpp
+index e179a0e18a644f16f87a8cc4d8920bbb80a39fc8..3d3a94e42c80e892cb2fc482e8d71ddfe8e0a6c0 100644
+--- a/editor/editor_interface.cpp
++++ b/editor/editor_interface.cpp
+@@ -307,12 +307,12 @@ void EditorInterface::edit_script(const Ref<Script> &p_script, int p_line, int p
+ 	ScriptEditor::get_singleton()->edit(p_script, p_line - 1, p_col - 1, p_grab_focus);
+ }
+ 
+-void EditorInterface::open_scene_from_path(const String &scene_path) {
++void EditorInterface::open_scene_from_path(const String &scene_path, bool p_ignore_broken_deps, bool p_set_inherited, bool p_clear_errors, bool p_force_open_imported, bool p_silent_change_tab) {
+ 	if (EditorNode::get_singleton()->is_changing_scene()) {
+ 		return;
+ 	}
+ 
+-	EditorNode::get_singleton()->open_request(scene_path);
++	EditorNode::get_singleton()->open_request(scene_path, p_ignore_broken_deps, p_set_inherited, p_clear_errors, p_force_open_imported, p_silent_change_tab);
+ }
+ 
+ void EditorInterface::reload_scene_from_path(const String &scene_path) {
+@@ -460,7 +460,7 @@ void EditorInterface::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("edit_resource", "resource"), &EditorInterface::edit_resource);
+ 	ClassDB::bind_method(D_METHOD("edit_node", "node"), &EditorInterface::edit_node);
+ 	ClassDB::bind_method(D_METHOD("edit_script", "script", "line", "column", "grab_focus"), &EditorInterface::edit_script, DEFVAL(-1), DEFVAL(0), DEFVAL(true));
+-	ClassDB::bind_method(D_METHOD("open_scene_from_path", "scene_filepath"), &EditorInterface::open_scene_from_path);
++	ClassDB::bind_method(D_METHOD("open_scene_from_path", "scene_filepath", "ignore_broken_deps", "set_inherited", "clear_errors", "force_open_imported", "silent_change_tab"), &EditorInterface::open_scene_from_path, DEFVAL(false), DEFVAL(false), DEFVAL(true), DEFVAL(false), DEFVAL(false));
+ 	ClassDB::bind_method(D_METHOD("reload_scene_from_path", "scene_filepath"), &EditorInterface::reload_scene_from_path);
+ 
+ 	ClassDB::bind_method(D_METHOD("get_open_scenes"), &EditorInterface::get_open_scenes);
+diff --git a/editor/editor_interface.h b/editor/editor_interface.h
+index 079fc169f27347387f47532517d15ef9c4e9b2af..28a2eaa9acdb2a4bcec323e2adc0d704480ffe9c 100644
+--- a/editor/editor_interface.h
++++ b/editor/editor_interface.h
+@@ -127,7 +127,7 @@ public:
+ 	void edit_resource(const Ref<Resource> &p_resource);
+ 	void edit_node(Node *p_node);
+ 	void edit_script(const Ref<Script> &p_script, int p_line = -1, int p_col = 0, bool p_grab_focus = true);
+-	void open_scene_from_path(const String &scene_path);
++	void open_scene_from_path(const String &scene_path, bool p_ignore_broken_deps = false, bool p_set_inherited = false, bool p_clear_errors = true, bool p_force_open_imported = false, bool p_silent_change_tab = false);
+ 	void reload_scene_from_path(const String &scene_path);
+ 
+ 	PackedStringArray get_open_scenes() const;
+diff --git a/editor/editor_node.cpp b/editor/editor_node.cpp
+index 6fe23720fbe4445824639a4f347f67cf55c421ca..23eeecc21b48c0f1ac3779a42846337896108b25 100644
+--- a/editor/editor_node.cpp
++++ b/editor/editor_node.cpp
+@@ -4032,9 +4032,8 @@ void EditorNode::update_diff_data_for_node(
+ 		update_diff_data_for_node(p_edited_scene, p_root, child, p_modification_table, p_addition_list);
+ 	}
+ }
+-//
+ 
+-void EditorNode::open_request(const String &p_path) {
++void EditorNode::open_request(const String &p_path, bool p_ignore_broken_deps, bool p_set_inherited, bool p_clear_errors, bool p_force_open_imported, bool p_silent_change_tab) {
+ 	if (!opening_prev) {
+ 		List<String>::Element *prev_scene_item = previous_scenes.find(p_path);
+ 		if (prev_scene_item != nullptr) {
+@@ -4042,7 +4041,7 @@ void EditorNode::open_request(const String &p_path) {
+ 		}
+ 	}
+ 
+-	load_scene(p_path); // As it will be opened in separate tab.
++	load_scene(p_path, p_ignore_broken_deps, p_set_inherited, p_clear_errors, p_force_open_imported, p_silent_change_tab); // As it will be opened in separate tab.
+ }
+ 
+ bool EditorNode::has_previous_scenes() const {
+diff --git a/editor/editor_node.h b/editor/editor_node.h
+index fe99cf1f010f4d66f7d579d8701caa4a0ef99ce1..e01bfe941fb21c906ff84686f99bef800688431f 100644
+--- a/editor/editor_node.h
++++ b/editor/editor_node.h
+@@ -791,7 +791,7 @@ public:
+ 
+ 	void select_editor_by_name(const String &p_name);
+ 
+-	void open_request(const String &p_path);
++	void open_request(const String &p_path, bool p_ignore_broken_deps = false, bool p_set_inherited = false, bool p_clear_errors = true, bool p_force_open_imported = false, bool p_silent_change_tab = false);
+ 	void edit_foreign_resource(Ref<Resource> p_resource);
+ 
+ 	bool is_resource_read_only(Ref<Resource> p_resource, bool p_foreign_resources_are_writable = false);
+diff --git a/modules/gdscript/gdscript_editor.cpp b/modules/gdscript/gdscript_editor.cpp
+index 724715d9e5f2e34b2ac9088cbecf4fb4dda60e71..e473646d9393e236e04c441033cf444781d87756 100644
+--- a/modules/gdscript/gdscript_editor.cpp
++++ b/modules/gdscript/gdscript_editor.cpp
+@@ -76,7 +76,7 @@ Ref<Script> GDScriptLanguage::make_template(const String &p_template, const Stri
+ 	String processed_template = p_template;
+ 	bool type_hints = false;
+ #ifdef TOOLS_ENABLED
+-	type_hints = EDITOR_GET("text_editor/completion/add_type_hints");
++	type_hints = Engine::get_singleton()->is_editor_hint() && EDITOR_GET("text_editor/completion/add_type_hints");
+ #endif
+ 	if (!type_hints) {
+ 		processed_template = processed_template.replace(": int", "")
+@@ -493,7 +493,7 @@ void GDScriptLanguage::get_public_annotations(List<MethodInfo> *p_annotations) c
+ 
+ String GDScriptLanguage::make_function(const String &p_class, const String &p_name, const PackedStringArray &p_args) const {
+ #ifdef TOOLS_ENABLED
+-	bool th = EditorSettings::get_singleton()->get_setting("text_editor/completion/add_type_hints");
++	bool th = Engine::get_singleton()->is_editor_hint() && EditorSettings::get_singleton()->get_setting("text_editor/completion/add_type_hints");
+ #else
+ 	bool th = false;
+ #endif
+@@ -784,7 +784,7 @@ static String _make_arguments_hint(const GDScriptParser::FunctionNode *p_functio
+ }
+ 
+ static void _get_directory_contents(EditorFileSystemDirectory *p_dir, HashMap<String, ScriptLanguage::CodeCompletionOption> &r_list) {
+-	const String quote_style = EDITOR_GET("text_editor/completion/use_single_quotes") ? "'" : "\"";
++	const String quote_style = (Engine::get_singleton()->is_editor_hint() && EDITOR_GET("text_editor/completion/use_single_quotes")) ? "'" : "\"";
+ 
+ 	for (int i = 0; i < p_dir->get_file_count(); i++) {
+ 		ScriptLanguage::CodeCompletionOption option(p_dir->get_file_path(i), ScriptLanguage::CODE_COMPLETION_KIND_FILE_PATH);
+@@ -2548,7 +2548,7 @@ static void _find_call_arguments(GDScriptParser::CompletionContext &p_context, c
+ 	Variant base = p_base.value;
+ 	GDScriptParser::DataType base_type = p_base.type;
+ 
+-	const String quote_style = EDITOR_GET("text_editor/completion/use_single_quotes") ? "'" : "\"";
++	const String quote_style = (Engine::get_singleton()->is_editor_hint() && EDITOR_GET("text_editor/completion/use_single_quotes")) ? "'" : "\"";
+ 
+ 	while (base_type.is_set() && !base_type.is_variant()) {
+ 		switch (base_type.kind) {
+@@ -2728,7 +2728,7 @@ static bool _get_subscript_type(GDScriptParser::CompletionContext &p_context, co
+ 
+ static void _find_call_arguments(GDScriptParser::CompletionContext &p_context, const GDScriptParser::Node *p_call, int p_argidx, HashMap<String, ScriptLanguage::CodeCompletionOption> &r_result, bool &r_forced, String &r_arghint) {
+ 	if (p_call->type == GDScriptParser::Node::PRELOAD) {
+-		if (p_argidx == 0 && bool(EDITOR_GET("text_editor/completion/complete_file_paths"))) {
++		if (p_argidx == 0 && Engine::get_singleton()->is_editor_hint() && bool(EDITOR_GET("text_editor/completion/complete_file_paths"))) {
+ 			_get_directory_contents(EditorFileSystem::get_singleton()->get_filesystem(), r_result);
+ 		}
+ 
+@@ -2836,7 +2836,7 @@ static void _find_call_arguments(GDScriptParser::CompletionContext &p_context, c
+ }
+ 
+ ::Error GDScriptLanguage::complete_code(const String &p_code, const String &p_path, Object *p_owner, List<ScriptLanguage::CodeCompletionOption> *r_options, bool &r_forced, String &r_call_hint) {
+-	const String quote_style = EDITOR_GET("text_editor/completion/use_single_quotes") ? "'" : "\"";
++	const String quote_style = (Engine::get_singleton()->is_editor_hint() && EDITOR_GET("text_editor/completion/use_single_quotes")) ? "'" : "\"";
+ 
+ 	GDScriptParser parser;
+ 	GDScriptAnalyzer analyzer(&parser);
+@@ -3030,7 +3030,7 @@ static void _find_call_arguments(GDScriptParser::CompletionContext &p_context, c
+ 			r_forced = true;
+ 		} break;
+ 		case GDScriptParser::COMPLETION_RESOURCE_PATH: {
+-			if (EDITOR_GET("text_editor/completion/complete_file_paths")) {
++			if (Engine::get_singleton()->is_editor_hint() && EDITOR_GET("text_editor/completion/complete_file_paths")) {
+ 				_get_directory_contents(EditorFileSystem::get_singleton()->get_filesystem(), options);
+ 				r_forced = true;
+ 			}
+@@ -3063,7 +3063,7 @@ static void _find_call_arguments(GDScriptParser::CompletionContext &p_context, c
+ 				break;
+ 			}
+ 
+-			bool use_type_hint = EditorSettings::get_singleton()->get_setting("text_editor/completion/add_type_hints").operator bool();
++			bool use_type_hint = Engine::get_singleton()->is_editor_hint() && EditorSettings::get_singleton()->get_setting("text_editor/completion/add_type_hints").operator bool();
+ 
+ 			List<MethodInfo> virtual_methods;
+ 			ClassDB::get_virtual_methods(class_name, &virtual_methods);
+diff --git a/modules/gdscript/gdscript_helper.cpp b/modules/gdscript/gdscript_helper.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..71faf0f19f93817fd9f56c5a0bd555f299bdb8d6
+--- /dev/null
++++ b/modules/gdscript/gdscript_helper.cpp
+@@ -0,0 +1,153 @@
++/*************************************************************************/
++/*  gdscript_helper.cpp                                           */
++/*************************************************************************/
++/*                       This file is part of:                           */
++/*                           GODOT ENGINE                                */
++/*                      https://godotengine.org                          */
++/*************************************************************************/
++/* Copyright (c) 2007-2023 Juan Linietsky, Ariel Manzur.                 */
++/* Copyright (c) 2014-2023 Godot Engine contributors (cf. AUTHORS.md).   */
++/*                                                                       */
++/* Permission is hereby granted, free of charge, to any person obtaining */
++/* a copy of this software and associated documentation files (the       */
++/* "Software"), to deal in the Software without restriction, including   */
++/* without limitation the rights to use, copy, modify, merge, publish,   */
++/* distribute, sublicense, and/or sell copies of the Software, and to    */
++/* permit persons to whom the Software is furnished to do so, subject to */
++/* the following conditions:                                             */
++/*                                                                       */
++/* The above copyright notice and this permission notice shall be        */
++/* included in all copies or substantial portions of the Software.       */
++/*                                                                       */
++/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,       */
++/* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF    */
++/* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.*/
++/* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY  */
++/* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,  */
++/* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
++/* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
++/*************************************************************************/
++
++#include "gdscript_helper.h"
++#include "scene\gui\code_edit.h"
++
++void GDScriptHelper::_bind_methods() {
++	ClassDB::bind_method(D_METHOD("set_validate_code", "code", "script_path"), &GDScriptHelper::set_validate_code, DEFVAL(String()));
++	ClassDB::bind_method("has_errors", &GDScriptHelper::has_errors);
++	ClassDB::bind_method("get_errors", &GDScriptHelper::get_errors);
++	ClassDB::bind_method("has_functions", &GDScriptHelper::has_functions);
++	ClassDB::bind_method("get_functions", &GDScriptHelper::get_functions);
++
++	ClassDB::bind_method(D_METHOD("set_completion_code", "code", "script_path", "script_owner"), &GDScriptHelper::set_completion_code, DEFVAL(String()), DEFVAL(Variant()));
++	ClassDB::bind_method("has_completion_options", &GDScriptHelper::has_completion_options);
++	ClassDB::bind_method("get_completion_options", &GDScriptHelper::get_completion_options);
++	ClassDB::bind_method("has_completion_hint", &GDScriptHelper::has_completion_hint);
++	ClassDB::bind_method("get_completion_hint", &GDScriptHelper::get_completion_hint);
++	ClassDB::bind_method("is_completion_forced", &GDScriptHelper::is_completion_forced);
++
++	ClassDB::bind_method(D_METHOD("lookup_code", "code", "symbol", "script_path", "script_owner"), &GDScriptHelper::lookup_code, DEFVAL(String()), DEFVAL(Variant()));
++
++	BIND_ENUM_CONSTANT(LOOKUP_RESULT_SCRIPT_LOCATION);
++	BIND_ENUM_CONSTANT(LOOKUP_RESULT_CLASS);
++	BIND_ENUM_CONSTANT(LOOKUP_RESULT_CLASS_CONSTANT);
++	BIND_ENUM_CONSTANT(LOOKUP_RESULT_CLASS_PROPERTY);
++	BIND_ENUM_CONSTANT(LOOKUP_RESULT_CLASS_METHOD);
++	BIND_ENUM_CONSTANT(LOOKUP_RESULT_CLASS_SIGNAL);
++	BIND_ENUM_CONSTANT(LOOKUP_RESULT_CLASS_ENUM);
++	BIND_ENUM_CONSTANT(LOOKUP_RESULT_CLASS_TBD_GLOBALSCOPE);
++	BIND_ENUM_CONSTANT(LOOKUP_RESULT_CLASS_ANNOTATION);
++	BIND_ENUM_CONSTANT(LOOKUP_RESULT_MAX);
++}
++
++bool GDScriptHelper::set_validate_code(const String &p_code, const String &p_path) {
++	r_functions.clear();
++	r_errors.clear();
++	GDScriptLanguage *lang = GDScriptLanguage::get_singleton();
++	return lang->validate(p_code, p_path, &r_functions, &r_errors);
++}
++
++bool GDScriptHelper::has_errors() const {
++	return !r_errors.is_empty();
++}
++
++TypedArray<Dictionary> GDScriptHelper::get_errors() const {
++	TypedArray<Dictionary> list;
++	for (const ScriptLanguage::ScriptError &e : r_errors) {
++		Dictionary error;
++		error["line"] = e.line-1;
++		error["column"] = e.column-1;
++		error["message"] = e.message;
++		list.append(error);
++	}
++	return list;
++}
++
++bool GDScriptHelper::has_functions() const {
++	return !r_functions.is_empty();
++}
++
++Dictionary GDScriptHelper::get_functions() const {
++	Dictionary list;
++	for (const String &e : r_functions) {
++		list[e.get_slice(":", 0)] = e.get_slice(":", 1).to_int()-1;
++	}
++	return list;
++}
++
++Error GDScriptHelper::set_completion_code(const String &p_code, const String &p_path, Object *p_owner) {
++	r_options.clear();
++	complete_forced = false;
++	code_hint = "";
++	GDScriptLanguage *lang = GDScriptLanguage::get_singleton();
++	Error err = lang->complete_code(p_code, p_path, p_owner, &r_options, complete_forced, code_hint);
++	r_options.sort_custom_inplace<CodeCompletionOptionCompare>();
++	return err;
++}
++
++bool GDScriptHelper::has_completion_options() const {
++	return !r_options.is_empty();
++}
++
++TypedArray<Dictionary> GDScriptHelper::get_completion_options() const {
++	TypedArray<Dictionary> list;
++	for (const ScriptLanguage::CodeCompletionOption &e : r_options) {
++		Dictionary option;
++		option["type"] = (CodeEdit::CodeCompletionKind)e.kind;
++		option["display_text"] = e.display;
++		option["insert_text"] = e.insert_text;
++		option["default_value"] = e.default_value;
++		list.append(option);
++	}
++	return list;
++}
++
++bool GDScriptHelper::has_completion_hint() const {
++	return !code_hint.is_empty();
++}
++
++String GDScriptHelper::get_completion_hint() const {
++	return code_hint;
++}
++
++bool GDScriptHelper::is_completion_forced() const {
++	return complete_forced;
++}
++
++Dictionary GDScriptHelper::lookup_code(const String &p_code, const String &p_symbol, const String &p_path, Object *p_owner) {
++	Dictionary result_dict;
++	ScriptLanguage::LookupResult lookup_result;
++	GDScriptLanguage *lang = GDScriptLanguage::get_singleton();
++	if (lang->lookup_code(p_code, p_symbol, p_path, p_owner, lookup_result) == OK) {
++		result_dict["type"] = (LookupResultType)lookup_result.type;
++		result_dict["script"] = lookup_result.script;
++		result_dict["class_name"] = lookup_result.class_name;
++		result_dict["class_member"] = lookup_result.class_member;
++		result_dict["class_path"] = lookup_result.class_path;
++		result_dict["location"] = lookup_result.location;
++	}
++	return result_dict;
++}
++
++GDScriptHelper::GDScriptHelper() = default;
++
++GDScriptHelper::~GDScriptHelper() = default;
+diff --git a/modules/gdscript/gdscript_helper.h b/modules/gdscript/gdscript_helper.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..829d1349b5e68ee60194ec51eee49d1425bd8854
+--- /dev/null
++++ b/modules/gdscript/gdscript_helper.h
+@@ -0,0 +1,129 @@
++/*************************************************************************/
++/*  gdscript_helper.h                                             */
++/*************************************************************************/
++/*                       This file is part of:                           */
++/*                           GODOT ENGINE                                */
++/*                      https://godotengine.org                          */
++/*************************************************************************/
++/* Copyright (c) 2007-2023 Juan Linietsky, Ariel Manzur.                 */
++/* Copyright (c) 2014-2023 Godot Engine contributors (cf. AUTHORS.md).   */
++/*                                                                       */
++/* Permission is hereby granted, free of charge, to any person obtaining */
++/* a copy of this software and associated documentation files (the       */
++/* "Software"), to deal in the Software without restriction, including   */
++/* without limitation the rights to use, copy, modify, merge, publish,   */
++/* distribute, sublicense, and/or sell copies of the Software, and to    */
++/* permit persons to whom the Software is furnished to do so, subject to */
++/* the following conditions:                                             */
++/*                                                                       */
++/* The above copyright notice and this permission notice shall be        */
++/* included in all copies or substantial portions of the Software.       */
++/*                                                                       */
++/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,       */
++/* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF    */
++/* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.*/
++/* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY  */
++/* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,  */
++/* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
++/* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
++/*************************************************************************/
++
++#ifndef GDSCRIPT_HELPER_H
++#define GDSCRIPT_HELPER_H
++
++#include "core/object/ref_counted.h"
++#include "gdscript.h"
++
++class GDScriptHelper : public RefCounted {
++	GDCLASS(GDScriptHelper, RefCounted);
++	List<String> r_functions;
++	List<ScriptLanguage::ScriptError> r_errors;
++	List<ScriptLanguage::CodeCompletionOption> r_options;
++	String code_hint;
++	bool complete_forced = false;
++
++protected:
++	static void _bind_methods();
++
++public:
++	enum LookupResultType {
++		LOOKUP_RESULT_SCRIPT_LOCATION,
++		LOOKUP_RESULT_CLASS,
++		LOOKUP_RESULT_CLASS_CONSTANT,
++		LOOKUP_RESULT_CLASS_PROPERTY,
++		LOOKUP_RESULT_CLASS_METHOD,
++		LOOKUP_RESULT_CLASS_SIGNAL,
++		LOOKUP_RESULT_CLASS_ENUM,
++		LOOKUP_RESULT_CLASS_TBD_GLOBALSCOPE,
++		LOOKUP_RESULT_CLASS_ANNOTATION,
++		LOOKUP_RESULT_MAX
++	};
++
++	bool set_validate_code(const String &p_code, const String &p_path = "");
++	bool has_errors() const;
++	TypedArray<Dictionary> get_errors() const;
++	bool has_functions() const;
++	Dictionary get_functions() const;
++
++	Error set_completion_code(const String &p_code, const String &p_path = "", Object *p_owner = nullptr);
++	bool has_completion_options() const;
++	TypedArray<Dictionary> get_completion_options() const;
++	bool has_completion_hint() const;
++	String get_completion_hint() const;
++	bool is_completion_forced() const;
++
++	Dictionary lookup_code(const String &p_code, const String &p_symbol, const String &p_path = "", Object *p_owner = nullptr);
++
++	GDScriptHelper();
++	~GDScriptHelper();
++};
++
++const int KIND_COUNT = 10;
++// The order in which to sort code completion options.
++const ScriptLanguage::CodeCompletionKind KIND_SORT_ORDER[KIND_COUNT] = {
++	ScriptLanguage::CODE_COMPLETION_KIND_VARIABLE,
++	ScriptLanguage::CODE_COMPLETION_KIND_MEMBER,
++	ScriptLanguage::CODE_COMPLETION_KIND_FUNCTION,
++	ScriptLanguage::CODE_COMPLETION_KIND_ENUM,
++	ScriptLanguage::CODE_COMPLETION_KIND_SIGNAL,
++	ScriptLanguage::CODE_COMPLETION_KIND_CONSTANT,
++	ScriptLanguage::CODE_COMPLETION_KIND_CLASS,
++	ScriptLanguage::CODE_COMPLETION_KIND_NODE_PATH,
++	ScriptLanguage::CODE_COMPLETION_KIND_FILE_PATH,
++	ScriptLanguage::CODE_COMPLETION_KIND_PLAIN_TEXT,
++};
++
++struct CodeCompletionOptionCompare {
++	_FORCE_INLINE_ bool operator()(const ScriptLanguage::CodeCompletionOption &l, const ScriptLanguage::CodeCompletionOption &r) const {
++		if (l.location == r.location) {
++			// If locations are same, sort on kind
++			if (l.kind == r.kind) {
++				// If kinds are same, sort alphanumeric
++				return l.display < r.display;
++			}
++
++			// Sort kinds based on the const sorting array defined above. Lower index = higher priority.
++			int l_index = -1;
++			int r_index = -1;
++			for (int i = 0; i < KIND_COUNT; i++) {
++				const ScriptLanguage::CodeCompletionKind kind = KIND_SORT_ORDER[i];
++				l_index = kind == l.kind ? i : l_index;
++				r_index = kind == r.kind ? i : r_index;
++
++				if (l_index != -1 && r_index != -1) {
++					return l_index < r_index;
++				}
++			}
++
++			// This return should never be hit unless something goes wrong.
++			// l and r should always have a Kind which is in the sort order array.
++			return l.display < r.display;
++		}
++
++		return l.location < r.location;
++	}
++};
++
++VARIANT_ENUM_CAST(GDScriptHelper::LookupResultType);
++
++#endif // GDSCRIPT_HELPER_H
+diff --git a/modules/gdscript/register_types.cpp b/modules/gdscript/register_types.cpp
+index 605e82be6e8125b7bdebd16f6cfaf343e8515e18..38c5bc05d17d742923cd4b37dd33ac2498996482 100644
+--- a/modules/gdscript/register_types.cpp
++++ b/modules/gdscript/register_types.cpp
+@@ -33,6 +33,7 @@
+ #include "gdscript.h"
+ #include "gdscript_analyzer.h"
+ #include "gdscript_cache.h"
++#include "gdscript_helper.h"
+ #include "gdscript_tokenizer.h"
+ #include "gdscript_utility_functions.h"
+ 
+@@ -138,6 +139,8 @@ void initialize_gdscript_module(ModuleInitializationLevel p_level) {
+ 		gdscript_cache = memnew(GDScriptCache);
+ 
+ 		GDScriptUtilityFunctions::register_functions();
++
++		GDREGISTER_CLASS(GDScriptHelper);
+ 	}
+ 
+ #ifdef TOOLS_ENABLED
+diff --git a/modules/spout/SCsub b/modules/spout/SCsub
+new file mode 100644
+index 0000000000000000000000000000000000000000..ec185799b388995c3b481c53435b4e310af4d145
+--- /dev/null
++++ b/modules/spout/SCsub
+@@ -0,0 +1,10 @@
++#!/usr/bin/env python
++
++Import("env")
++Import("env_modules")
++
++env_spout = env_modules.Clone();
++
++env_spout.add_source_files(env.modules_sources, "*.cpp")
++
++env.Append(LIBS=File("#thirdparty/spout-library/Binaries/x64/SpoutLibrary.lib"))
+diff --git a/modules/spout/config.py b/modules/spout/config.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..27e465cef457968404dc1d83fd71e8a5d46daeff
+--- /dev/null
++++ b/modules/spout/config.py
+@@ -0,0 +1,11 @@
++def can_build(env, platform):
++    return platform == "windows"
++
++def configure(env):
++    pass
++
++def get_doc_classes():
++    return ["Spout"]
++
++def get_doc_path():
++    return "doc_classes"
+diff --git a/modules/spout/doc_classes/Spout.xml b/modules/spout/doc_classes/Spout.xml
+new file mode 100644
+index 0000000000000000000000000000000000000000..214a9f02e9f2c052a0b3b278c1c6c4f045869a69
+--- /dev/null
++++ b/modules/spout/doc_classes/Spout.xml
+@@ -0,0 +1,556 @@
++<?xml version="1.0" encoding="UTF-8" ?>
++<class name="Spout" inherits="Reference" version="3.4">
++	<brief_description>
++        A Spout2 sender (implemented) and receiver (todo)
++	</brief_description>
++	<description>
++        A Spout2 sender (implemented) and receiver (todo). Uses SpoutLibrary for its implementation.
++	</description>
++	<tutorials>
++	</tutorials>
++	<methods>
++        <!-- Sender -->
++
++        <method name="sender_set_sender_name">
++            <return type="void" />
++            <argument index="0" name="sender_name" type="String" default="&quot;&quot;" />
++            <description>
++                Set name for sender creation.
++                If no name is specified, the executable name is used. Thereafter, all sending functions create and update a sender based on the size passed and the name that has been set.
++            </description>
++        </method>
++        <method name="sender_release_sender">
++            <return type="bool" />
++            <argument index="0" name="msec" type="int" default="0" />
++            <description>
++                Close receiver and and release resources.
++                A new sender is created or updated by all sending functions.
++            </description>
++        </method>
++        <method name="sender_send_fbo">
++            <return type="Error" />
++            <argument index="0" name="fbo_id" type="int" />
++            <description>
++                Send a texture attached to an fbo.
++                The fbo must be currently bound. The sending texture can be larger than the size that the sender is set up for. For example, if the application is using only a portion of the allocated texture space (e.g. Freeframe plugins).
++            </description>
++        </method>
++        <method name="sender_send_texture">
++            <return type="Error" />
++            <argument index="0" name="godot_texture_id" type="int" />
++            <argument index="1" name="shared_texture_id" type="int" />
++            <argument index="2" name="invert" type="bool" default="true" />
++            <argument index="3" name="host_fbo" type="int" default="0" />
++            <description>
++                Send an OpenGL texture.
++                [code]sender_send_texture[/code] creates a shared texture for all receivers to access.
++                The invert flag is optional and by default true. This flips the texture in the Y axis, which is necessary because OpenGL textures are upside. If it is set to false, no flip occurs and the result may appear upside down.
++                The host fbo argument is optional. An fbo ID is necessary if the texture is currently bound, otherwise the binding is lost.
++            </description>
++        </method>
++        <method name="sender_send_image">
++            <return type="Error" />
++            <argument index="0" name="image" type="Image" />
++            <argument index="1" name="bool" type="bool" default="false" />
++            <argument index="2" name="gl_format" type="int" default="GL_RGBA (platform implementation detail)" />
++            <description>
++                Send a pixel image.
++                [code]sender_send_image[/code] creates a shared texture using image pixels as the source instead of an OpenGL texture. The format of the image to be sent is RGBA by default but can be a different OpenGL format (e.g. GL_RGB or GL_BGRA_EXT).
++                The invert flag is optional and [code]false[/code] by default.
++                Like with [code]sender_send_texture[/code], the ID of a currently bound fbo can be passed in.
++                NOTE: Param order is slightly adjusted. The [code]gl_format[/code] does not map back to the built-in Godot enum. Instead, it is an implementation detail on Windows. Only use [code]gl_format[/code] if you know what you are doing.
++            </description>
++        </method>
++        <method name="sender_get_name">
++            <return type="String" />
++            <description>
++                Get the sender name.
++            </description>
++        </method>
++        <method name="sender_get_fps">
++            <return type="float" />
++            <description>
++                Get the sender frame rate.
++            </description>
++        </method>
++        <method name="sender_get_frame">
++            <return type="float" />
++            <description>
++                Get the sender frame number.
++            </description>
++        </method>
++        <method name="sender_get_cpu">
++            <return type="bool" />
++            <description>
++                Returns [code]true[/code] if the sender is using CPU methods.
++            </description>
++        </method>
++        <method name="sender_get_gldx">
++            <return type="bool" />
++            <description>
++                Returns [code]true[/code] if the sender graphics hardware is compatible with NVIDIA NV_DX_interpo2 extension.
++            </description>
++        </method>
++
++        <!-- Receiver -->
++
++        <method name="receiver_set_receiver_name">
++            <return type="void" />
++            <argument index="0" name="sender_name" type="String" default="&quot;&quot;" />
++            <description>
++                Specify a sender for connection.
++                If a name is specified, the receiver will not connect to any other unless the user selects one.
++                If that sender closes, the receiver will wait for the nominated sender to open.
++                If no name is specified, the receiver will connect to the active sender.
++            </description>
++        </method>
++        <method name="receiver_release_receiver">
++            <return type="void" />
++            <description>
++                Close the receiver, release resources, and be ready to connect to another sender.
++            </description>
++        </method>
++        <method name="receiver_receive_texture">
++            <return type="Error" />
++            <argument index="0" name="godot_texture_id" type="int" />
++            <argument index="1" name="shared_texture_id" type="int" />
++            <argument index="2" name="invert" type="bool" default="false" />
++            <argument index="3" name="host_fbo" type="int" default="0" />
++            <description>
++                Receive valid OpenGL texture.
++                Copy from the sender shared texture if there is texture to receive into. The receiving OpenGL texture can only be RGBA of dimension (width * height) and must be reallocated if [code]receiver_is_updated[/code] returns [code]true[/code]. Return if flagged for update. The update flag is reset when the receiving application calls [code]receiver_is_updated[/code].
++                If no arguments are passed, then connect to a sender, retrieve shared texture details, initialize GL interop for OpenGL texture access, and update the sender shared texture, frame count, and framerate. The texture can then be accessed using [code]bind_shared_texture[/code], [code]unbind_shared_texture[/code], and [code]get_shared_texture_id[/code].
++                As with [code]sender_send_texture[/code], the [code]host_fbo[/code] argument is optional. An fbo ID is necessary if the texture is currently bound, otherwise the binding is lost.
++            </description>
++        </method>
++        <method name="receiver_receive_image">
++            <return type="Error" />
++            <argument index="0" name="image" type="Image" />
++            <argument index="1" name="invert" type="bool" default="false" />
++            <argument index="2" name="host_fbo" type="int" default="0" />
++            <argument index="3" name="gl_format" type="int" default="GL_RGBA (platform implementation detail)" />
++            <description>
++                Copy the sender texture to image pixels.
++                Formats supported are: GL_RGBA, GL_RGB, GL_BGRA_EXT, GL_BGR_EXT. GL_BGRA_EXT and GL_BGR_EXT are dependent on those extension being supported at runtime. If they are not, the rgba and rgb equivalents are used. The same sender size changes are handled with [code]receiver_is_updated[/code] and the receiving buffer must be reallocated if [code]receiver_is_updated[/code] returns [code]true[/code]. Images with padding on each line are not supported. The width should be a multiple of 4.
++                As with [code]receiver_receive_texture[/code], the ID of a currently bound fbo should be passed in.
++                NOTE: Param order is slightly adjusted. The [code]gl_format[/code] does not map back to the built-in Godot enum. Instead, it is an implementation detail on Windows. Only use [code]gl_format[/code] if you know what you are doing.
++            </description>
++        </method>
++        <method name="receiver_is_updated">
++            <return type="bool" />
++            <description>
++                Query whether the sender has changed.
++                Must be checked at every cycle before receiving data. If this is not done, the receiving functions will fail.
++            </description>
++        </method>
++        <method name="receiver_is_connected">
++            <return type="bool" />
++            <description>
++                Query the sender connection.
++                If the sender closes, receiving functions will return [code]false[/code].
++                The connection can be tested at any time.
++            </description>
++        </method>
++        <method name="receiver_is_frame_new">
++            <return type="bool" />
++            <description>
++                Query received frame status.
++                The receiving texture or pixel buffer is refreshed if the sender has produced a new frame. This can be queried to process texture data for only new frames.
++            </description>
++        </method>
++        <method name="receiver_get_sender_name">
++            <return type="String" />
++            <description>
++                Get the sender name.
++            </description>
++        </method>
++        <method name="receiver_get_sender_size">
++            <return type="Vector2" />
++            <description>
++                Get the sender width and height.
++            </description>
++        </method>
++        <method name="receiver_get_sender_fps">
++            <return type="float" />
++            <description>
++                Get the sender frame rate.
++            </description>
++        </method>
++        <method name="receiver_get_sender_frame">
++            <return type="float" />
++            <description>
++                Get the sender frame number.
++            </description>
++        </method>
++        <method name="receiver_get_sender_cpu">
++            <return type="bool" />
++            <description>
++                The received sender sharing mode. Returns [code]true[/code] if the sender is using CPU methods.
++            </description>
++        </method>
++        <method name="receiver_get_sender_gldx">
++            <return type="bool" />
++            <description>
++                The received sender sharing compatibility. Returns [code]true[/code] if the sender graphics hardware is compatible with the NVIDIA NV_DX_interop2 extension.
++            </description>
++        </method>
++
++        <!-- Frame counting -->
++
++        <method name="set_frame_count">
++            <return type="void" />
++            <argument index="0" name="enabled" type="bool" />
++            <description>
++                Enable or disable frame counting globally.
++            </description>
++        </method>
++        <method name="disable_frame_count">
++            <return type="void" />
++            <description>
++                Disable frame counting specifically for this application.
++            </description>
++        </method>
++        <method name="is_frame_count_enabled">
++            <return type="bool" />
++            <description>
++                Returns the frame count status.
++            </description>
++        </method>
++        <method name="hold_fps">
++            <return type="void" />
++            <argument index="0" name="fps" type="int" />
++            <description>
++                Frame rate control.
++            </description>
++        </method>
++        <method name="set_frame_sync">
++            <return type="void" />
++            <argument index="0" name="sender_name" type="String" />
++            <description>
++                Signal a sync event.
++            </description>
++        </method>
++
++        <!-- Data sharing -->
++
++        <method name="write_memory_buffer">
++            <return type="Error" />
++            <argument index="0" name="sender_name" type="String" />
++            <argument index="1" name="data" type="PoolByteArray" />
++            <argument index="2" name="length" type="int" />
++            <description>
++                Write a buffer to shared memory.
++                If shared memory has not been created in advance, it will be created on the first call to this function at the length specified.
++                This is acceptable if the data to send is fixed in length. Otherwise, the shared memory should be created with sufficient size in advance to contain the maximum length expected. See [code]create_memory_buffer[/code].
++                The map is closed when the sender is released.
++            </description>
++        </method>
++        <method name="read_memory_buffer">
++            <return type="PoolByteArray" />
++            <argument index="0" name="sender_name" type="String" />
++            <argument index="1" name="max_length" type="int" />
++            <description>
++                Read shared memory to a buffer.
++                Open a memory map and retain the handle. The map is closed when the receiver is released.
++            </description>
++        </method>
++        <method name="create_memory_buffer">
++            <return type="Error" />
++            <argument index="0" name="name" type="String" />
++            <argument index="1" name="length" type="int" />
++            <description>
++                Create a shared memory buffer.
++                Create a memory map and retain the handle. This function should be called before any buffer write if the length of the data to send will vary. The map is closed when the sender is released.
++            </description>
++        </method>
++        <method name="delete_memory_buffer">
++            <return type="Error" />
++            <description>
++                Delete a shared memory buffer.
++            </description>
++        </method>
++        <method name="get_memory_buffer_size">
++            <return type="int" />
++            <argument index="0" name="name" type="String" />
++            <description>
++                Get the number of bytes available for data transfer.
++            </description>
++        </method>
++
++        <!-- Log utilities -->
++
++        <method name="enable_spout_log">
++            <return type="void" />
++            <description>
++                Enable logging to the console.
++                Logs are displayed in a console window. Useful for program development.
++            </description>
++        </method>
++        <method name="enable_spout_log_file">
++            <return type="void" />
++            <argument index="0" name="filename" type="String" />
++            <argument index="1" name="append" type="bool" default="false" />
++            <description>
++                Enable logging to a file. Optionally appends to the file.
++                You can instead, or additional to a console window, specify output to a text file with the extension of your choice. The log file is recreated every time the application starts unless you specify to append to the existing one. The file is saved in the [code]%AppData%[/code] folder unless you specify the full path.
++                You can find and examine the log file after the application has run.
++            </description>
++        </method>
++        <method name="get_spout_logs">
++            <return type="String" />
++            <description>
++                Returns the log file as a [code]String[/code].
++            </description>
++        </method>
++        <method name="show_spout_logs">
++            <return type="void" />
++            <description>
++                Show the log file folder in Windows Explorer.
++            </description>
++        </method>
++        <method name="disable_spout_log">
++            <return type="void" />
++            <description>
++                Disable logging to the console and file.
++            </description>
++        </method>
++        <method name="set_spout_log_level">
++            <return type="void" />
++            <argument index="0" name="level" type="int" enum="SpoutLogLevel" />
++            <description>
++                Set the current log level.
++            </description>
++        </method>
++        <method name="spout_log">
++            <return type="void" />
++            <argument index="0" name="format" type="String" />
++            <description>
++                General purpose log.
++                Godot's built-in [code]print[/code] should be preferred.
++            </description>
++        </method>
++        <method name="spout_log_verbose">
++            <return type="void" />
++            <argument index="0" name="format" type="String" />
++            <description>
++                [code]Verbose[/code] logging for [code]SPOUT_LOG_VERBOSE[/code] or above.
++                Godot's built-in [code]print[/code] should be preferred.
++            </description>
++        </method>
++        <method name="spout_log_notice">
++            <return type="void" />
++            <argument index="0" name="format" type="String" />
++            <description>
++                [code]Notice[/code] logging for [code]SPOUT_LOG_NOTICE[/code] or above.
++            </description>
++        </method>
++        <method name="spout_log_warning">
++            <return type="void" />
++            <argument index="0" name="format" type="String" />
++            <description>
++                [code]Warning[/code] logging for [code]SPOUT_LOG_WARNING[/code] or above.
++            </description>
++        </method>
++        <method name="spout_log_error">
++            <return type="void" />
++            <argument index="0" name="format" type="String" />
++            <description>
++                [code]Notice[/code] logging for [code]SPOUT_LOG_ERROR[/code] or above.
++            </description>
++        </method>
++        <method name="spout_log_fatal">
++            <return type="void" />
++            <argument index="0" name="format" type="String" />
++            <description>
++                [code]Fatal[/code] logging that is always shown.
++            </description>
++        </method>
++
++        <!-- OpenGL shared texture -->
++
++        <method name="is_initialized">
++            <return type="bool" />
++            <description>
++                The initialization status
++            </description>
++        </method>
++        <method name="bind_shared_texture">
++            <return type="bool" />
++            <description>
++                Bind an OpenGL shared texture.
++            </description>
++        </method>
++        <method name="unbind_shared_texture">
++            <return type="bool" />
++            <description>
++                Unbind an OpenGL shared texture.
++            </description>
++        </method>
++        <method name="get_shared_texture_id">
++            <return type="int" />
++            <description>
++                Get the bound OpenGL shared texture ID.
++            </description>
++        </method>
++
++        <!-- Sender names -->
++
++        <method name="get_sender_count">
++            <return type="int" />
++            <description>
++                The number of senders.
++            </description>
++        </method>
++        <method name="get_sender">
++            <return type="String" />
++            <argument index="0" name="index" type="int" />
++            <argument index="1" name="max_size" type="int" default="256" />
++            <description>
++                Get the sender item name in the sender names list.
++            </description>
++        </method>
++        <method name="find_sender_name">
++            <return type="bool" />
++            <argument index="0" name="sender_name" type="String" />
++            <description>
++                Find a sender in the sender names list
++            </description>
++        </method>
++        <method name="get_active_sender">
++            <return type="String" />
++            <description>
++                Get the current active sender.
++            </description>
++        </method>
++        <method name="set_active_sender">
++            <return type="Error" />
++            <argument index="0" name="sender_name" type="String" />
++            <description>
++                Set sender as active.
++            </description>
++        </method>
++
++        <!-- Information -->
++
++        <method name="get_host_path">
++            <return type="String" />
++            <argument index="0" name="sender_name" type="String" />
++            <argument index="1" name="max_chars" type="int" />
++            <description>
++                The path of the host that produced the sender.
++                Retrieved frm the description string in the sender info memory map.
++            </description>
++        </method>
++        <method name="get_vertical_sync">
++            <return type="int" />
++            <description>
++                Get the vertical sync status.
++            </description>
++        </method>
++        <method name="set_vertical_sync">
++            <return type="Error" />
++            <argument index="0" name="sync" type="bool" default="true" />
++            <description>
++                Lock sharing to the monitor vertical sync.
++            </description>
++        </method>
++        <method name="get_spout_version">
++            <return type="int" />
++            <description>
++                Get the current Spout version.
++            </description>
++        </method>
++
++        <!-- Graphics compatibility -->
++
++        <method name="get_auto_share">
++            <return type="bool" />
++            <description>
++                Get auto GPU/CPU share depending on compatibility.
++            </description>
++        </method>
++        <method name="set_auto_share">
++            <return type="void" />
++            <argument index="0" name="auto" type="bool" default="true" />
++            <description>
++                Set auto GPU/CPU share depending on compatibility.
++            </description>
++        </method>
++        <method name="is_gldx_ready">
++            <return type="bool" />
++            <description>
++                Get OpenGL texture share compatibility.
++            </description>
++        </method>
++
++        <!-- Graphics adapter -->
++
++        <method name="get_num_adapters">
++            <return type="int" />
++            <description>
++                The number of graphics adapters in the system.
++            </description>
++        </method>
++        <method name="get_adapter_name">
++            <return type="String" />
++            <argument index="0" name="index" type="int" />
++            <argument index="1" name="max_chars" type="int" default="256" />
++            <description>
++                Gets the adapter name.
++            </description>
++        </method>
++        <method name="adapter_name">
++            <return type="String" />
++            <description>
++                Get the current adapter name.
++            </description>
++        </method>
++        <method name="get_adapter">
++            <return type="int" />
++            <description>
++                Get the current adapter index.
++            </description>
++        </method>
++        <method name="set_adapter">
++            <return type="Error" />
++            <argument index="0" name="index" type="int" default="0" />
++            <description>
++                Set the graphics adapter for output.
++            </description>
++        </method>
++
++        <!-- Custom -->
++
++        <method name="get_senders">
++            <return type="Array" />
++            <description>
++                Wrapper function for getting a list of available senders.
++            </description>
++        </method>
++	</methods>
++	<members>
++        <member name="send_size" type="Vector2" setter="set_send_size" getter="get_send_size">
++            The size to use when sending over Spout.
++        </member>
++	</members>
++	<constants>
++        <constant name="SPOUT_LOG_SILENT" value="0" enum="SpoutLogLevel">
++            Log level silent.
++        </constant>
++        <constant name="SPOUT_LOG_VERBOSE" value="1" enum="SpoutLogLevel">
++            Log level verbose.
++        </constant>
++        <constant name="SPOUT_LOG_NOTICE" value="2" enum="SpoutLogLevel">
++            Log level notice.
++        </constant>
++        <constant name="SPOUT_LOG_WARNING" value="3" enum="SpoutLogLevel">
++            Log level warning.
++        </constant>
++        <constant name="SPOUT_LOG_ERROR" value="4" enum="SpoutLogLevel">
++            Log level error.
++        </constant>
++        <constant name="SPOUT_LOG_FATAL" value="5" enum="SpoutLogLevel">
++            Log level fatal.
++        </constant>
++	</constants>
++</class>
+\ No newline at end of file
+diff --git a/modules/spout/register_types.cpp b/modules/spout/register_types.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..ab1140188c13d2aa8b940a0507890410812c84ca
+--- /dev/null
++++ b/modules/spout/register_types.cpp
+@@ -0,0 +1,12 @@
++#include "register_types.h"
++
++#include "spout_gd.h"
++
++void initialize_spout_module(ModuleInitializationLevel p_level) {
++	if (p_level == MODULE_INITIALIZATION_LEVEL_SERVERS) {
++		GDREGISTER_CLASS(Spout);
++	}
++}
++
++void uninitialize_spout_module(ModuleInitializationLevel p_level) {
++}
+diff --git a/modules/spout/register_types.h b/modules/spout/register_types.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..c103bbbeec01a00bfe23981249398c6fa79cf29a
+--- /dev/null
++++ b/modules/spout/register_types.h
+@@ -0,0 +1,9 @@
++#ifndef SPOUT_REGISTER_TYPES_H
++#define SPOUT_REGISTER_TYPES_H
++
++#include "modules/register_module_types.h"
++
++void initialize_spout_module(ModuleInitializationLevel p_level);
++void uninitialize_spout_module(ModuleInitializationLevel p_level);
++
++#endif // SPOUT_REGISTER_TYPES_H
+diff --git a/modules/spout/spout_gd.cpp b/modules/spout/spout_gd.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..60d2e95006590018e3b45b4e228b04fa48b6b7de
+--- /dev/null
++++ b/modules/spout/spout_gd.cpp
+@@ -0,0 +1,479 @@
++#include "spout_gd.h"
++
++#pragma region Sender
++
++void Spout::sender_set_sender_name(const String &sender_name) {
++	spout_lib->SetSenderName(sender_name.utf8().get_data());
++}
++
++void Spout::sender_release_sender(int msec) {
++	spout_lib->ReleaseSender(static_cast<DWORD>(msec));
++}
++
++Error Spout::sender_send_fbo(const uint32_t p_fbo_id) {
++	return spout_lib->SendFbo(p_fbo_id, static_cast<unsigned int>(send_size.x), static_cast<unsigned int>(send_size.y)) ? Error::OK : Error::FAILED;
++}
++
++Error Spout::sender_send_texture(const uint32_t p_godot_texture_id, const uint32_t p_shared_texture_id, const bool p_invert, const int p_host_fbo) {
++	return spout_lib->SendTexture(
++				   static_cast<GLuint>(p_godot_texture_id),
++				   static_cast<GLuint>(p_shared_texture_id),
++				   static_cast<unsigned int>(send_size.x),
++				   static_cast<unsigned int>(send_size.y),
++				   p_invert,
++				   static_cast<GLuint>(p_host_fbo))
++			? Error::OK
++			: Error::FAILED;
++}
++
++Error Spout::sender_send_image(Ref<Image> p_image, const bool p_invert, const int p_gl_format) {
++	const unsigned char *p = (const unsigned char *)p_image->get_data().ptr();
++	return spout_lib->SendImage(p, static_cast<unsigned int>(send_size.x), static_cast<unsigned int>(send_size.y), p_gl_format, p_invert) ? Error::OK : Error::FAILED;
++}
++
++String Spout::sender_get_name() {
++	const char *sender_name = spout_lib->GetName();
++
++	return sender_name ? String(sender_name) : String();
++}
++
++double_t Spout::sender_get_fps() {
++	return spout_lib->GetFps();
++}
++
++double_t Spout::sender_get_frame() {
++	return static_cast<double_t>(spout_lib->GetFrame());
++}
++
++bool Spout::sender_get_cpu() {
++	return spout_lib->GetCPU();
++}
++
++bool Spout::sender_get_gldx() {
++	return spout_lib->GetGLDX();
++}
++
++#pragma endregion
++
++#pragma region Receiver
++
++void Spout::receiver_set_receiver_name(const String &p_sender_name) {
++	spout_lib->SetReceiverName(p_sender_name.is_empty() ? nullptr : p_sender_name.utf8().get_data());
++}
++
++void Spout::receiver_release_receiver() {
++	spout_lib->ReleaseReceiver();
++}
++
++Error Spout::receiver_receive_texture(int p_godot_texture_id, int p_shared_texture_id, bool p_invert, int p_host_fbo) {
++	return spout_lib->ReceiveTexture(static_cast<GLuint>(p_shared_texture_id), static_cast<GLuint>(p_godot_texture_id), p_invert, static_cast<GLuint>(p_host_fbo)) ? Error::OK : Error::FAILED;
++}
++
++Error Spout::receiver_receive_image(Ref<Image> p_image, const bool p_invert, const int p_host_fbo, const int p_gl_format) {
++	unsigned char *p = (unsigned char *)p_image->get_data().ptr();
++
++	return spout_lib->ReceiveImage(p, p_gl_format, p_invert, p_host_fbo) ? Error::OK : Error::FAILED;
++}
++
++bool Spout::receiver_is_updated() {
++	return spout_lib->IsUpdated();
++}
++
++bool Spout::receiver_is_connected() {
++	return spout_lib->IsConnected();
++}
++
++bool Spout::receiver_is_frame_new() {
++	return spout_lib->IsFrameNew();
++}
++
++String Spout::receiver_get_sender_name() {
++	const char *sender_name = spout_lib->GetSenderName();
++
++	return sender_name ? String(sender_name) : String();
++}
++
++Vector2 Spout::receiver_get_sender_size() {
++	return Vector2(static_cast<real_t>(spout_lib->GetSenderWidth()), static_cast<real_t>(spout_lib->GetSenderHeight()));
++}
++
++double_t Spout::receiver_get_sender_fps() {
++	return spout_lib->GetSenderFps();
++}
++
++double_t Spout::receiver_get_sender_frame() {
++	return static_cast<double_t>(spout_lib->GetSenderFrame());
++}
++
++bool Spout::receiver_get_sender_cpu() {
++	return spout_lib->GetSenderFrame();
++}
++
++bool Spout::receiver_get_sender_gldx() {
++	return spout_lib->GetSenderGLDX();
++}
++
++#pragma endregion
++
++#pragma region Frame counting
++
++void Spout::set_frame_count(bool p_enabled) {
++	spout_lib->SetFrameCount(p_enabled);
++}
++
++void Spout::disable_frame_count() {
++	spout_lib->DisableFrameCount();
++}
++
++bool Spout::is_frame_count_enabled() {
++	return spout_lib->IsFrameCountEnabled();
++}
++
++void Spout::hold_fps(const int p_fps) {
++	spout_lib->HoldFps(p_fps);
++}
++
++void Spout::set_frame_sync(const String &p_sender_name) {
++	spout_lib->SetFrameSync(p_sender_name.utf8().get_data());
++}
++
++#pragma endregion
++
++#pragma region Data sharing
++
++Error Spout::write_memory_buffer(const String &p_sender_name, const PackedByteArray p_data, const int p_length) {
++	const uint8_t *data = p_data.ptr();
++
++	return spout_lib->WriteMemoryBuffer(
++				   p_sender_name.utf8().get_data(),
++				   (char *)data, // TODO hmmm
++				   p_length)
++			? Error::OK
++			: Error::FAILED;
++}
++
++PackedByteArray Spout::read_memory_buffer(const String &p_sender_name, const int p_max_length) {
++	// TODO dynamically size this
++	char data[256];
++
++	bool success = spout_lib->ReadMemoryBuffer(p_sender_name.utf8().get_data(), data, p_max_length);
++
++	PackedByteArray read_data = PackedByteArray();
++
++	if (!success) {
++		return read_data;
++	}
++
++	for (int i = 0; i < 256; i++) {
++		read_data.ptrw()[i] = data[i];
++	}
++
++	return read_data;
++}
++
++Error Spout::create_memory_buffer(const String &p_name, const int p_length) {
++	return spout_lib->CreateMemoryBuffer(p_name.utf8().get_data(), p_length) ? Error::OK : Error::FAILED;
++}
++
++Error Spout::delete_memory_buffer() {
++	return spout_lib->DeleteMemoryBuffer() ? Error::OK : Error::FAILED;
++}
++
++int Spout::get_memory_buffer_size(const String &p_name) {
++	return spout_lib->GetMemoryBufferSize(p_name.utf8().get_data());
++}
++
++#pragma endregion
++
++#pragma region Log utilites
++
++void Spout::enable_spout_log() {
++	spout_lib->EnableSpoutLog();
++}
++
++void Spout::enable_spout_log_file(const String p_filename, const bool p_append) {
++	spout_lib->EnableSpoutLogFile(p_filename.utf8().get_data(), p_append);
++}
++
++String Spout::get_spout_log() {
++	std::string log = spout_lib->GetSpoutLog();
++
++	return String(log.c_str());
++}
++
++void Spout::show_spout_logs() {
++	spout_lib->ShowSpoutLogs();
++}
++
++void Spout::disable_spout_log() {
++	spout_lib->DisableSpoutLog();
++}
++
++void Spout::set_spout_log_level(SpoutLogLevel p_level) {
++	spout_lib->SetSpoutLogLevel(static_cast<SpoutLibLogLevel>(p_level));
++}
++
++void Spout::spout_log(const String p_format) {
++	spout_lib->SpoutLog(p_format.utf8().get_data());
++}
++
++void Spout::spout_log_verbose(const String p_format) {
++	spout_lib->SpoutLogVerbose(p_format.utf8().get_data());
++}
++
++void Spout::spout_log_notice(const String p_format) {
++	spout_lib->SpoutLogNotice(p_format.utf8().get_data());
++}
++
++void Spout::spout_log_warning(const String p_format) {
++	spout_lib->SpoutLogWarning(p_format.utf8().get_data());
++}
++
++void Spout::spout_log_error(const String p_format) {
++	spout_lib->SpoutLogError(p_format.utf8().get_data());
++}
++
++void Spout::spout_log_fatal(const String p_format) {
++	spout_lib->SpoutLogFatal(p_format.utf8().get_data());
++}
++
++#pragma endregion
++
++#pragma region OpenGL shared texture
++
++bool Spout::is_initialized() {
++	return spout_lib->IsInitialized();
++}
++
++bool Spout::bind_shared_texture() {
++	return spout_lib->BindSharedTexture();
++}
++
++bool Spout::unbind_shared_texture() {
++	return spout_lib->UnBindSharedTexture();
++}
++
++uint32_t Spout::get_shared_texture_id() {
++	return static_cast<int>(spout_lib->GetSharedTextureID());
++}
++
++#pragma endregion
++
++#pragma region Sender names
++
++int Spout::get_sender_count() {
++	return spout_lib->GetSenderCount();
++}
++
++String Spout::get_sender(const int p_index, const int p_max_size) {
++	// TODO set this dynamically
++	char sender_name[256];
++
++	spout_lib->GetSender(p_index, sender_name, p_max_size);
++
++	return String(sender_name);
++}
++
++bool Spout::find_sender_name(const String &p_sender_name) {
++	return spout_lib->FindSenderName(p_sender_name.utf8().get_data());
++}
++
++String Spout::get_active_sender() {
++	char sender_name[256];
++
++	return spout_lib->GetActiveSender(sender_name) ? String(sender_name) : String();
++}
++
++Error Spout::set_active_sender(const String &p_sender_name) {
++	return spout_lib->SetActiveSender(p_sender_name.utf8().get_data()) ? Error::OK : Error::FAILED;
++}
++
++#pragma endregion
++
++#pragma region Information
++
++String Spout::get_host_path(const String p_sender_name, const int p_max_chars) {
++	// TODO create the size dynamically
++	char hostpath[256];
++
++	spout_lib->GetHostPath(p_sender_name.utf8().get_data(), hostpath, p_max_chars);
++
++	return String(hostpath);
++}
++
++int Spout::get_vertical_sync() {
++	return spout_lib->GetVerticalSync();
++}
++
++Error Spout::set_vertical_sync(const bool p_sync) {
++	return spout_lib->SetVerticalSync(p_sync) ? Error::OK : Error::FAILED;
++}
++
++int Spout::get_spout_version() {
++	return spout_lib->GetSpoutVersion();
++}
++
++#pragma endregion
++
++#pragma region Graphics compatibility
++
++bool Spout::get_auto_share() {
++	return spout_lib->GetAutoShare();
++}
++
++void Spout::set_auto_share(const bool p_is_auto) {
++	spout_lib->SetAutoShare(p_is_auto);
++}
++
++bool Spout::is_gldx_ready() {
++	return spout_lib->IsGLDXready();
++}
++
++#pragma endregion
++
++#pragma region Graphics adapter
++
++int Spout::get_num_adapters() {
++	return spout_lib->GetNumAdapters();
++}
++
++String Spout::get_adapter_name(const int p_index, const int p_max_chars) {
++	// TODO create size dynamically
++	char adapter_name[256];
++
++	spout_lib->GetAdapterName(p_index, adapter_name, p_max_chars);
++
++	return String(adapter_name);
++}
++
++String Spout::adapter_name() {
++	return String(spout_lib->AdapterName());
++}
++
++int Spout::get_adapter() {
++	return spout_lib->GetAdapter();
++}
++
++#pragma endregion
++
++Array Spout::get_senders() {
++	Array arr;
++
++	int count = get_sender_count();
++	arr.resize(count);
++
++	for (int i = 0; i < count; i++) {
++		arr.append(get_sender(i));
++	}
++
++	return arr;
++}
++
++Vector2 Spout::get_send_size() {
++	return send_size;
++}
++
++void Spout::set_send_size(Vector2 p_size) {
++	send_size = p_size;
++}
++
++void Spout::_bind_methods() {
++	ClassDB::bind_method(D_METHOD("sender_set_sender_name", "sender_name"), &Spout::sender_set_sender_name, DEFVAL(""));
++	ClassDB::bind_method(D_METHOD("sender_release_sender", "msec"), &Spout::sender_release_sender, DEFVAL(0));
++	ClassDB::bind_method(D_METHOD("sender_send_fbo", "fbo_id"), &Spout::sender_send_fbo);
++	ClassDB::bind_method(D_METHOD("sender_send_texture", "godot_texture_id", "shared_texture_id", "invert", "host_fbo"), &Spout::sender_send_texture, DEFVAL(0), DEFVAL(0), DEFVAL(false), DEFVAL(0));
++	ClassDB::bind_method(D_METHOD("sender_send_image", "image", "invert", "gl_format"), &Spout::sender_send_image, DEFVAL(false), DEFVAL(GL_RGBA));
++	ClassDB::bind_method(D_METHOD("sender_get_name"), &Spout::sender_get_name);
++	ClassDB::bind_method(D_METHOD("sender_get_fps"), &Spout::sender_get_fps);
++	ClassDB::bind_method(D_METHOD("sender_get_frame"), &Spout::sender_get_frame);
++	ClassDB::bind_method(D_METHOD("sender_get_cpu"), &Spout::sender_get_cpu);
++	ClassDB::bind_method(D_METHOD("sender_get_gldx"), &Spout::sender_get_gldx);
++
++	ClassDB::bind_method(D_METHOD("receiver_set_receiver_name", "sender_name"), &Spout::receiver_set_receiver_name, DEFVAL(""));
++	ClassDB::bind_method(D_METHOD("receiver_release_receiver"), &Spout::receiver_release_receiver);
++	ClassDB::bind_method(D_METHOD("receiver_receive_texture", "godot_texture_id", "shared_texture_id", "invert", "host_fbo"), &Spout::receiver_receive_texture, DEFVAL(false), DEFVAL(0));
++	ClassDB::bind_method(D_METHOD("receiver_receive_image", "image", "invert", "host_fbo", "gl_format"), &Spout::receiver_receive_image, DEFVAL(false), DEFVAL(0), DEFVAL(GL_RGBA));
++	ClassDB::bind_method(D_METHOD("receiver_is_updated"), &Spout::receiver_is_updated);
++	ClassDB::bind_method(D_METHOD("receiver_is_connected"), &Spout::receiver_is_connected);
++	ClassDB::bind_method(D_METHOD("receiver_is_frame_new"), &Spout::receiver_is_frame_new);
++	ClassDB::bind_method(D_METHOD("receiver_get_sender_name"), &Spout::receiver_get_sender_name);
++	ClassDB::bind_method(D_METHOD("receiver_get_sender_size"), &Spout::receiver_get_sender_size);
++	ClassDB::bind_method(D_METHOD("receiver_get_sender_fps"), &Spout::receiver_get_sender_fps);
++	ClassDB::bind_method(D_METHOD("receiver_get_sender_frame"), &Spout::receiver_get_sender_frame);
++	ClassDB::bind_method(D_METHOD("receiver_get_sender_cpu"), &Spout::receiver_get_sender_cpu);
++	ClassDB::bind_method(D_METHOD("receiver_get_sender_gldx"), &Spout::receiver_get_sender_gldx);
++
++	ClassDB::bind_method(D_METHOD("set_frame_count", "enabled"), &Spout::set_frame_count);
++	ClassDB::bind_method(D_METHOD("disable_frame_count"), &Spout::disable_frame_count);
++	ClassDB::bind_method(D_METHOD("is_frame_count_enabled"), &Spout::is_frame_count_enabled);
++	ClassDB::bind_method(D_METHOD("hold_fps", "fps"), &Spout::hold_fps);
++	ClassDB::bind_method(D_METHOD("set_frame_sync", "sender_name"), &Spout::set_frame_sync);
++
++	ClassDB::bind_method(D_METHOD("write_memory_buffer", "sender_name", "data", "length"), &Spout::write_memory_buffer);
++	ClassDB::bind_method(D_METHOD("read_memory_buffer", "sender_name", "max_length"), &Spout::read_memory_buffer);
++	ClassDB::bind_method(D_METHOD("create_memory_buffer", "name", "length"), &Spout::create_memory_buffer);
++	ClassDB::bind_method(D_METHOD("delete_memory_buffer"), &Spout::delete_memory_buffer);
++	ClassDB::bind_method(D_METHOD("get_memory_buffer_size", "name"), &Spout::get_memory_buffer_size);
++
++	ClassDB::bind_method(D_METHOD("enable_spout_log"), &Spout::enable_spout_log);
++	ClassDB::bind_method(D_METHOD("enable_spout_log_file", "filename", "append"), &Spout::enable_spout_log_file, DEFVAL(false));
++	ClassDB::bind_method(D_METHOD("get_spout_logs"), &Spout::get_spout_log);
++	ClassDB::bind_method(D_METHOD("show_spout_logs"), &Spout::show_spout_logs);
++	ClassDB::bind_method(D_METHOD("disable_spout_log"), &Spout::disable_spout_log);
++	ClassDB::bind_method(D_METHOD("set_spout_log_level"), &Spout::set_spout_log_level);
++	ClassDB::bind_method(D_METHOD("spout_log", "format"), &Spout::spout_log);
++	ClassDB::bind_method(D_METHOD("spout_log_verbose", "format"), &Spout::spout_log_verbose);
++	ClassDB::bind_method(D_METHOD("spout_log_notice", "format"), &Spout::spout_log_notice);
++	ClassDB::bind_method(D_METHOD("spout_log_warning", "format"), &Spout::spout_log_warning);
++	ClassDB::bind_method(D_METHOD("spout_log_error", "format"), &Spout::spout_log_error);
++	ClassDB::bind_method(D_METHOD("spout_log_fatal", "format"), &Spout::spout_log_fatal);
++
++	ClassDB::bind_method(D_METHOD("is_initialized"), &Spout::is_initialized);
++	ClassDB::bind_method(D_METHOD("bind_shared_texture"), &Spout::bind_shared_texture);
++	ClassDB::bind_method(D_METHOD("unbind_shared_texture"), &Spout::unbind_shared_texture);
++	ClassDB::bind_method(D_METHOD("get_shared_texture_id"), &Spout::get_shared_texture_id);
++
++	ClassDB::bind_method(D_METHOD("get_sender_count"), &Spout::get_sender_count);
++	ClassDB::bind_method(D_METHOD("get_sender", "index", "max_size"), &Spout::get_sender, DEFVAL(256));
++	ClassDB::bind_method(D_METHOD("find_sender_name", "sender_name"), &Spout::find_sender_name);
++	ClassDB::bind_method(D_METHOD("get_active_sender"), &Spout::get_active_sender);
++	ClassDB::bind_method(D_METHOD("set_active_sender", "sender_name"), &Spout::set_active_sender);
++
++	ClassDB::bind_method(D_METHOD("get_host_path", "sender_name", "max_chars"), &Spout::get_host_path);
++	ClassDB::bind_method(D_METHOD("get_vertical_sync"), &Spout::get_vertical_sync);
++	ClassDB::bind_method(D_METHOD("set_vertical_sync", "sync"), &Spout::set_vertical_sync, DEFVAL(true));
++	ClassDB::bind_method(D_METHOD("get_spout_version"), &Spout::get_spout_version);
++
++	ClassDB::bind_method(D_METHOD("get_auto_share"), &Spout::get_auto_share);
++	ClassDB::bind_method(D_METHOD("set_auto_share", "is_auto"), &Spout::set_auto_share, DEFVAL(true));
++	ClassDB::bind_method(D_METHOD("is_gldx_ready"), &Spout::is_gldx_ready);
++
++	ClassDB::bind_method(D_METHOD("get_num_adapters"), &Spout::get_num_adapters);
++	ClassDB::bind_method(D_METHOD("get_adapter_name", "index", "max_chars"), &Spout::get_adapter_name, DEFVAL(256));
++	ClassDB::bind_method(D_METHOD("adapter_name"), &Spout::adapter_name);
++	ClassDB::bind_method(D_METHOD("get_adapter"), &Spout::get_adapter);
++
++	ClassDB::bind_method(D_METHOD("get_senders"), &Spout::get_senders);
++	ClassDB::bind_method(D_METHOD("get_send_size"), &Spout::get_send_size);
++	ClassDB::bind_method(D_METHOD("set_send_size", "size"), &Spout::set_send_size);
++
++	ADD_PROPERTY(PropertyInfo(Variant::VECTOR2, "send_size"), "set_send_size", "get_send_size");
++
++	BIND_CONSTANT(SPOUT_LOG_SILENT);
++	BIND_CONSTANT(SPOUT_LOG_VERBOSE);
++	BIND_CONSTANT(SPOUT_LOG_NOTICE);
++	BIND_CONSTANT(SPOUT_LOG_WARNING);
++	BIND_CONSTANT(SPOUT_LOG_ERROR);
++	BIND_CONSTANT(SPOUT_LOG_FATAL);
++}
++
++Spout::Spout() {
++	spout_lib = GetSpout();
++	send_size = Vector2(100.0f, 100.0f);
++	sender_set_sender_name(String("Godot_Spout"));
++}
++
++Spout::~Spout() {
++	sender_release_sender();
++	spout_lib->Release();
++}
+diff --git a/modules/spout/spout_gd.h b/modules/spout/spout_gd.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..cbda8abfad65475a02d47d4bc5cead74446ea9f8
+--- /dev/null
++++ b/modules/spout/spout_gd.h
+@@ -0,0 +1,161 @@
++#ifndef SPOUT_GD_H
++#define SPOUT_GD_H
++
++#include "core/variant/array.h"
++#include "core/error/error_list.h"
++#include "core/math/vector2.h"
++#include "core/object/ref_counted.h"
++#include "scene/resources/texture.h"
++
++#include "thirdparty/spout-library/Binaries/x64/SpoutLibrary.h"
++
++class Spout : public RefCounted {
++	GDCLASS(Spout, RefCounted);
++
++	Vector2 send_size;
++
++private:
++	SPOUTLIBRARY *spout_lib;
++
++protected:
++	static void _bind_methods();
++
++public:
++	enum SpoutLogLevel {
++		SPOUT_LOG_SILENT = SpoutLibLogLevel::SPOUT_LOG_SILENT,
++		SPOUT_LOG_VERBOSE = SpoutLibLogLevel::SPOUT_LOG_VERBOSE,
++		SPOUT_LOG_NOTICE = SpoutLibLogLevel::SPOUT_LOG_NOTICE,
++		SPOUT_LOG_WARNING = SpoutLibLogLevel::SPOUT_LOG_WARNING,
++		SPOUT_LOG_ERROR = SpoutLibLogLevel::SPOUT_LOG_ERROR,
++		SPOUT_LOG_FATAL = SpoutLibLogLevel::SPOUT_LOG_FATAL
++	};
++
++#pragma region Sender
++
++	void sender_set_sender_name(const String &sender_name = String());
++	void sender_release_sender(int p_msec = 0);
++	Error sender_send_fbo(const uint32_t p_fbo_id);
++	Error sender_send_texture(const uint32_t p_godot_texture_id, const uint32_t p_shared_texture_id, const bool p_invert = true, const int p_host_fbo = 0);
++	Error sender_send_image(Ref<Image> p_image, const bool p_invert = false, const int p_gl_format = GL_RGBA);
++	String sender_get_name();
++	double_t sender_get_fps();
++	double_t sender_get_frame();
++	bool sender_get_cpu();
++	bool sender_get_gldx();
++
++#pragma endregion
++
++#pragma region Receiver
++
++	void receiver_set_receiver_name(const String &p_sender_name = String());
++	void receiver_release_receiver();
++	Error receiver_receive_texture(int p_godot_texture_id = 0, int p_shared_texture_id = 0, bool p_invert = false, int p_host_fbo = 0);
++	Error receiver_receive_image(Ref<Image> p_image, const bool p_invert = false, const int p_host_fbo = 0, const int p_gl_format = GL_RGBA);
++	bool receiver_is_updated();
++	bool receiver_is_connected();
++	bool receiver_is_frame_new();
++	String receiver_get_sender_name();
++	Vector2 receiver_get_sender_size();
++	double_t receiver_get_sender_fps();
++	double_t receiver_get_sender_frame();
++	bool receiver_get_sender_cpu();
++	bool receiver_get_sender_gldx();
++
++#pragma endregion
++
++#pragma region Frame counting
++
++	void set_frame_count(bool p_enabled);
++	void disable_frame_count();
++	bool is_frame_count_enabled();
++	void hold_fps(const int p_fps);
++	void set_frame_sync(const String &p_sender_name);
++	// NOTE WaitFrameSync is not implemented since i think that might require actual waiting?
++
++#pragma endregion
++
++#pragma region Data sharing
++
++	Error write_memory_buffer(const String &p_sender_name, const PackedByteArray p_data, const int p_length);
++	PackedByteArray read_memory_buffer(const String &p_sender_name, const int p_max_length);
++	Error create_memory_buffer(const String &p_name, const int p_length);
++	Error delete_memory_buffer();
++	int get_memory_buffer_size(const String &p_name);
++
++#pragma endregion
++
++#pragma region Log utilites
++
++	void enable_spout_log();
++	void enable_spout_log_file(const String p_filename, const bool p_append = false);
++	String get_spout_log();
++	void show_spout_logs();
++	void disable_spout_log();
++	void set_spout_log_level(SpoutLogLevel p_level);
++	// NOTE The library accepts varargs for these but that's not easy to expose to GDScript
++	void spout_log(const String p_format);
++	void spout_log_verbose(const String p_format);
++	void spout_log_notice(const String p_format);
++	void spout_log_warning(const String p_format);
++	void spout_log_error(const String p_format);
++	void spout_log_fatal(const String p_format);
++
++#pragma endregion
++
++#pragma region OpenGL shared texture
++
++	bool is_initialized();
++	bool bind_shared_texture();
++	bool unbind_shared_texture();
++	uint32_t get_shared_texture_id();
++
++#pragma endregion
++
++#pragma region Sender names
++
++	int get_sender_count();
++	String get_sender(const int p_index, const int p_max_size = 256);
++	bool find_sender_name(const String &p_sender_name);
++	String get_active_sender();
++	Error set_active_sender(const String &p_sender_name);
++
++#pragma endregion
++
++#pragma region Information
++
++	String get_host_path(const String p_sender_name, const int p_max_chars);
++	int get_vertical_sync();
++	Error set_vertical_sync(const bool p_sync = true);
++	int get_spout_version();
++
++#pragma endregion
++
++#pragma region Graphics compatibility
++
++	bool get_auto_share();
++	void set_auto_share(const bool p_is_auto = true);
++	bool is_gldx_ready();
++
++#pragma endregion
++
++#pragma region Graphics adapter
++
++	int get_num_adapters();
++	String get_adapter_name(const int p_index, const int p_max_chars = 256);
++	String adapter_name();
++	int get_adapter();
++
++#pragma endregion
++
++	Array get_senders();
++
++	Vector2 get_send_size();
++	void set_send_size(Vector2 p_size);
++
++	Spout();
++	~Spout();
++};
++
++VARIANT_ENUM_CAST(Spout::SpoutLogLevel);
++
++#endif
+diff --git a/thirdparty/spout-library/Binaries/x64/SpoutLibrary.h b/thirdparty/spout-library/Binaries/x64/SpoutLibrary.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..93042fdc1357fef69dc448919714ddadfd98230b
+--- /dev/null
++++ b/thirdparty/spout-library/Binaries/x64/SpoutLibrary.h
+@@ -0,0 +1,486 @@
++//
++//	SpoutLibrary.dll
++//
++//	Spout SDK dll compatible with any C++ compiler
++//
++/*
++		Copyright (c) 2016-2023, Lynn Jarvis. All rights reserved.
++
++		Redistribution and use in source and binary forms, with or without modification, 
++		are permitted provided that the following conditions are met:
++
++		1. Redistributions of source code must retain the above copyright notice, 
++		   this list of conditions and the following disclaimer.
++
++		2. Redistributions in binary form must reproduce the above copyright notice, 
++		   this list of conditions and the following disclaimer in the documentation 
++		   and/or other materials provided with the distribution.
++
++		THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"	AND ANY 
++		EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES 
++		OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE	ARE DISCLAIMED. 
++		IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
++		INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
++		PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
++		INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
++		LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++		OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++*/
++#pragma once
++
++#ifdef _MSC_VER
++#pragma warning(disable : 26433) // Function should be marked with 'override'
++#endif
++
++// for definitions
++#include <windows.h>
++#include <string>
++
++// Re-define to avoid include of GL.h 
++typedef unsigned int GLuint;
++typedef unsigned int GLenum;
++#ifndef GL_RGBA
++#define GL_RGBA 0x1908
++#endif
++
++#define SPOUTLIBRARY_EXPORTS // defined for this DLL. The application imports rather than exports
++
++#ifdef SPOUTLIBRARY_EXPORTS
++#define SPOUTAPI __declspec(dllexport)
++#else
++#define SPOUTAPI __declspec(dllimport)
++#endif
++
++// Local log level definitions for SetSpoutLogLevel.
++// "SpoutLogLevel" enum conflicts with previous definition
++// in SpoutUtils if it is used in the application.
++// Change enum name to "SpoutLibLogLevel".
++//
++// Option : disable warning C26812 (unscoped enums) for Visual Studio.
++//
++// Use of C++11 scoped (class) enums are not compatible with early compilers (< VS2012 and others).
++// For Visual Studio, this warning is designated "Prefer" and "C" standard unscoped enums are
++// therefore retained for compatibility. The warning can be enabled or disabled here.
++//
++#ifdef _MSC_VER
++#pragma warning(disable:26812)
++#endif
++
++//
++enum SpoutLibLogLevel {
++	SPOUT_LOG_SILENT,
++	SPOUT_LOG_VERBOSE,
++	SPOUT_LOG_NOTICE,
++	SPOUT_LOG_WARNING,
++	SPOUT_LOG_ERROR,
++	SPOUT_LOG_FATAL,
++	SPOUT_LOG_NONE
++};
++
++////////////////////////////////////////////////////////////////////////////////
++//
++// COM-Like abstract interface.
++// This interface doesn't require __declspec(dllexport/dllimport) specifier.
++// Method calls are dispatched via virtual table.
++// Any C++ compiler can use it.
++// Instances are obtained via factory function.
++//
++
++struct SPOUTLIBRARY
++{
++
++	//
++	// Sender
++	//
++
++	virtual void SetSenderName(const char* sendername = nullptr) = 0;
++	// Set the sender DX11 shared texture format
++	virtual void SetSenderFormat(DWORD dwFormat) = 0;
++	// Close sender and free resources
++	//   A sender is created or updated by all sending functions
++	virtual void ReleaseSender(DWORD dwMsec = 0) = 0;
++	// Send texture attached to fbo
++	//   The fbo must be currently bound
++	//   The sending texture can be larger than the size that the sender is set up for
++	//   For example, if the application is using only a portion of the allocated texture space,  
++	//   such as for Freeframe plugins. (The 2.006 equivalent is DrawToSharedTexture)
++	//   To send the OpenGL default framebuffer, specify "0" for the fbo ID, width and height.
++	virtual bool SendFbo(GLuint FboID, unsigned int width, unsigned int height, bool bInvert = true) = 0;
++	// Send OpenGL texture
++	virtual bool SendTexture(GLuint TextureID, GLuint TextureTarget, unsigned int width, unsigned int height, bool bInvert = true, GLuint HostFBO = 0) = 0;
++	// Send image pixels
++	virtual bool SendImage(const unsigned char* pixels, unsigned int width, unsigned int height, GLenum glFormat = GL_RGBA, bool bInvert = false) = 0;
++	// Sender name
++	virtual const char * GetName() = 0;
++	// Sender width
++	virtual unsigned int GetWidth() = 0;
++	// Sender height
++	virtual unsigned int GetHeight() = 0;
++	// Sender frame rate
++	virtual double GetFps() = 0;
++	// Sender frame number
++	virtual long GetFrame() = 0;
++	// Sender share handle
++	virtual HANDLE GetHandle() = 0;
++	// Sender sharing method
++	virtual bool GetCPU() = 0;
++	// Sender GL/DX hardware compatibility
++	virtual bool GetGLDX() = 0;
++
++	//
++	// Receiver
++	//
++
++	// Specify sender for connection
++	//   If a name is specified, the receiver will not connect to any other unless the user selects one
++	//   If that sender closes, the receiver will wait for the nominated sender to open 
++	//   If no name is specified, the receiver will connect to the active sender
++	virtual void SetReceiverName(const char* SenderName = nullptr) = 0;
++	// Close receiver and release resources ready to connect to another sender
++	virtual void ReleaseReceiver() = 0;
++
++	// Receive texture
++	//   If no arguments, connect to a sender and retrieve texture details ready for access
++	//	 (see BindSharedTexture and UnBindSharedTexture)
++	// 	 Connect to a sender and inform the application to update
++	//   the receiving texture if it has changed dimensions
++	//   For no change, copy the sender shared texture to the application texture
++	virtual bool ReceiveTexture(GLuint TextureID = 0, GLuint TextureTarget = 0, bool bInvert = false, GLuint HostFbo = 0) = 0;
++	// Receive image pixels
++	//   Connect to a sender and inform the application to update
++	//   the receiving buffer if it has changed dimensions
++	//   For no change, copy the sender shared texture to the pixel buffer
++	virtual bool ReceiveImage(unsigned char *pixels, GLenum glFormat = GL_RGBA, bool bInvert = false, GLuint HostFbo = 0) = 0;
++	// Query whether the sender has changed
++	//   Checked at every cycle before receiving data
++	virtual bool IsUpdated() = 0;
++	// Query sender connection
++	//   If the sender closes, receiving functions return false,  
++	virtual bool IsConnected() = 0;
++	// Query received frame status
++	//   The receiving texture or pixel buffer is only refreshed if the sender has produced a new frame  
++	//   This can be queried to process texture data only for new frames
++	virtual bool IsFrameNew() = 0;
++	// Get sender name
++	virtual const char * GetSenderName() = 0;
++	// Get sender width
++	virtual unsigned int GetSenderWidth() = 0;
++	// Get sender height
++	virtual unsigned int GetSenderHeight() = 0;
++	// Get sender DirectX texture format
++	virtual DWORD GetSenderFormat() = 0;
++	// Get sender frame rate
++	virtual double GetSenderFps() = 0;
++	// Get sender frame number
++	virtual long GetSenderFrame() = 0;
++	// Received sender share handle
++	virtual HANDLE GetSenderHandle() = 0;
++	// Received sender sharing mode
++	virtual bool GetSenderCPU() = 0;
++	// Received sender GL/DX compatibility
++	virtual bool GetSenderGLDX() = 0;
++	// Open sender selection dialog
++	virtual void SelectSender() = 0;
++
++	//
++	// Frame count
++	//
++
++	// Enable or disable frame counting globally
++	virtual void SetFrameCount(bool bEnable) = 0;
++	// Disable frame counting specifically for this application
++	virtual void DisableFrameCount() = 0;
++	// Return frame count status
++	virtual bool IsFrameCountEnabled() = 0;
++	// Sender frame rate control
++	virtual void HoldFps(int fps) = 0;
++	// Get system refresh rate
++	virtual double GetRefreshRate() = 0;
++	// Signal sync event 
++	virtual void SetFrameSync(const char* SenderName) = 0;
++	// Wait or test for a sync event
++	virtual bool WaitFrameSync(const char *SenderName, DWORD dwTimeout = 0) = 0;
++
++
++	//
++	// Data sharing
++	//
++
++	// Write data
++	virtual bool WriteMemoryBuffer(const char *sendername, const char* data, int length) = 0;
++	// Read data
++	virtual int  ReadMemoryBuffer(const char* sendername, char* data, int maxlength) = 0;
++	// Create a shared memory buffer
++	virtual bool CreateMemoryBuffer(const char *name, int length) = 0;
++	// Delete a shared memory buffer
++	virtual bool DeleteMemoryBuffer() = 0;
++	// Get the number of bytes available for data transfer
++	virtual int GetMemoryBufferSize(const char *name) = 0;
++
++	//
++	// Log utilities
++	//
++
++	// Open console for debugging
++	virtual void OpenSpoutConsole() = 0;
++	// Close console
++	virtual void CloseSpoutConsole(bool bWarning = false) = 0;
++	// Enable spout log to the console
++	virtual void EnableSpoutLog() = 0;
++	// Enable spout log to a file with optional append
++	virtual void EnableSpoutLogFile(const char* filename, bool bappend = false) = 0;
++	// Return the log file as a string
++	virtual std::string GetSpoutLog() = 0;
++	// Show the log file folder in Windows Explorer
++	virtual void ShowSpoutLogs() = 0;
++	// Disable logging
++	virtual void DisableSpoutLog() = 0;
++	// Set the current log level
++	// SPOUT_LOG_SILENT  - Disable all messages
++	// SPOUT_LOG_VERBOSE - Show all messages
++	// SPOUT_LOG_NOTICE  - Show information messages - default
++	// SPOUT_LOG_WARNING - Something might go wrong
++	// SPOUT_LOG_ERROR   - Something did go wrong
++	// SPOUT_LOG_FATAL   - Something bad happened
++	virtual void SetSpoutLogLevel(SpoutLibLogLevel level) = 0;
++	// General purpose log
++	virtual void SpoutLog(const char* format, ...) = 0;
++	// Verbose - show log for SPOUT_LOG_VERBOSE or above
++	virtual void SpoutLogVerbose(const char* format, ...) = 0;
++	// Notice - show log for SPOUT_LOG_NOTICE or above
++	virtual void SpoutLogNotice(const char* format, ...) = 0;
++	// Warning - show log for SPOUT_LOG_WARNING or above
++	virtual void SpoutLogWarning(const char* format, ...) = 0;
++	// Error - show log for SPOUT_LOG_ERROR or above
++	virtual void SpoutLogError(const char* format, ...) = 0;
++	// Fatal - always show log
++	virtual void SpoutLogFatal(const char* format, ...) = 0;
++	// MessageBox dialog with optional timeout
++	//   Used where a Windows MessageBox would interfere with the application GUI
++	//   The dialog closes itself if a timeout is specified
++	virtual int SpoutMessageBox(const char * message, DWORD dwMilliseconds = 0) = 0;
++	// MessageBox dialog with standard arguments
++	//   Replaces an existing MessageBox call
++	virtual int SpoutMessageBox(HWND hwnd, LPCSTR message, LPCSTR caption, UINT uType, DWORD dwMilliseconds = 0) = 0;
++
++	//
++	// Registry utilities
++	//
++	// Read subkey DWORD value
++	virtual bool ReadDwordFromRegistry(HKEY hKey, const char *subkey, const char *valuename, DWORD *pValue) = 0;
++	// Write subkey DWORD value
++	virtual bool WriteDwordToRegistry(HKEY hKey, const char *subkey, const char *valuename, DWORD dwValue) = 0;
++	// Read subkey character string
++	virtual bool ReadPathFromRegistry(HKEY hKey, const char *subkey, const char *valuename, char *filepath) = 0;
++	// Write subkey character string
++	virtual bool WritePathToRegistry(HKEY hKey, const char *subkey, const char *valuename, const char *filepath) = 0;
++	// Remove subkey value name
++	virtual bool RemovePathFromRegistry(HKEY hKey, const char *subkey, const char *valuename) = 0;
++	// Delete a subkey and its values.
++	//   It must be a subkey of the key that hKey identifies, but it cannot have subkeys.  
++	//   Note that key names are not case sensitive.  
++	virtual bool RemoveSubKey(HKEY hKey, const char *subkey) = 0;
++	// Find subkey
++	virtual bool FindSubKey(HKEY hKey, const char *subkey) = 0;
++
++	//
++	// Computer information
++	//
++	virtual std::string GetSDKversion() = 0;
++	virtual bool IsLaptop() = 0;
++
++	//
++	// Timing utilities
++	//
++	virtual void StartTiming() = 0;
++	virtual double EndTiming() = 0;
++
++	// -----------------------------------------
++
++	// Initialization status
++	virtual bool IsInitialized() = 0;
++	// Bind OpenGL shared texture
++	virtual bool BindSharedTexture() = 0;
++	// Un-bind OpenGL shared texture
++	virtual bool UnBindSharedTexture() = 0;
++	// OpenGL shared texture ID
++	virtual GLuint GetSharedTextureID() = 0;
++
++	//
++	// Sender names
++	//
++
++	// Number of senders
++	virtual int GetSenderCount() = 0;
++	// Sender item name
++	virtual bool GetSender(int index, char* sendername, int MaxSize = 256) = 0;
++	// Find a sender in the list
++	virtual bool FindSenderName(const char* sendername) = 0;
++	// Sender information
++	virtual bool GetSenderInfo(const char* sendername, unsigned int &width, unsigned int &height, HANDLE &dxShareHandle, DWORD &dwFormat) = 0;
++	// Current active sender
++	virtual bool GetActiveSender(char* Sendername) = 0;
++	// Set sender as active
++	virtual bool SetActiveSender(const char* Sendername) = 0;
++	
++	//
++	// Get user registry settings recorded by "SpoutSettings"
++	// Set them either to the registry or for the application only
++	//
++
++	// Get user buffering mode
++	virtual bool GetBufferMode() = 0;
++	// Set application buffering mode
++	virtual void SetBufferMode(bool bActive = true) = 0;
++	// Get user number of pixel buffers
++	virtual int GetBuffers() = 0;
++	// Set application number of pixel buffers
++	virtual void SetBuffers(int nBuffers) = 0;
++	// Get user Maximum senders allowed
++	virtual int GetMaxSenders() = 0;
++	// Set user Maximum senders allowed
++	virtual void SetMaxSenders(int maxSenders) = 0;
++
++	//
++	// 2.006 compatibility
++	//
++
++	// Create a sender
++	virtual bool CreateSender(const char *Sendername, unsigned int width, unsigned int height, DWORD dwFormat = 0) = 0;
++	// Update a sender
++	virtual bool UpdateSender(const char* Sendername, unsigned int width, unsigned int height) = 0;
++	// Create receiver connection
++	virtual bool CreateReceiver(char* Sendername, unsigned int &width, unsigned int &height, bool bUseActive = false) = 0;
++	// Check receiver connection
++	virtual bool CheckReceiver(char* Sendername, unsigned int &width, unsigned int &height, bool &bConnected) = 0;
++	// Get user DX9 mode
++	virtual bool GetDX9() = 0;
++	// Set user DX9 mode
++	virtual bool SetDX9(bool bDX9 = true) = 0;
++	// Get user memory share mode
++	virtual bool GetMemoryShareMode() = 0;
++	// Set user memory share mode
++	virtual bool SetMemoryShareMode(bool bMem = true) = 0;
++	// Get user CPU mode
++	virtual bool GetCPUmode() = 0;
++	// Set user CPU mode
++	virtual bool SetCPUmode(bool bCPU) = 0;
++	// Get user share mode
++	//  0 - texture, 1 - memory, 2 - CPU
++	virtual int GetShareMode() = 0;
++	// Set user share mode
++	//  0 - texture, 1 - memory, 2 - CPU
++	virtual void SetShareMode(int mode) = 0;
++	// Open sender selection dialog
++	virtual void SelectSenderPanel() = 0;
++
++	//
++	// Information
++	//
++
++	// The path of the host that produced the sender
++	virtual bool GetHostPath(const char *sendername, char *hostpath, int maxchars) = 0;
++	// Vertical sync status
++	virtual int GetVerticalSync() = 0;
++	// Lock to monitor vertical sync
++	virtual bool SetVerticalSync(bool bSync = true) = 0;
++	// Get Spout version
++	virtual int GetSpoutVersion() = 0;
++
++	//
++	// Graphics compatibility
++	//
++
++	// Get auto GPU/CPU share depending on compatibility
++	virtual bool GetAutoShare() = 0;
++	// Set auto GPU/CPU share depending on compatibility
++	virtual void SetAutoShare(bool bAuto = true) = 0;
++	// OpenGL texture share compatibility
++	virtual bool IsGLDXready() = 0;
++
++	//
++	// Adapter functions
++	//
++
++	// The number of graphics adapters in the system
++	virtual int GetNumAdapters() = 0;
++	// Adapter item name
++	virtual bool GetAdapterName(int index, char *adaptername, int maxchars) = 0;
++	// Return current adapter name
++	virtual char * AdapterName() = 0;
++	// Get adapter index 
++	virtual int GetAdapter() = 0;
++
++	//
++	// Graphics preference
++	//
++	// Windows 10+ SDK required
++	//
++#ifdef NTDDI_WIN10_RS4
++
++	// Get the Windows graphics preference for an application
++	//	-1 - Not registered
++	//	 0 - Let Windows decide  DXGI_GPU_PREFERENCE_UNSPECIFIED
++	//	 1 - Power saving        DXGI_GPU_PREFERENCE_MINIMUM_POWER
++	//	 2 - High performance    DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE
++	virtual int GetPerformancePreference(const char* path) = 0;
++	// Set the Windows graphics preference for an application
++	virtual bool SetPerformancePreference(int preference, const char* path) = 0;
++	// Get the graphics adapter name for a Windows preference
++	virtual bool GetPreferredAdapterName(int preference, char* adaptername, int maxchars) = 0;
++	// Set graphics adapter index for a Windows preference
++	virtual bool SetPreferredAdapter(int preference) = 0;
++	// Availability of Windows graphics preference
++	virtual bool IsPreferenceAvailable() = 0;
++	// Is the path a valid application
++	virtual bool IsApplicationPath(const char* path) = 0;
++#endif
++
++
++	//
++	// OpenGL utilities
++	//
++
++	// Create an OpenGL window and context for situations where there is none.
++	//   Not used if applications already have an OpenGL context.
++	//   Always call CloseOpenGL afterwards.
++	virtual bool CreateOpenGL() = 0;
++	// Close OpenGL window
++	virtual bool CloseOpenGL() = 0;
++	// Copy OpenGL texture with optional invert
++	//   Textures must be the same size
++	virtual bool CopyTexture(GLuint SourceID, GLuint SourceTarget,
++		GLuint DestID, GLuint DestTarget,
++		unsigned int width, unsigned int height,
++		bool bInvert = false, GLuint HostFBO = 0) = 0;
++
++	//
++	// DirectX utilities
++	//
++
++	virtual bool OpenDirectX() = 0;
++	virtual void CloseDirectX() = 0;
++
++	// Initialize and prepare DirectX 11
++	virtual bool OpenDirectX11(void * pDevice = nullptr) = 0;
++	virtual void CloseDirectX11() = 0;
++
++	// Return the class device
++	virtual void* GetDX11Device() = 0;
++
++	// Return the class context
++	virtual void* GetDX11Context() = 0;
++	
++	// Library release function
++    virtual void Release() = 0;
++
++};
++
++// Handle type. In C++ language the interface type is used.
++typedef SPOUTLIBRARY* SPOUTHANDLE;
++
++// Factory function that creates an instance of the SPOUT object.
++extern "C" SPOUTAPI SPOUTHANDLE WINAPI GetSpout(VOID);
++
++////////////////////////////////////////////////////////////////////////////////
+diff --git a/thirdparty/spout-library/SpoutLibrary.cpp b/thirdparty/spout-library/SpoutLibrary.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..b55c550f8afb9565aeac9d5632c81ae67e3df643
+--- /dev/null
++++ b/thirdparty/spout-library/SpoutLibrary.cpp
+@@ -0,0 +1,1815 @@
++//
++//	SpoutLibrary.dll
++//
++//	Spout SDK dll compatible with any C++ compiler
++//
++//	Based on the CodeProject "HowTo: Export C++ classes from a DLL" by Alex Blekhman.
++//	http://www.codeproject.com/Articles/28969/HowTo-Export-C-classes-from-a-DLL
++//
++//		30.03.16 - Build for 2.005 release - VS2012 /MT
++//		13.05.16 - Rearrange folders - rebuild 2.005 - VS2012 /MT
++//		23.06.16 - Add invert to ReceiveImage
++//		23.06.16 - Rebuild for 2.005 release - VS2012 /MT
++//		03.07.16 - Rebuild with VS2015
++//		13.01.17 - Rebuild for Spout 2.006
++//				 - Add SetCPUmode, GetCPUmode, SetBufferMode, GetBufferMode
++//				 - Add HostFBO arg to DrawSharedTexture
++//		17.01.17 - Add GetShareMode, SetShareMode
++//		23.01.17 - Rebuild for Spout 2.006 - VS2012 /MT
++//		08.01.17 - Rebuild - VS2012 /MT
++//		20.01.17 - Rebuild update - VS2012 /MT
++//		05-04-19 - Introduce SpoutFunctions class
++//				   Add CreateOpenGL() and CloseOpenGL()
++//				   Test with QT and MingW compiler
++//		11-05-19 - Build for 32 bit and 64 bit - VS2017 /MT
++//		24.05.19 - Add OpenSpoutConsole for debugging
++//		03.06.19 - Add CloseSpoutConsole for debugging
++//		04-06-19 - Re-build for 32 bit and 64 bit - VS2017 /MT
++//		06-06-19 - Re-build for 256 max senders - 32 bit and 64 bit - VS2017 /MT
++//		18.06.19 - Change sender Update to include sender name
++//		26.09.19 - Remove redundant 2.007 functions for single class
++//				 - Remove Update and use UpdateSender
++//				 - Remove CloseSender/CloseReceiver and use ReleaseSender/ReleaseSender
++//		29.09.19 - Change IsDX9 to GetDX9 to avoid repeated compatibility test
++//		09.10.19 - Add WriteDX9surface and SetDX9device
++//		22.10.19 - Add include guard in SpoutLibrary.h
++//				 - Add SendFboTexture
++//				 - Relocate ReleaseSender
++//				   Re-build for 32 bit and 64 bit - VS2017 /MT
++//		27.11.19 - Re-build for revised Spout SDK - 32 bit and 64 bit - VS2017 / MT
++//		18.01.20 - Add CopyTexture, GetSenderTextureID. Update receiver example
++//		19.01.20 - Remove send data functions
++//				   Change SendFboTexture to SendFbo
++//		20.01.20 - Change GetSenderTextureID() to GetSharedTextureID
++//		30.05.20 - Change SendTextureData/SendImageData back to SendTexture/SendImage
++//				   Remove 2.006 overloads. Library is now exclusively 2.007.
++//				   Re-build for revised Spout SDK - 32 bit and 64 bit - VS2017 / MT
++//		18.06.20 - Add GetSenderFormat()
++//		12.07.20 - Simplify and use 2.007 sender / receiver classes
++//				 - Remove GetShareMode / SetShareMode
++//		18.07.20 - Re-build 32/64 bit - VS2017 / MT
++//		28.12.20 - Update functions using the SpoutGL class for 2.007
++//		29.12.20 - Re-arrange files for CMake and modify project files
++//		31.12.20 - Re-build 32/64 bit - VS2017 / MT
++//		06.01.20 - Re-build 32/64 bit - VS2017 / MT
++//		18.01.21 - Add RegisterSenderName, ReleaseSenderName, FindSenderName
++//		19.01.21 - Remove RegisterSenderName, ReleaseSenderName - too low level
++//		24.01.21 - Re-build 32/64 bit - VS2017 / MT
++//		09.04.21 - Add event functions SetFrameSync/WaitFrameSync
++//				 - Add data functions WriteMemoryBuffer/ReadMemoryBuffer
++//		10.04.21 - Add GetSenderGLDX(), GetCPU() and GetGLDX()
++//				   Update documentation comments
++//				   Re-build 32/64 bit - VS2017 / MT
++//		24.04.21 - ReceiveTexture - return if flagged for update
++//		10.06.21 - Re-build 32/64 bit - VS2017 / MT
++//		20.07.21 - Change generic local log level definition to avoid
++//				   conflict with other libraries and applications.
++//		25.07.21   Re-build 32/64 bit - VS2017 / Multi-threaded DLL (/MD)
++//		24.10.21 - Rebuild with updated SpoutGL files 32/64 bit /MD
++//		24.11.21 - Add SelectSenderPanel for 2.006 compatibility
++//		17.12.21 - Add timing utility functions
++//		27.12.21 - Rebuild 32/64 bit /MD for update 2.007.006
++//		28.01.22 - Remove <d3d9.h> from SpoutLibrary.h (Issue #77)
++//		24.02.22 - Rebuild 32/64 bit /MD Version 2.007.007
++//		21.03.22 - Change local LogLevel enum to more unique SpoutLibLogLevel
++//				   Initialize Spout object pointer
++//		11.04.22 - Option disable warning C26812 (unscoped enums) for Visual Studio
++//		10.05.22 - Correct OpenSpoutConsole to use "spoututils::"
++//		12.05.22 - Rebuild VS2022 - 32/64 bit /MD
++//				   Spout Version 2.007.008
++//		31.10.22 - Add GetPerformancePreference, SetPerformancePreference, GetPreferredAdapterName
++//				   Corrected SpoutLog to use _dolog
++//		01.11.22 - Add SetPreferredAdapter, GetSDKversion, IsLaptop
++//		03.11.22 - Add IsPreferenceAvailable
++//		25.22.33 - Revise SpoutSenderNmaes UpdateSenderFps / HoldFps
++//				   Add GetRefreshRate
++//		30.11.22 - Add IsApplicationPath
++//		22.12.22 - Compiler compatibility check
++//				   Conditional compile of preference functions
++//		26.12.22 - Add missing SPOUT_LOG_NONE to SpoutLibLogLevel
++//				   Rebuild release VS2022 - 32/64 bit /MD
++//				   Spout Version 2.007.009
++//		17.03.23 - SpoutLibrary.h - add redefinitons to avoid include of GL.h 
++//				   Spout.cpp ReceiveSenderData - if there is a valid D3D11 format, use it.
++//		18.03.23 - For MingW compatibility
++//				     Remove old style include guard from header
++//				     Test for _MSC_VER for pragma warnings in header
++//				     Test for NTDDI_WIN10_RS4 define for graphics preferences
++//		07.04.23   Rebuild with SDK version 2.007.010 - release VS2022 - 32/64 bit /MD
++//
++/*
++		Copyright (c) 2016-2023, Lynn Jarvis. All rights reserved.
++
++		Redistribution and use in source and binary forms, with or without modification, 
++		are permitted provided that the following conditions are met:
++
++		1. Redistributions of source code must retain the above copyright notice, 
++		   this list of conditions and the following disclaimer.
++
++		2. Redistributions in binary form must reproduce the above copyright notice, 
++		   this list of conditions and the following disclaimer in the documentation 
++		   and/or other materials provided with the distribution.
++
++		THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"	AND ANY 
++		EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES 
++		OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE	ARE DISCLAIMED. 
++		IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
++		INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
++		PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
++		INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
++		LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++		OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++*/
++
++#include <stdio.h>
++#include "SpoutLibrary.h"
++#include "..\SpoutGL\Spout.h"
++
++#include <d3d11.h>
++#pragma comment (lib, "d3d11.lib")// the Direct3D 11 Library file
++
++
++////////////////////////////////////////////////////////////////////////////////
++//
++// Implementation of the SPOUT interface.
++//
++
++// Title: SpoutLibrary
++//
++// <https://spout.zeal.co/>
++//
++//	Spout SDK dll compatible with any C++ compiler
++//
++//	Based on the CodeProject :
++//
++//	"HowTo: Export C++ classes from a DLL" by Alex Blekhman.
++//
++//	http://www.codeproject.com/Articles/28969/HowTo-Export-C-classes-from-a-DLL
++//
++// Group: Building the library
++// 
++// The "VS2017" folder contains Visual Studio projects to build the dll.
++//
++// The Spout SDK source files should be located in a folder "SpoutGL" two levels above the project folder.
++// 
++// Open the SpoutLibrary solution, change to "Release" and build the project.
++// SpoutLibrary.dll and SpoutLibrary.lib will be in the Win32\Release or x64\Release folder.
++// 
++// Also refer to "Building the libraries.pdf" for details on building the libraries using CMake.
++//
++// Group: Building applications with the library
++//
++// o Include SpoutLibrary.h in your application header file.
++// o Include SpoutLibrary.lib in your project for the linker.
++// o Include SpoutLibrary.dll in the application executable folder.
++// 
++//
++// All functions are the same as described for in the Spout SDK documentation.
++//
++// Group: Using the library
++//
++// Refer to the source code of the SpoutLibrary example.
++//
++//
++// 1) Include SpoutLibrary.h in your application header file
++// 
++// --- Code
++// #include "SpoutLibrary.h"
++// ---
++// 
++// 2) create a spout sender object pointer
++// 
++// --- Code
++// SPOUTLIBRARY * sender;
++// ---
++// 
++// 3) Create an instance of the library
++// 
++// --- Code
++// sender = GetSpout();
++// ---
++// 
++// 4) Use the object as usual :
++// 
++// --- Code
++// sender->SendTexture(...) etc.
++// ---
++// 
++// Compare with the graphics sender example using the Spout SDK source files.
++
++
++class SPOUTImpl : public SPOUTLIBRARY
++{
++
++public:
++
++	// Spout SDK functions object for this class
++	// Initialize in GetSpout()
++	Spout * spout;
++
++private: // Spout SDK functions
++
++	//
++	// Group: Sender
++	//
++	// SendFbo, SendTexture and SendImage create or update a sender as required.
++	//
++	// - If a sender has not been created yet :
++	//
++	//    - Make sure Spout has been initialized and OpenGL context is available
++	//    - Perform a compatibility check for GL/DX interop
++	//    - If compatible, create interop for GL/DX transfer
++	//    - If not compatible, create a DirectX 11 shared texture for the sender
++	//    - Create a sender using the DX11 shared texture handle
++	//
++	// - If the sender exists, test for size change :
++	//
++	//    - If compatible, update the shared textures and GL/DX interop
++	//    - If not compatible, re-create the class DirectX shared texture to the new size
++	//    - Update the sender and class variables	
++	//
++
++	// Function: SetSenderName
++	// Set name for sender creation
++	//
++	//     If no name is specified, the executable name is used. 
++	//     Thereafter, all sending functions create and update a sender
++	//     based on the size passed and the name that has been set
++	void SetSenderName(const char* sendername = nullptr);
++
++	// Function: SetSenderFormat
++	// Set the sender DX11 shared texture format
++	void SetSenderFormat(DWORD dwFormat);
++
++	// Function: ReleaseSender
++	// Close receiver and release resources.
++	//
++	// A new sender is created or updated by all sending functions
++	void ReleaseSender(DWORD dwMsec = 0);
++
++	// Function: SendFbo
++	// Send texture attached to fbo
++	//
++	//   The fbo must be currently bound
++	//   The sending texture can be larger than the size that the sender is set up for
++	//   For example, if the application is using only a portion of the allocated texture space,  
++	//   such as for Freeframe plugins. (The 2.006 equivalent is DrawToSharedTexture)
++	//
++	bool SendFbo(GLuint FboID, unsigned int width, unsigned int height, bool bInvert = true);
++
++	// Function: SendTexture
++	// Send OpenGL texture
++	//
++	//     SendTexture creates a shared texture for all receivers to access.
++	//
++	//     The invert flag is optional and by default true. This flips the texture
++	//     in the Y axis, which is necessary because DirectX and OpenGL textures
++	//     are opposite in Y. If it is set to false no flip occurs and the result
++	//     may appear upside down.
++	//
++	//     The host fbo argument is optional (default 0) but an fbo ID is necessary
++	//     if it is currently bound, then that binding is restored. Otherwise the
++	//     binding is lost.
++	//
++	bool SendTexture(GLuint TextureID, GLuint TextureTarget, unsigned int width, unsigned int height, bool bInvert = true, GLuint HostFBO = 0);
++
++	// Function: SendImage
++	// Send pixel image
++	//
++	//     SendImage creates a shared texture using image pixels as the source
++	//     instead of an OpenGL texture. The format of the image to be sent is RGBA 
++	//     by default but can be a different OpenGL format, for example GL_RGB or GL_BGRA_EXT.
++	//
++	//     The invert flag is optional and false by default.
++	//
++	//     As for SendTexture, the ID of a currently bound fbo can be passed in.
++	//
++	bool SendImage(const unsigned char* pixels, unsigned int width, unsigned int height, GLenum glFormat = GL_RGBA, bool bInvert = false);
++	
++	// Function: GetName
++	// Sender name
++	const char * GetName();
++	
++	// Function: GetWidth
++	// Sender width
++	unsigned int GetWidth();
++	
++	// Function: GetHeight
++	// Sender height
++	unsigned int GetHeight();
++	
++	// Function: GetFps
++	// Sender frame rate
++	double GetFps();
++	
++	// Function: GetFrame
++	// Sender frame number
++	long GetFrame();
++	
++	// Function: GetHandle
++	// Sender share handle
++	HANDLE GetHandle();
++
++	// Function: GetCPU
++	// Sender sharing method.
++	// Returns true if the sender is using CPU methods
++	bool GetCPU();
++
++	// Function: GetGLDX
++	// Sender sharing compatibility.
++	// Returns true if the sender graphics hardware is 
++	// compatible with NVIDIA NV_DX_interop2 extension
++	bool GetGLDX();
++
++
++	//
++	// Group: Receiver
++	//
++	// Receiving functions
++	//
++	// ReceiveTexture and ReceiveImage 
++	//
++	//		- Connect to a sender
++	//
++	//		- Set class variables for sender name, width and height
++	//
++	//		- If the sender has changed size, set a flag for the application to update the receiving texture or image if IsUpdated() returns true.
++	//
++	//		- Copy the sender shared texture to the user texture or image.
++	//
++	// Any changes to sender size are managed. However, if you are receiving to a local texture or image,
++	// the application must check for update at every cycle before receiving any data using "IsUpdated()"
++
++	// Function: SetReceiverName
++	// Specify sender for connection
++	//
++	//   - If a name is specified, the receiver will not connect to any other unless the user selects one.
++	//   - If that sender closes, the receiver will wait for the nominated sender to open. 
++	//   - If no name is specified, the receiver will connect to the active sender.
++	void SetReceiverName(const char * SenderName = nullptr);
++
++	// Function: ReleaseReceiver
++	// Close receiver and release resources ready to connect to another sender
++	void ReleaseReceiver();
++
++	// Function: ReceiveTexture
++	//
++	//   For a valid OpenGL receving texture :
++	//
++	//   Copy from the sender shared texture if there is a texture to receive into.
++	//   The receiving OpenGL texture can only be RGBA of dimension (width * height)
++	//   and must be re-allocated if IsUpdated() returns true. Return if flagged for update.
++	//   The update flag is reset when the receiving application calls IsUpdated().
++	//
++	//   If no arguments are passed :
++	//
++	//   Connect to a sender and retrieve shared texture details,
++	//	 initialize GL/DX interop for OpenGL texture access, and update
++	//   the sender shared texture, frame count and framerate.
++	//   The texture can then be accessed using :
++	//		- BindSharedTexture();
++	//		- UnBindSharedTexture();
++	//		- GetSharedTextureID();
++	//
++	//   As for SendTexture, the host fbo argument is optional (default 0)
++	//   but an fbo ID is necessary if it is currently bound, then that binding
++	//   is restored. Otherwise the binding is lost.
++	bool ReceiveTexture(GLuint TextureID = 0, GLuint TextureTarget = 0, bool bInvert = false, GLuint HostFbo = 0);
++	
++	// Function: ReceiveImage
++	// Copy the sender texture to image pixels.
++	//
++	//    Formats supported are : GL_RGBA, GL_RGB, GL_BGRA_EXT, GL_BGR_EXT.
++	//    GL_BGRA_EXT and GL_BGR_EXT are dependent on those extensions being supported at runtime.
++	//    If they are not, the rgba and rgb equivalents are used.
++	//    The same sender size changes are handled with IsUpdated() as for ReceiveTexture.
++	//    and the receiving buffer must be re-allocated if IsUpdated() returns true.
++	//    NOTE : images with padding on each line are not supported.
++	//    Also the width should be a multiple of 4.
++	//
++	//    As for ReceiveTexture, the ID of a currently bound fbo should be passed in.
++	bool ReceiveImage(unsigned char *pixels, GLenum glFormat = GL_RGBA, bool bInvert = false, GLuint HostFbo = 0);
++	
++	// Function: IsUpdated
++	// Query whether the sender has changed.
++	//
++	//   Must be checked at every cycle before receiving data. 
++	//
++	//   If this is not done, the receiving functions fail.
++	bool IsUpdated();
++	
++	// Function: IsConnected
++	// Query sender connection.
++	//
++	//   If the sender closes, receiving functions return false,  
++	//   but connection can be tested at any time.
++	bool IsConnected();
++	
++	// Function: IsFrameNew
++	// Query received frame status
++	//
++	//   The receiving texture or pixel buffer is refreshed if the sender has produced a new frame  
++	//   This can be queried to process texture data only for new frames
++	bool IsFrameNew();
++	
++	// Function: GetSenderName
++	// Get sender name
++	const char * GetSenderName();
++	
++	// Function: GetSenderWidth
++	// Get sender width
++	unsigned int GetSenderWidth();
++	
++	// Function: GetSenderHeight
++	// Get sender height
++	unsigned int GetSenderHeight();
++	
++	// Function: GetSenderFormat
++	// Get sender DirectX texture format
++	DWORD GetSenderFormat();
++	
++	// Function: GetSenderFps
++	// Get sender frame rate
++	double GetSenderFps();
++	
++	// Function: GetSenderFrame
++	// Get sender frame number
++	long GetSenderFrame();
++	
++	// Function: GetSenderHandle
++	// Received sender share handle
++	HANDLE GetSenderHandle();
++	
++	// Function: GetSenderCPU
++	// Received sender sharing mode.
++	// Returns true if the sender is using CPU methods
++	bool GetSenderCPU();
++
++	// Function: GetSenderGLDX
++	// Received sender sharing compatibility.
++	//     Returns true if the sender graphics hardware is 
++	//     compatible with NVIDIA NV_DX_interop2 extension
++	bool GetSenderGLDX();
++	
++	// Function: SelectSender
++	// Open sender selection dialog
++	void SelectSender();
++
++	//
++	// Group: Frame counting
++	//
++
++	// Function: SetFrameCount
++	// Enable or disable frame counting globally
++	void SetFrameCount(bool bEnable);
++	
++	// Function: DisableFrameCount
++	// Disable frame counting specifically for this application
++	void DisableFrameCount();
++	
++	// Function: IsFrameCountEnabled
++	// Return frame count status
++	bool IsFrameCountEnabled();
++	
++	// Function: HoldFps
++	// Frame rate control
++	void HoldFps(int fps);
++
++	// Function: GetRefreshRate
++	// Get system refresh rate
++	double GetRefreshRate();
++	
++	// Function: SetFrameSync
++	// Signal sync event 
++	void SetFrameSync(const char* SenderName);
++	
++	// Function: WaitFrameSync
++	// Wait or test for a sync event
++	bool WaitFrameSync(const char *SenderName, DWORD dwTimeout = 0);
++
++	//
++	// Group: Data sharing
++	//
++	//   General purpose data exchange functions using shared memory.
++	//   These functions can be used in addition to texture sharing.
++	//   Typical uses will be for data attached to the video frame,
++	//   commonly referred to as "per frame Metadata".
++	//
++	//   Notes for synchronisation.
++	//
++	//   If used before sending and after receiving, the data will be 
++	//   associated with the same video frame, but frames may be missed 
++	//   if the receiver has a lower frame rate than the sender.
++	//
++	//   If strict synchronization is required, the data sharing functions
++	//   should be used in combination with event signal functions. The sender
++	//   frame rate will be matched exactly to that of the receiver and the 
++	//   receiver will not miss any frames.
++	//
++	//      - void SetFrameSync(const char* SenderName);
++	//      - bool WaitFrameSync(const char *SenderName, DWORD dwTimeout = 0);
++	//
++	//   WaitFrameSync
++	//   A sender should use this before rendering or sending texture or data and
++	//   wait for a signal from the receiver that it is ready to read another frame.
++	//
++	//   SetFrameSync
++	//   After receiving a texture, rendering the result and reading data
++	//   a receiver should signal that it is ready to read another. 
++	//
++
++	// Function: WriteMemoryBuffer
++	// Write buffer to shared memory.
++	//
++	//    If shared memory has not been created in advance, it will be
++	//    created on the first call to this function at the length specified.
++	//
++	//    This is acceptable if the data to send is fixed in length.
++	//    Otherwise the shared memory should be created in advance of sufficient
++	//    size to contain the maximum length expected (see CreateMemoryBuffer).
++	//
++	//    The map is closed when the sender is released.
++	//
++	bool WriteMemoryBuffer(const char *sendername, const char* data, int length);
++
++	// Function: ReadMemoryBuffer
++	// Read shared memory to a buffer.
++	//
++	//    Open a memory map and retain the handle.
++	//    The map is closed when the receiver is released.
++	int  ReadMemoryBuffer(const char* sendername, char* data, int maxlength);
++
++	// Function: CreateMemoryBuffer
++	// Create a shared memory buffer.
++	//
++	//    Create a memory map and retain the handle.
++	//    This function should be called before any buffer write
++	//    if the length of the data to send will vary.
++	//    The map is closed when the sender is released.
++	bool CreateMemoryBuffer(const char *name, int length);
++
++	// Function: DeleteMemoryBuffer
++	// Delete a sender shared memory buffer.
++	bool DeleteMemoryBuffer();
++
++	// Function: GetMemoryBufferSize
++	// Get the number of bytes available for data transfer.
++	int GetMemoryBufferSize(const char *name);
++
++	//
++	// Group: Log utilities
++	//
++
++	// Function: OpenSpoutConsole
++	// Open console window.
++	//
++	// A console window opens without logs.
++	// Useful for debugging with console output.
++	void OpenSpoutConsole();
++
++	// Function: CloseSpoutConsole
++	// Close console window.
++	//
++	// The optional warning displays a MessageBox if user notification is required.
++	void CloseSpoutConsole(bool bWarning = false);
++
++	// Function: EnableSpoutLog
++	// Enable logging to the console.
++	//
++	// Logs are displayed in a console window.  
++	// Useful for program development.
++	void EnableSpoutLog();
++
++	// Function: EnableSpoutLogFile
++	// Enable logging to a file with optional append.
++	//
++	// You can instead, or additionally to a console window,  
++	// specify output to a text file with the extension of your choice  
++	// Example : EnableSpoutLogFile("Sender.log");
++	// The log file is re-created every time the application starts unless you specify to append to the existing one :  
++	// Example : EnableSpoutLogFile("Sender.log", true);
++	// The file is saved in the %AppData% folder unless you specify the full path :  
++	//    C:>Users>username>AppData>Roaming>Spout   
++	// You can find and examine the log file after the application has run.
++	void EnableSpoutLogFile(const char *filename, bool append = false);
++
++	// Function: GetSpoutLog
++	// Return the log file as a string
++	std::string GetSpoutLog();
++
++	// Function: ShowSpoutLogs
++	// Show the log file folder in Windows Explorer
++	void ShowSpoutLogs();
++
++	// Function: DisableSpoutLog
++	// Disable logging to console and file
++	void DisableSpoutLog();
++
++	// Function: SetSpoutLogLevel
++	// Set the current log level
++	void SetSpoutLogLevel(SpoutLibLogLevel level);
++
++	// Function: SpoutLog
++	// General purpose log
++	void SpoutLog(const char* format, ...);
++
++	// Function: SpoutLogVerbose
++	// Verbose - show log for SPOUT_LOG_VERBOSE or above
++	void SpoutLogVerbose(const char* format, ...);
++
++	// Function: SpoutLogNotice
++	// Notice - show log for SPOUT_LOG_NOTICE or above
++	void SpoutLogNotice(const char* format, ...);
++
++	// Function: SpoutLogWarning
++	// Warning - show log for SPOUT_LOG_WARNING or above
++	void SpoutLogWarning(const char* format, ...);
++
++	// Function: SpoutLogError
++	// Error - show log for SPOUT_LOG_ERROR or above
++	void SpoutLogError(const char* format, ...);
++
++	// Function: SpoutLogFatal
++	// Fatal - always show log
++	void SpoutLogFatal(const char* format, ...);
++
++	// Function: SpoutMessageBox
++	// MessageBox dialog with optional timeout.
++	//
++	// Used where a Windows MessageBox would interfere with the application GUI.  
++	// The dialog closes itself if a timeout is specified.
++	int SpoutMessageBox(const char * message, DWORD dwMilliseconds = 0);
++
++	// Function: SpoutMessageBox
++	// MessageBox dialog with standard arguments.
++	// Replaces an existing MessageBox call.
++	int SpoutMessageBox(HWND hwnd, LPCSTR message, LPCSTR caption, UINT uType, DWORD dwMilliseconds = 0);
++
++	//
++	// Group: Registry utilities
++	//
++
++	// Function: ReadDwordFromRegistry
++	// Read subkey DWORD value
++	bool ReadDwordFromRegistry(HKEY hKey, const char *subkey, const char *valuename, DWORD *pValue);
++	
++	// Function: WriteDwordToRegistry
++	// Write subkey DWORD value
++	bool WriteDwordToRegistry(HKEY hKey, const char *subkey, const char *valuename, DWORD dwValue);
++	
++	// Function: ReadPathFromRegistry
++	// Read subkey character string
++	bool ReadPathFromRegistry(HKEY hKey, const char *subkey, const char *valuename, char *filepath);
++	
++	// Function: WritePathToRegistry
++	// Write subkey character string
++	bool WritePathToRegistry(HKEY hKey, const char *subkey, const char *valuename, const char *filepath);
++	
++	// Function: RemovePathFromRegistry
++	// Remove subkey value name
++	bool RemovePathFromRegistry(HKEY hKey, const char *subkey, const char *valuename);
++	
++	// Function: RemoveSubKey
++	// Delete a subkey and its values.
++	//   It must be a subkey of the key that hKey identifies, but it cannot have subkeys.  
++	//   Note that key names are not case sensitive.  
++	bool RemoveSubKey(HKEY hKey, const char *subkey);
++	
++	// Function: FindSubKey
++	// Find subkey
++	bool FindSubKey(HKEY hKey, const char *subkey);
++
++	//
++	// Group: Information
++	//
++
++	// ---------------------------------------------------------
++	// Function: GetSDKversion
++	// Spout SDK version.
++	std::string GetSDKversion();
++
++	// ---------------------------------------------------------
++	// Function: IsLaptop
++	// Return whether the system is a laptop.
++	//
++	// Queries power status. Battery power most likely means laptop.
++	bool IsLaptop();
++
++	//
++	// Group: Timing utilities
++	//
++
++	// Function: StartTiming
++	// Start timing interval
++	void StartTiming();
++
++	// Function: EndTiming
++	// Return timing interval
++	double EndTiming();
++	
++	//
++	// Group: OpenGL shared texture
++	//
++
++	// Function: IsInitialized
++	// Initialization status
++	bool IsInitialized();
++	
++	// Function: BindSharedTexture
++	// Bind OpenGL shared texture
++	bool BindSharedTexture();
++	
++	// Function: UnBindSharedTexture
++	// Un-bind OpenGL shared texture
++	bool UnBindSharedTexture();
++	
++	// Function: GetSharedTextureID
++	// OpenGL shared texture ID
++	GLuint GetSharedTextureID();
++
++	//
++	// Group: Sender names
++	//
++
++	// Function: GetSenderCount
++	// Number of senders
++	int  GetSenderCount();
++	
++	// Function: GetSender
++	// Sender item name in the sender names list
++	bool GetSender(int index, char* sendername, int MaxSize = 256);
++	
++	// Function: FindSenderName
++	// Find a sender in the sender names list
++	bool FindSenderName(const char* sendername);
++	
++	// Function: GetSenderInfo
++	// Sender information
++	bool GetSenderInfo(const char* sendername, unsigned int &width, unsigned int &height, HANDLE &dxShareHandle, DWORD &dwFormat);
++	
++	// Function: GetActiveSender
++	// Current active sender
++	bool GetActiveSender(char* Sendername);
++	
++	// Function: SetActiveSender
++	// Set sender as active
++	bool SetActiveSender(const char* Sendername);
++
++
++
++	//
++	// Group: User registry settings
++	// recorded by "SpoutSettings"
++	//
++
++	// Function: GetBufferMode
++	// Get user buffering mode
++	bool GetBufferMode();
++	
++	// Function: SetBufferMode
++	// Set application buffering mode
++	void SetBufferMode(bool bActive = true);
++	
++	// Function: GetBuffers
++	// Get user number of pixel buffers
++	int GetBuffers();
++	
++	// Function: SetBuffers
++	// Set application number of pixel buffers
++	void SetBuffers(int nBuffers);
++	
++	// Function: GetMaxSenders
++	// Get user Maximum senders allowed
++	int GetMaxSenders();
++	
++	// Function: SetMaxSenders
++	// Set user Maximum senders allowed
++	void SetMaxSenders(int maxSenders);
++
++	
++	//
++	// Group: 2.006 compatibility
++	//
++	// These functions are retained for compatibility with existing 2.006 code.
++	//
++
++	// Function: CreateSender
++	// Create a sender
++	bool CreateSender(const char *Sendername, unsigned int width, unsigned int height, DWORD dwFormat = 0);
++	
++	// Function: UpdateSender
++	// Update a sender
++	bool UpdateSender(const char* Sendername, unsigned int width, unsigned int height);
++	
++	// Function: CreateReceiver
++	// Create receiver connection
++	bool CreateReceiver(char* Sendername, unsigned int &width, unsigned int &height, bool bUseActive = false);
++	
++	// Function: CheckReceiver
++	// Check receiver connection
++	bool CheckReceiver(char* Sendername, unsigned int &width, unsigned int &height, bool &bConnected);
++	
++	// Function: GetDX9
++	// Get user DX9 mode
++	bool GetDX9();
++	
++	// Function: SetDX9
++	// Set user DX9 mode
++	bool SetDX9(bool bDX9 = true);
++	
++	// Function: GetMemoryShareMode
++	// Get user memory share mode
++	bool GetMemoryShareMode();
++	
++	// Function: SetMemoryShareMode
++	// Set user memory share mode
++	bool SetMemoryShareMode(bool bMem = true);
++	
++	// Function: GetCPUmode
++	// Get user CPU mode
++	bool GetCPUmode();
++	
++	// Function: SetCPUmode
++	// Set user CPU mode
++	bool SetCPUmode(bool bCPU);
++	
++	// Function: GetShareMode
++	// Get user share mode
++	//  0 - texture, 1 - memory, 2 - CPU
++	int GetShareMode();
++	
++	// Function: SetShareMode
++	// Set user share mode
++	//  0 - texture, 1 - memory, 2 - CPU
++	void SetShareMode(int mode);
++
++	// Function: SelectSender
++	// Open sender selection dialog
++	//  2.006 compatibility only. Use SelectSender()
++	void SelectSenderPanel();
++
++	//
++	// Group: Information
++	//
++
++	// Function: GetHostPath
++	// The path of the host that produced the sender
++	//
++	// Retrieved from the description string in the sender info memory map
++	bool GetHostPath(const char *sendername, char *hostpath, int maxchars);
++	
++	// Function: GetVerticalSync
++	// Vertical sync status
++	int GetVerticalSync();
++	
++	// Function: SetVerticalSync
++	// Lock to monitor vertical sync
++	bool SetVerticalSync(bool bSync = true);
++	
++	// Function: GetSpoutVersion
++	// Get Spout version
++	int GetSpoutVersion();
++
++	//
++	// Group: Graphics compatibility
++	//
++
++	// Function: GetAutoShare
++	// Get auto GPU/CPU share depending on compatibility
++	bool GetAutoShare();
++	
++	// Function: SetAutoShare
++	// Set auto GPU/CPU share depending on compatibility
++	void SetAutoShare(bool bAuto = true);
++	
++	// Function: IsGLDXready
++	// OpenGL texture share compatibility
++	bool IsGLDXready();
++
++	//
++	// Group: Graphics adapter
++	//
++	// Note that both the Sender and Receiver must use the same graphics adapter.
++	//
++
++	// Function: GetNumAdapters
++	// The number of graphics adapters in the system
++	int GetNumAdapters();
++	
++	// Function: GetAdapterName
++	// Get adapter item name
++	bool GetAdapterName(int index, char *adaptername, int maxchars);
++	
++	// Function: AdapterName
++	// Current adapter name
++	char * AdapterName();
++	
++	// Function: GetAdapter
++	// Get adapter index
++	int GetAdapter();
++	
++	//
++	// Group: Graphics preference
++	//
++	// Windows 10+ SDK required
++	//
++	// Performance prefrence settings are available from Windows 10
++	// April 2018 update "Redstone 4" (Version 1803, build 17134) and later.
++	// Windows 10 SDK required included in Visual Studio 2017 ver.15.7 
++	//
++#ifdef NTDDI_WIN10_RS4
++
++	//---------------------------------------------------------
++	// Function: GetPerformancePreference
++	// Get the Windows graphics preference for an application
++	//
++	//	-1 - Not registered
++	//
++	//	 0 - DXGI_GPU_PREFERENCE_UNSPECIFIED
++	//
++	//	 1 - DXGI_GPU_PREFERENCE_MINIMUM_POWER
++	//
++	//	 2 - DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE
++	//
++	int GetPerformancePreference(const char* path);
++
++	//---------------------------------------------------------
++	// Function: SetPerformancePreference
++	// Set the Windows graphics preference for an application
++	//
++	//     -1 - No preference
++	//
++	//      0 - Default
++	//
++	//      1 - Power saving
++	//
++	//      2 - High performance
++	//
++	bool SetPerformancePreference(int preference, const char* path);
++
++	//---------------------------------------------------------
++	// Function: GetPreferredAdapterName
++	//
++	// Get the graphics adapter name for a Windows preference
++	// This is the first adapter for the given preference :
++	//
++	//    DXGI_GPU_PREFERENCE_UNSPECIFIED - (0) Equivalent to EnumAdapters1
++	//
++	//    DXGI_GPU_PREFERENCE_MINIMUM_POWER - (1) Integrated GPU
++	//
++	//    DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE - (2) External GPU / Discrete GPU
++	//
++	bool GetPreferredAdapterName(int preference, char* adaptername, int maxchars);
++
++	//---------------------------------------------------------
++	// Function: SetPreferredAdapter
++	//
++	// Set graphics adapter index for a Windows preference
++	//
++	// This index is used by CreateDX11device when DirectX is intitialized
++	//
++	//    DXGI_GPU_PREFERENCE_UNSPECIFIED - (0) Equivalent to EnumAdapters1
++	//
++	//    DXGI_GPU_PREFERENCE_MINIMUM_POWER - (1) Integrated GPU
++	//
++	//    DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE - (2) External GPU / Discrete GPU
++	//
++	bool SetPreferredAdapter(int preference);
++
++	//---------------------------------------------------------
++	// Function: IsPreferenceAvailable()
++	// Availability of Windows graphics preference settings.
++	//
++	// Settings are available from Windows 10 April 2018 update 
++	// (Version 1803, build 17134) and later.
++	bool IsPreferenceAvailable();
++
++	//---------------------------------------------------------
++	// Function: IsApplicationPath
++	//
++	// Is the path a valid application
++	//
++	// A valid application path will have a drive letter and terminate with ".exe"
++	bool IsApplicationPath(const char* path);
++#endif
++
++	//
++	// Group: OpenGL utilities
++	//
++
++	// Function: CreateOpenGL
++	// Create an OpenGL window and context for situations where there is none.
++	//   Not used if applications already have an OpenGL context.
++	//   Always call CloseOpenGL afterwards.
++	bool CreateOpenGL();
++	
++	// Function: CloseOpenGL
++	// Close OpenGL window
++	bool CloseOpenGL();
++	
++	// Function: CopyTexture
++	// Copy OpenGL texture with optional invert
++	//   Textures must be the same size
++	bool CopyTexture(GLuint SourceID, GLuint SourceTarget,
++		GLuint DestID, GLuint DestTarget,
++		unsigned int width, unsigned int height,
++		bool bInvert = false, GLuint HostFBO = 0);
++
++
++	//
++	// Group: DirectX utilities
++	//
++
++	bool OpenDirectX();
++	void CloseDirectX();
++	
++	// Function: OpenDirectX11
++	// Initialize and prepare DirectX 11
++	bool OpenDirectX11(void * pDevice = nullptr);
++	void CloseDirectX11();
++
++	// Function: GetDX11Device
++	// Return the class device
++	void * GetDX11Device();
++
++	// Function: GetDX11Context
++	// Return the class context
++	void * GetDX11Context();
++
++	//
++	// Group: Class release
++	//
++
++	// Function: Release
++	// Release the class instance
++	void Release();
++
++};
++
++
++// ---------------------------------------------------------------
++// 2.007
++//
++
++//
++// Sender
++//
++
++void SPOUTImpl::SetSenderName(const char* sendername)
++{
++		spout->SetSenderName(sendername);
++}
++
++void SPOUTImpl::SetSenderFormat(DWORD dwFormat)
++{
++		spout->SetSenderFormat(dwFormat);
++}
++
++void SPOUTImpl::ReleaseSender(DWORD dwMsec)
++{
++	dwMsec = 0; // Not used for 2.007
++	spout->ReleaseSender();
++}
++
++bool SPOUTImpl::SendFbo(GLuint FboID, unsigned int width, unsigned int height, bool bInvert)
++{
++	return spout->SendFbo(FboID, width, height, bInvert);
++}
++
++bool SPOUTImpl::SendTexture(GLuint TextureID, GLuint TextureTarget, unsigned int width, unsigned int height, bool bInvert, GLuint HostFBO)
++{
++	return spout->SendTexture(TextureID, TextureTarget, width, height, bInvert, HostFBO);
++}
++
++bool SPOUTImpl::SendImage(const unsigned char* pixels, unsigned int width, unsigned int height, GLenum glFormat, bool bInvert)
++{
++	return spout->SendImage(pixels, width, height, glFormat, bInvert);
++}
++
++const char * SPOUTImpl::GetName()
++{
++	return spout->GetName();
++}
++
++unsigned int SPOUTImpl::GetWidth()
++{
++	return spout->GetWidth();
++}
++
++unsigned int SPOUTImpl::GetHeight()
++{
++	return spout->GetHeight();
++}
++
++double SPOUTImpl::GetFps()
++{
++	return spout->GetFps();
++}
++
++long SPOUTImpl::GetFrame()
++{
++	return spout->GetFrame();
++}
++
++HANDLE SPOUTImpl::GetHandle()
++{
++	return spout->GetHandle();
++}
++
++bool SPOUTImpl::GetCPU()
++{
++	return spout->GetCPU();
++}
++
++bool SPOUTImpl::GetGLDX()
++{
++	return spout->GetGLDX();
++}
++
++
++//
++// Receiver
++//
++
++void SPOUTImpl::SetReceiverName(const char* SenderName)
++{
++	spout->SetReceiverName(SenderName);
++}
++
++void SPOUTImpl::ReleaseReceiver()
++{
++	spout->ReleaseReceiver();
++}
++
++bool SPOUTImpl::ReceiveTexture(GLuint TextureID, GLuint TextureTarget, bool bInvert, GLuint HostFbo)
++{
++	return spout->ReceiveTexture(TextureID, TextureTarget, bInvert, HostFbo);
++}
++
++bool SPOUTImpl::ReceiveImage(unsigned char *pixels, GLenum glFormat, bool bInvert, GLuint HostFbo)
++{
++	return spout->ReceiveImage(pixels, glFormat, bInvert, HostFbo);
++}
++
++bool SPOUTImpl::IsUpdated()
++{
++	return spout->IsUpdated();
++}
++
++bool SPOUTImpl::IsConnected()
++{
++	return spout->IsConnected();
++}
++
++bool SPOUTImpl::IsFrameNew()
++{
++	return spout->IsFrameNew();
++}
++
++const char * SPOUTImpl::GetSenderName()
++{
++	return spout->GetSenderName();
++}
++
++unsigned int SPOUTImpl::GetSenderWidth()
++{
++	return spout->GetSenderWidth();
++}
++
++unsigned int SPOUTImpl::GetSenderHeight()
++{
++	return spout->GetSenderHeight();
++}
++
++DWORD SPOUTImpl::GetSenderFormat()
++{
++	return spout->GetSenderFormat();
++}
++
++double SPOUTImpl::GetSenderFps()
++{
++	return spout->GetSenderFps();
++}
++
++long SPOUTImpl::GetSenderFrame()
++{
++	return spout->GetSenderFrame();
++}
++
++HANDLE SPOUTImpl::GetSenderHandle()
++{
++	return spout->GetSenderHandle();
++}
++
++bool SPOUTImpl::GetSenderCPU()
++{
++	return spout->GetSenderCPU();
++}
++
++bool SPOUTImpl::GetSenderGLDX()
++{
++	return spout->GetSenderGLDX();
++}
++void SPOUTImpl::SelectSender()
++{
++	spout->SelectSender();
++}
++
++//
++// Frame count
++//
++
++void SPOUTImpl::SetFrameCount(bool bEnable)
++{
++	spout->SetFrameCount(bEnable);
++}
++
++
++void SPOUTImpl::DisableFrameCount()
++{
++	spout->DisableFrameCount();
++}
++
++bool SPOUTImpl::IsFrameCountEnabled()
++{
++	return spout->IsFrameCountEnabled();
++}
++
++void SPOUTImpl::HoldFps(int fps)
++{
++	return spout->HoldFps(fps);
++}
++
++double SPOUTImpl::GetRefreshRate()
++{
++	return spoututils::GetRefreshRate();
++}
++
++void SPOUTImpl::SetFrameSync(const char* SenderName)
++{
++	return spout->SetFrameSync(SenderName);
++}
++
++bool SPOUTImpl::WaitFrameSync(const char *SenderName, DWORD dwTimeout)
++{
++	return spout->WaitFrameSync(SenderName, dwTimeout);
++}
++
++bool SPOUTImpl::WriteMemoryBuffer(const char *name, const char* data, int length)
++{
++	return spout->WriteMemoryBuffer(name, data, length);
++}
++
++int SPOUTImpl::ReadMemoryBuffer(const char* name, char* data, int maxlength)
++{
++	return spout->ReadMemoryBuffer(name, data, maxlength);
++}
++
++bool SPOUTImpl::CreateMemoryBuffer(const char *name, int length)
++{
++	return spout->CreateMemoryBuffer(name, length);
++}
++
++bool SPOUTImpl::DeleteMemoryBuffer()
++{
++	return spout->DeleteMemoryBuffer();
++}
++
++int SPOUTImpl::GetMemoryBufferSize(const char *name)
++{
++	return spout->GetMemoryBufferSize(name);
++}
++
++
++//
++// ======================= Logging and registry utilities =======================
++//
++// These functions use the spoututils namespace directly
++//
++
++// Logging
++
++void SPOUTImpl::OpenSpoutConsole()
++{
++	spoututils::OpenSpoutConsole();
++}
++
++void SPOUTImpl::CloseSpoutConsole(bool bWarning)
++{
++	spoututils::CloseSpoutConsole(bWarning);
++}
++
++void SPOUTImpl::EnableSpoutLog()
++{
++	spoututils::EnableSpoutLog();
++}
++
++void SPOUTImpl::EnableSpoutLogFile(const char* filename, bool append)
++{
++	spoututils::EnableSpoutLogFile(filename, append);
++}
++
++std::string SPOUTImpl::GetSpoutLog()
++{
++	return spoututils::GetSpoutLog();
++}
++
++void SPOUTImpl::ShowSpoutLogs()
++{
++	spoututils::ShowSpoutLogs();
++}
++
++void SPOUTImpl::DisableSpoutLog()
++{
++	spoututils::DisableSpoutLog();
++}
++
++void SPOUTImpl::SetSpoutLogLevel(SpoutLibLogLevel level)
++{
++	spoututils::SetSpoutLogLevel(static_cast<spoututils::SpoutLogLevel>(level));
++}
++
++void SPOUTImpl::SpoutLog(const char* format, ...)
++{
++	va_list args;
++	va_start(args, format);
++	spoututils::_doLog(spoututils::SPOUT_LOG_NONE, format, args);
++	va_end(args);
++}
++
++void SPOUTImpl::SpoutLogVerbose(const char* format, ...)
++{
++	va_list args;
++	va_start(args, format);
++	spoututils::_doLog(spoututils::SPOUT_LOG_VERBOSE, format, args);
++	va_end(args);
++}
++
++void SPOUTImpl::SpoutLogNotice(const char* format, ...)
++{
++	va_list args;
++	va_start(args, format);
++	spoututils::_doLog(spoututils::SPOUT_LOG_NOTICE, format, args);
++	va_end(args);
++}
++
++void SPOUTImpl::SpoutLogWarning(const char* format, ...)
++{
++	va_list args;
++	va_start(args, format);
++	spoututils::_doLog(spoututils::SPOUT_LOG_WARNING, format, args);
++	va_end(args);
++}
++
++void SPOUTImpl::SpoutLogError(const char* format, ...)
++{
++	va_list args;
++	va_start(args, format);
++	spoututils::_doLog(spoututils::SPOUT_LOG_ERROR, format, args);
++	va_end(args);
++}
++
++void SPOUTImpl::SpoutLogFatal(const char* format, ...)
++{
++	va_list args;
++	va_start(args, format);
++	spoututils::_doLog(spoututils::SPOUT_LOG_FATAL, format, args);
++	va_end(args);
++}
++
++int SPOUTImpl::SpoutMessageBox(const char * message, DWORD dwMilliseconds)
++{
++	return spoututils::SpoutMessageBox(message, dwMilliseconds);
++}
++
++int SPOUTImpl::SpoutMessageBox(HWND hwnd, LPCSTR message, LPCSTR caption, UINT uType, DWORD dwMilliseconds)
++{
++	return spoututils::SpoutMessageBox(hwnd, message, caption, uType, dwMilliseconds);
++}
++
++// Registry utilities
++
++bool SPOUTImpl::ReadDwordFromRegistry(HKEY hKey, const char *subkey, const char *valuename, DWORD *pValue)
++{
++	return spoututils::ReadDwordFromRegistry(hKey, subkey, valuename, pValue);
++}
++
++bool SPOUTImpl::WriteDwordToRegistry(HKEY hKey, const char *subkey, const char *valuename, DWORD dwValue)
++{
++	return spoututils::WriteDwordToRegistry(hKey, subkey, valuename, dwValue);
++}
++
++bool SPOUTImpl::ReadPathFromRegistry(HKEY hKey, const char *subkey, const char *valuename, char *filepath)
++{
++	return spoututils::ReadPathFromRegistry(hKey, subkey, valuename, filepath);
++}
++
++bool SPOUTImpl::WritePathToRegistry(HKEY hKey, const char *subkey, const char *valuename, const char *filepath)
++{
++	return spoututils::WritePathToRegistry(hKey, subkey, valuename, filepath);
++}
++
++bool SPOUTImpl::RemovePathFromRegistry(HKEY hKey, const char *subkey, const char *valuename)
++{
++	return spoututils::RemovePathFromRegistry(hKey, subkey, valuename);
++}
++
++bool SPOUTImpl::RemoveSubKey(HKEY hKey, const char *subkey)
++{
++	return spoututils::RemoveSubKey(hKey, subkey);
++}
++
++bool SPOUTImpl::FindSubKey(HKEY hKey, const char *subkey)
++{
++	return spoututils::FindSubKey(hKey, subkey);
++}
++
++std::string SPOUTImpl::GetSDKversion()
++{
++	return spoututils::GetSDKversion();
++}
++
++bool SPOUTImpl::IsLaptop()
++{
++	return spoututils::IsLaptop();
++}
++
++void SPOUTImpl::StartTiming()
++{
++	spoututils::StartTiming();
++}
++
++double SPOUTImpl::EndTiming()
++{
++	return spoututils::EndTiming();
++}
++
++bool SPOUTImpl::IsInitialized()
++{
++	return spout->IsSpoutInitialized();
++}
++
++bool SPOUTImpl::BindSharedTexture()
++{
++	return spout->BindSharedTexture();
++}
++
++bool SPOUTImpl::UnBindSharedTexture()
++{
++	return spout->UnBindSharedTexture();
++}
++
++GLuint SPOUTImpl::GetSharedTextureID()
++{
++	return spout->GetSharedTextureID();
++}
++
++int  SPOUTImpl::GetSenderCount()
++{
++	return spout->GetSenderCount();
++}
++
++bool SPOUTImpl::GetSender(int index, char* sendername, int MaxSize)
++{
++	return spout->GetSender(index, sendername, MaxSize);
++}
++
++bool SPOUTImpl::FindSenderName(const char* sendername)
++{
++	return spout->sendernames.FindSenderName(sendername);
++}
++
++bool SPOUTImpl::GetSenderInfo(const char* sendername, unsigned int &width, unsigned int &height, HANDLE &dxShareHandle, DWORD &dwFormat)
++{
++	return spout->GetSenderInfo(sendername, width, height, dxShareHandle, dwFormat);
++}
++
++bool SPOUTImpl::GetActiveSender(char* Sendername)
++{
++	return spout->GetActiveSender(Sendername);
++}
++
++bool SPOUTImpl::SetActiveSender(const char* Sendername)
++{
++	return spout->SetActiveSender(Sendername);
++}
++
++bool SPOUTImpl::GetBufferMode()
++{
++	return spout->GetBufferMode();
++}
++
++void SPOUTImpl::SetBufferMode(bool bActive)
++{
++	spout->SetBufferMode(bActive);
++}
++
++int SPOUTImpl::GetBuffers()
++{
++	return spout->GetBuffers();
++}
++
++void SPOUTImpl::SetBuffers(int nBuffers)
++{
++	spout->SetBuffers(nBuffers);
++}
++
++int  SPOUTImpl::GetMaxSenders()
++{
++	return spout->GetMaxSenders();
++}
++
++void SPOUTImpl::SetMaxSenders(int maxSenders)
++{
++	spout->SetMaxSenders(maxSenders);
++}
++
++
++//
++// For 2.006 compatibility
++//
++
++//
++// ======================= 2.006 and earlier =======================
++//
++
++//
++// Sender
++//
++bool SPOUTImpl::CreateSender(const char *Sendername, unsigned int width, unsigned int height, DWORD dwFormat)
++{
++	return spout->CreateSender(Sendername, width, height, dwFormat);
++}
++
++bool SPOUTImpl::UpdateSender(const char* Sendername, unsigned int width, unsigned int height)
++{
++	return spout->UpdateSender(Sendername, width, height);
++}
++
++// 
++// Receiver
++//
++bool SPOUTImpl::CreateReceiver(char* Sendername, unsigned int &width, unsigned int &height, bool bUseActive)
++{
++	return spout->CreateReceiver(Sendername, width, height, bUseActive);
++}
++
++bool SPOUTImpl::CheckReceiver(char* Sendername, unsigned int &width, unsigned int &height, bool &bConnected)
++{
++	return spout->CheckReceiver(Sendername, width, height, bConnected);
++}
++
++bool SPOUTImpl::GetDX9()
++{
++	return spout->GetDX9();
++}
++
++bool SPOUTImpl::SetDX9(bool bDX9)
++{
++	return spout->SetDX9(bDX9);
++}
++
++bool SPOUTImpl::GetMemoryShareMode()
++{
++	return spout->GetMemoryShareMode();
++}
++
++bool SPOUTImpl::SetMemoryShareMode(bool bMem)
++{
++	return spout->SetMemoryShareMode(bMem);
++}
++
++bool SPOUTImpl::GetCPUmode()
++{
++	return spout->GetCPUmode();
++}
++
++bool SPOUTImpl::SetCPUmode(bool bCPU)
++{
++	return spout->SetCPUmode(bCPU);
++}
++
++int SPOUTImpl::GetShareMode()
++{
++	return spout->GetShareMode();
++}
++
++void SPOUTImpl::SetShareMode(int mode)
++{
++	spout->SetShareMode(mode);
++}
++
++void SPOUTImpl::SelectSenderPanel()
++{
++	spout->SelectSender();
++}
++
++
++//
++// Information
++//
++
++bool SPOUTImpl::GetHostPath(const char *sendername, char *hostpath, int maxchars)
++{
++	return spout->GetHostPath(sendername, hostpath, maxchars);
++}
++
++int SPOUTImpl::GetVerticalSync()
++{
++	return spout->GetVerticalSync();
++}
++
++bool SPOUTImpl::SetVerticalSync(bool bSync)
++{
++	return spout->SetVerticalSync(bSync);
++}
++
++int SPOUTImpl::GetSpoutVersion()
++{
++	return spout->GetSpoutVersion();
++}
++
++
++//
++// Graphics compatibility
++//
++
++bool SPOUTImpl::GetAutoShare()
++{
++	return spout->GetAutoShare();
++}
++
++void SPOUTImpl::SetAutoShare(bool bAuto)
++{
++	spout->SetAutoShare(bAuto);
++}
++
++bool SPOUTImpl::IsGLDXready()
++{
++	return spout->IsGLDXready();
++}
++
++//
++// Adapter functions
++//
++
++int SPOUTImpl::GetNumAdapters()
++{
++	return spout->GetNumAdapters();
++}
++
++bool SPOUTImpl::GetAdapterName(int index, char *adaptername, int maxchars)
++{
++	return spout->GetAdapterName(index, adaptername, maxchars);
++}
++
++char * SPOUTImpl::AdapterName()
++{
++	return spout->AdapterName();
++}
++
++int SPOUTImpl::GetAdapter()
++{
++	return spout->GetAdapter();
++}
++
++// Windows 10+ SDK required
++#ifdef NTDDI_WIN10_RS4
++
++int SPOUTImpl::GetPerformancePreference(const char* path)
++{
++	return spout->GetPerformancePreference(path);
++}
++
++bool SPOUTImpl::SetPerformancePreference(int preference, const char* path)
++{
++	return spout->SetPerformancePreference(preference, path);
++}
++
++bool SPOUTImpl::GetPreferredAdapterName(int preference, char* adaptername, int maxchars)
++{
++	return spout->GetPreferredAdapterName(preference, adaptername, maxchars);
++}
++
++bool SPOUTImpl::SetPreferredAdapter(int preference)
++{
++	return spout->SetPreferredAdapter(preference);
++}
++
++bool SPOUTImpl::IsPreferenceAvailable()
++{
++	return spout->IsPreferenceAvailable();
++}
++
++bool SPOUTImpl::IsApplicationPath(const char* path)
++{
++	return spout->IsApplicationPath(path);
++}
++#endif
++
++
++//
++// OpenGL utilities
++//
++
++bool SPOUTImpl::CreateOpenGL()
++{
++	return spout->CreateOpenGL();
++}
++
++bool SPOUTImpl::CloseOpenGL()
++{
++	return spout->CloseOpenGL();
++}
++
++bool SPOUTImpl::CopyTexture(GLuint SourceID, GLuint SourceTarget,
++	GLuint DestID, GLuint DestTarget,
++	unsigned int width, unsigned int height,
++	bool bInvert, GLuint HostFBO)
++{
++	return spout->CopyTexture(SourceID, SourceTarget, DestID, DestTarget,
++								width, height, bInvert, HostFBO);
++}
++
++//
++// DirectX utilities
++//
++
++bool SPOUTImpl::OpenDirectX()
++{
++	return spout->OpenDirectX();
++}
++
++void SPOUTImpl::CloseDirectX()
++{
++	spout->CloseDirectX();
++}
++
++bool SPOUTImpl::OpenDirectX11(void * pDevice)
++{
++	// A cast from void* can use static_cast
++	return spout->OpenDirectX11(static_cast<ID3D11Device*>(pDevice));
++}
++
++void SPOUTImpl::CloseDirectX11()
++{
++	spout->spoutdx.CloseDirectX11();
++}
++
++void * SPOUTImpl::GetDX11Device()
++{
++	// void cast conversion can be implicit
++	return spout->GetDX11Device();
++}
++
++void * SPOUTImpl::GetDX11Context()
++{
++	// void cast conversion can be implicit
++	return spout->GetDX11Device();
++}
++
++
++//
++// Class function
++//
++
++void SPOUTImpl::Release()
++{
++	// Delete the spout object instance
++	delete(spout);
++	spout = nullptr;
++	// Delete this class instance
++	delete this;
++}
++
++
++////////////////////////////////////////////////////////////////////////////////
++// Factory function that creates instances if the SPOUT object.
++//
++// Export both decorated and undecorated names. For example :
++//		 GetSpout    - Undecorated name, which can be easily used with GetProcAddress
++//                     Win32 API function.
++//		_GetSpout@0  - Common name decoration for __stdcall functions in C language.
++//
++// For more information on name decoration see here:
++// "Format of a C Decorated Name"
++// http://msdn.microsoft.com/en-us/library/x7kb4e2f.aspx
++
++#if !defined(_WIN64)
++// This pragma is required only for 32-bit builds.
++// In a 64-bit environment, C functions are not decorated.
++#pragma comment(linker, "/export:GetSpout=_GetSpout@0")
++#endif  // _WIN64
++
++extern "C" SPOUTAPI SPOUTHANDLE APIENTRY GetSpout()
++{
++	// The Spout class implementation
++	SPOUTImpl * pSpout = new SPOUTImpl;
++
++	// Create a new spout pointer for this class
++	pSpout->spout = new Spout;
++
++	return pSpout;
++}
++
++////////////////////////////////////////////////////////////////////////////////
+diff --git a/thirdparty/spout-library/SpoutLibrary.h b/thirdparty/spout-library/SpoutLibrary.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..93042fdc1357fef69dc448919714ddadfd98230b
+--- /dev/null
++++ b/thirdparty/spout-library/SpoutLibrary.h
+@@ -0,0 +1,486 @@
++//
++//	SpoutLibrary.dll
++//
++//	Spout SDK dll compatible with any C++ compiler
++//
++/*
++		Copyright (c) 2016-2023, Lynn Jarvis. All rights reserved.
++
++		Redistribution and use in source and binary forms, with or without modification, 
++		are permitted provided that the following conditions are met:
++
++		1. Redistributions of source code must retain the above copyright notice, 
++		   this list of conditions and the following disclaimer.
++
++		2. Redistributions in binary form must reproduce the above copyright notice, 
++		   this list of conditions and the following disclaimer in the documentation 
++		   and/or other materials provided with the distribution.
++
++		THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"	AND ANY 
++		EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES 
++		OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE	ARE DISCLAIMED. 
++		IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, 
++		INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
++		PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
++		INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
++		LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++		OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
++*/
++#pragma once
++
++#ifdef _MSC_VER
++#pragma warning(disable : 26433) // Function should be marked with 'override'
++#endif
++
++// for definitions
++#include <windows.h>
++#include <string>
++
++// Re-define to avoid include of GL.h 
++typedef unsigned int GLuint;
++typedef unsigned int GLenum;
++#ifndef GL_RGBA
++#define GL_RGBA 0x1908
++#endif
++
++#define SPOUTLIBRARY_EXPORTS // defined for this DLL. The application imports rather than exports
++
++#ifdef SPOUTLIBRARY_EXPORTS
++#define SPOUTAPI __declspec(dllexport)
++#else
++#define SPOUTAPI __declspec(dllimport)
++#endif
++
++// Local log level definitions for SetSpoutLogLevel.
++// "SpoutLogLevel" enum conflicts with previous definition
++// in SpoutUtils if it is used in the application.
++// Change enum name to "SpoutLibLogLevel".
++//
++// Option : disable warning C26812 (unscoped enums) for Visual Studio.
++//
++// Use of C++11 scoped (class) enums are not compatible with early compilers (< VS2012 and others).
++// For Visual Studio, this warning is designated "Prefer" and "C" standard unscoped enums are
++// therefore retained for compatibility. The warning can be enabled or disabled here.
++//
++#ifdef _MSC_VER
++#pragma warning(disable:26812)
++#endif
++
++//
++enum SpoutLibLogLevel {
++	SPOUT_LOG_SILENT,
++	SPOUT_LOG_VERBOSE,
++	SPOUT_LOG_NOTICE,
++	SPOUT_LOG_WARNING,
++	SPOUT_LOG_ERROR,
++	SPOUT_LOG_FATAL,
++	SPOUT_LOG_NONE
++};
++
++////////////////////////////////////////////////////////////////////////////////
++//
++// COM-Like abstract interface.
++// This interface doesn't require __declspec(dllexport/dllimport) specifier.
++// Method calls are dispatched via virtual table.
++// Any C++ compiler can use it.
++// Instances are obtained via factory function.
++//
++
++struct SPOUTLIBRARY
++{
++
++	//
++	// Sender
++	//
++
++	virtual void SetSenderName(const char* sendername = nullptr) = 0;
++	// Set the sender DX11 shared texture format
++	virtual void SetSenderFormat(DWORD dwFormat) = 0;
++	// Close sender and free resources
++	//   A sender is created or updated by all sending functions
++	virtual void ReleaseSender(DWORD dwMsec = 0) = 0;
++	// Send texture attached to fbo
++	//   The fbo must be currently bound
++	//   The sending texture can be larger than the size that the sender is set up for
++	//   For example, if the application is using only a portion of the allocated texture space,  
++	//   such as for Freeframe plugins. (The 2.006 equivalent is DrawToSharedTexture)
++	//   To send the OpenGL default framebuffer, specify "0" for the fbo ID, width and height.
++	virtual bool SendFbo(GLuint FboID, unsigned int width, unsigned int height, bool bInvert = true) = 0;
++	// Send OpenGL texture
++	virtual bool SendTexture(GLuint TextureID, GLuint TextureTarget, unsigned int width, unsigned int height, bool bInvert = true, GLuint HostFBO = 0) = 0;
++	// Send image pixels
++	virtual bool SendImage(const unsigned char* pixels, unsigned int width, unsigned int height, GLenum glFormat = GL_RGBA, bool bInvert = false) = 0;
++	// Sender name
++	virtual const char * GetName() = 0;
++	// Sender width
++	virtual unsigned int GetWidth() = 0;
++	// Sender height
++	virtual unsigned int GetHeight() = 0;
++	// Sender frame rate
++	virtual double GetFps() = 0;
++	// Sender frame number
++	virtual long GetFrame() = 0;
++	// Sender share handle
++	virtual HANDLE GetHandle() = 0;
++	// Sender sharing method
++	virtual bool GetCPU() = 0;
++	// Sender GL/DX hardware compatibility
++	virtual bool GetGLDX() = 0;
++
++	//
++	// Receiver
++	//
++
++	// Specify sender for connection
++	//   If a name is specified, the receiver will not connect to any other unless the user selects one
++	//   If that sender closes, the receiver will wait for the nominated sender to open 
++	//   If no name is specified, the receiver will connect to the active sender
++	virtual void SetReceiverName(const char* SenderName = nullptr) = 0;
++	// Close receiver and release resources ready to connect to another sender
++	virtual void ReleaseReceiver() = 0;
++
++	// Receive texture
++	//   If no arguments, connect to a sender and retrieve texture details ready for access
++	//	 (see BindSharedTexture and UnBindSharedTexture)
++	// 	 Connect to a sender and inform the application to update
++	//   the receiving texture if it has changed dimensions
++	//   For no change, copy the sender shared texture to the application texture
++	virtual bool ReceiveTexture(GLuint TextureID = 0, GLuint TextureTarget = 0, bool bInvert = false, GLuint HostFbo = 0) = 0;
++	// Receive image pixels
++	//   Connect to a sender and inform the application to update
++	//   the receiving buffer if it has changed dimensions
++	//   For no change, copy the sender shared texture to the pixel buffer
++	virtual bool ReceiveImage(unsigned char *pixels, GLenum glFormat = GL_RGBA, bool bInvert = false, GLuint HostFbo = 0) = 0;
++	// Query whether the sender has changed
++	//   Checked at every cycle before receiving data
++	virtual bool IsUpdated() = 0;
++	// Query sender connection
++	//   If the sender closes, receiving functions return false,  
++	virtual bool IsConnected() = 0;
++	// Query received frame status
++	//   The receiving texture or pixel buffer is only refreshed if the sender has produced a new frame  
++	//   This can be queried to process texture data only for new frames
++	virtual bool IsFrameNew() = 0;
++	// Get sender name
++	virtual const char * GetSenderName() = 0;
++	// Get sender width
++	virtual unsigned int GetSenderWidth() = 0;
++	// Get sender height
++	virtual unsigned int GetSenderHeight() = 0;
++	// Get sender DirectX texture format
++	virtual DWORD GetSenderFormat() = 0;
++	// Get sender frame rate
++	virtual double GetSenderFps() = 0;
++	// Get sender frame number
++	virtual long GetSenderFrame() = 0;
++	// Received sender share handle
++	virtual HANDLE GetSenderHandle() = 0;
++	// Received sender sharing mode
++	virtual bool GetSenderCPU() = 0;
++	// Received sender GL/DX compatibility
++	virtual bool GetSenderGLDX() = 0;
++	// Open sender selection dialog
++	virtual void SelectSender() = 0;
++
++	//
++	// Frame count
++	//
++
++	// Enable or disable frame counting globally
++	virtual void SetFrameCount(bool bEnable) = 0;
++	// Disable frame counting specifically for this application
++	virtual void DisableFrameCount() = 0;
++	// Return frame count status
++	virtual bool IsFrameCountEnabled() = 0;
++	// Sender frame rate control
++	virtual void HoldFps(int fps) = 0;
++	// Get system refresh rate
++	virtual double GetRefreshRate() = 0;
++	// Signal sync event 
++	virtual void SetFrameSync(const char* SenderName) = 0;
++	// Wait or test for a sync event
++	virtual bool WaitFrameSync(const char *SenderName, DWORD dwTimeout = 0) = 0;
++
++
++	//
++	// Data sharing
++	//
++
++	// Write data
++	virtual bool WriteMemoryBuffer(const char *sendername, const char* data, int length) = 0;
++	// Read data
++	virtual int  ReadMemoryBuffer(const char* sendername, char* data, int maxlength) = 0;
++	// Create a shared memory buffer
++	virtual bool CreateMemoryBuffer(const char *name, int length) = 0;
++	// Delete a shared memory buffer
++	virtual bool DeleteMemoryBuffer() = 0;
++	// Get the number of bytes available for data transfer
++	virtual int GetMemoryBufferSize(const char *name) = 0;
++
++	//
++	// Log utilities
++	//
++
++	// Open console for debugging
++	virtual void OpenSpoutConsole() = 0;
++	// Close console
++	virtual void CloseSpoutConsole(bool bWarning = false) = 0;
++	// Enable spout log to the console
++	virtual void EnableSpoutLog() = 0;
++	// Enable spout log to a file with optional append
++	virtual void EnableSpoutLogFile(const char* filename, bool bappend = false) = 0;
++	// Return the log file as a string
++	virtual std::string GetSpoutLog() = 0;
++	// Show the log file folder in Windows Explorer
++	virtual void ShowSpoutLogs() = 0;
++	// Disable logging
++	virtual void DisableSpoutLog() = 0;
++	// Set the current log level
++	// SPOUT_LOG_SILENT  - Disable all messages
++	// SPOUT_LOG_VERBOSE - Show all messages
++	// SPOUT_LOG_NOTICE  - Show information messages - default
++	// SPOUT_LOG_WARNING - Something might go wrong
++	// SPOUT_LOG_ERROR   - Something did go wrong
++	// SPOUT_LOG_FATAL   - Something bad happened
++	virtual void SetSpoutLogLevel(SpoutLibLogLevel level) = 0;
++	// General purpose log
++	virtual void SpoutLog(const char* format, ...) = 0;
++	// Verbose - show log for SPOUT_LOG_VERBOSE or above
++	virtual void SpoutLogVerbose(const char* format, ...) = 0;
++	// Notice - show log for SPOUT_LOG_NOTICE or above
++	virtual void SpoutLogNotice(const char* format, ...) = 0;
++	// Warning - show log for SPOUT_LOG_WARNING or above
++	virtual void SpoutLogWarning(const char* format, ...) = 0;
++	// Error - show log for SPOUT_LOG_ERROR or above
++	virtual void SpoutLogError(const char* format, ...) = 0;
++	// Fatal - always show log
++	virtual void SpoutLogFatal(const char* format, ...) = 0;
++	// MessageBox dialog with optional timeout
++	//   Used where a Windows MessageBox would interfere with the application GUI
++	//   The dialog closes itself if a timeout is specified
++	virtual int SpoutMessageBox(const char * message, DWORD dwMilliseconds = 0) = 0;
++	// MessageBox dialog with standard arguments
++	//   Replaces an existing MessageBox call
++	virtual int SpoutMessageBox(HWND hwnd, LPCSTR message, LPCSTR caption, UINT uType, DWORD dwMilliseconds = 0) = 0;
++
++	//
++	// Registry utilities
++	//
++	// Read subkey DWORD value
++	virtual bool ReadDwordFromRegistry(HKEY hKey, const char *subkey, const char *valuename, DWORD *pValue) = 0;
++	// Write subkey DWORD value
++	virtual bool WriteDwordToRegistry(HKEY hKey, const char *subkey, const char *valuename, DWORD dwValue) = 0;
++	// Read subkey character string
++	virtual bool ReadPathFromRegistry(HKEY hKey, const char *subkey, const char *valuename, char *filepath) = 0;
++	// Write subkey character string
++	virtual bool WritePathToRegistry(HKEY hKey, const char *subkey, const char *valuename, const char *filepath) = 0;
++	// Remove subkey value name
++	virtual bool RemovePathFromRegistry(HKEY hKey, const char *subkey, const char *valuename) = 0;
++	// Delete a subkey and its values.
++	//   It must be a subkey of the key that hKey identifies, but it cannot have subkeys.  
++	//   Note that key names are not case sensitive.  
++	virtual bool RemoveSubKey(HKEY hKey, const char *subkey) = 0;
++	// Find subkey
++	virtual bool FindSubKey(HKEY hKey, const char *subkey) = 0;
++
++	//
++	// Computer information
++	//
++	virtual std::string GetSDKversion() = 0;
++	virtual bool IsLaptop() = 0;
++
++	//
++	// Timing utilities
++	//
++	virtual void StartTiming() = 0;
++	virtual double EndTiming() = 0;
++
++	// -----------------------------------------
++
++	// Initialization status
++	virtual bool IsInitialized() = 0;
++	// Bind OpenGL shared texture
++	virtual bool BindSharedTexture() = 0;
++	// Un-bind OpenGL shared texture
++	virtual bool UnBindSharedTexture() = 0;
++	// OpenGL shared texture ID
++	virtual GLuint GetSharedTextureID() = 0;
++
++	//
++	// Sender names
++	//
++
++	// Number of senders
++	virtual int GetSenderCount() = 0;
++	// Sender item name
++	virtual bool GetSender(int index, char* sendername, int MaxSize = 256) = 0;
++	// Find a sender in the list
++	virtual bool FindSenderName(const char* sendername) = 0;
++	// Sender information
++	virtual bool GetSenderInfo(const char* sendername, unsigned int &width, unsigned int &height, HANDLE &dxShareHandle, DWORD &dwFormat) = 0;
++	// Current active sender
++	virtual bool GetActiveSender(char* Sendername) = 0;
++	// Set sender as active
++	virtual bool SetActiveSender(const char* Sendername) = 0;
++	
++	//
++	// Get user registry settings recorded by "SpoutSettings"
++	// Set them either to the registry or for the application only
++	//
++
++	// Get user buffering mode
++	virtual bool GetBufferMode() = 0;
++	// Set application buffering mode
++	virtual void SetBufferMode(bool bActive = true) = 0;
++	// Get user number of pixel buffers
++	virtual int GetBuffers() = 0;
++	// Set application number of pixel buffers
++	virtual void SetBuffers(int nBuffers) = 0;
++	// Get user Maximum senders allowed
++	virtual int GetMaxSenders() = 0;
++	// Set user Maximum senders allowed
++	virtual void SetMaxSenders(int maxSenders) = 0;
++
++	//
++	// 2.006 compatibility
++	//
++
++	// Create a sender
++	virtual bool CreateSender(const char *Sendername, unsigned int width, unsigned int height, DWORD dwFormat = 0) = 0;
++	// Update a sender
++	virtual bool UpdateSender(const char* Sendername, unsigned int width, unsigned int height) = 0;
++	// Create receiver connection
++	virtual bool CreateReceiver(char* Sendername, unsigned int &width, unsigned int &height, bool bUseActive = false) = 0;
++	// Check receiver connection
++	virtual bool CheckReceiver(char* Sendername, unsigned int &width, unsigned int &height, bool &bConnected) = 0;
++	// Get user DX9 mode
++	virtual bool GetDX9() = 0;
++	// Set user DX9 mode
++	virtual bool SetDX9(bool bDX9 = true) = 0;
++	// Get user memory share mode
++	virtual bool GetMemoryShareMode() = 0;
++	// Set user memory share mode
++	virtual bool SetMemoryShareMode(bool bMem = true) = 0;
++	// Get user CPU mode
++	virtual bool GetCPUmode() = 0;
++	// Set user CPU mode
++	virtual bool SetCPUmode(bool bCPU) = 0;
++	// Get user share mode
++	//  0 - texture, 1 - memory, 2 - CPU
++	virtual int GetShareMode() = 0;
++	// Set user share mode
++	//  0 - texture, 1 - memory, 2 - CPU
++	virtual void SetShareMode(int mode) = 0;
++	// Open sender selection dialog
++	virtual void SelectSenderPanel() = 0;
++
++	//
++	// Information
++	//
++
++	// The path of the host that produced the sender
++	virtual bool GetHostPath(const char *sendername, char *hostpath, int maxchars) = 0;
++	// Vertical sync status
++	virtual int GetVerticalSync() = 0;
++	// Lock to monitor vertical sync
++	virtual bool SetVerticalSync(bool bSync = true) = 0;
++	// Get Spout version
++	virtual int GetSpoutVersion() = 0;
++
++	//
++	// Graphics compatibility
++	//
++
++	// Get auto GPU/CPU share depending on compatibility
++	virtual bool GetAutoShare() = 0;
++	// Set auto GPU/CPU share depending on compatibility
++	virtual void SetAutoShare(bool bAuto = true) = 0;
++	// OpenGL texture share compatibility
++	virtual bool IsGLDXready() = 0;
++
++	//
++	// Adapter functions
++	//
++
++	// The number of graphics adapters in the system
++	virtual int GetNumAdapters() = 0;
++	// Adapter item name
++	virtual bool GetAdapterName(int index, char *adaptername, int maxchars) = 0;
++	// Return current adapter name
++	virtual char * AdapterName() = 0;
++	// Get adapter index 
++	virtual int GetAdapter() = 0;
++
++	//
++	// Graphics preference
++	//
++	// Windows 10+ SDK required
++	//
++#ifdef NTDDI_WIN10_RS4
++
++	// Get the Windows graphics preference for an application
++	//	-1 - Not registered
++	//	 0 - Let Windows decide  DXGI_GPU_PREFERENCE_UNSPECIFIED
++	//	 1 - Power saving        DXGI_GPU_PREFERENCE_MINIMUM_POWER
++	//	 2 - High performance    DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE
++	virtual int GetPerformancePreference(const char* path) = 0;
++	// Set the Windows graphics preference for an application
++	virtual bool SetPerformancePreference(int preference, const char* path) = 0;
++	// Get the graphics adapter name for a Windows preference
++	virtual bool GetPreferredAdapterName(int preference, char* adaptername, int maxchars) = 0;
++	// Set graphics adapter index for a Windows preference
++	virtual bool SetPreferredAdapter(int preference) = 0;
++	// Availability of Windows graphics preference
++	virtual bool IsPreferenceAvailable() = 0;
++	// Is the path a valid application
++	virtual bool IsApplicationPath(const char* path) = 0;
++#endif
++
++
++	//
++	// OpenGL utilities
++	//
++
++	// Create an OpenGL window and context for situations where there is none.
++	//   Not used if applications already have an OpenGL context.
++	//   Always call CloseOpenGL afterwards.
++	virtual bool CreateOpenGL() = 0;
++	// Close OpenGL window
++	virtual bool CloseOpenGL() = 0;
++	// Copy OpenGL texture with optional invert
++	//   Textures must be the same size
++	virtual bool CopyTexture(GLuint SourceID, GLuint SourceTarget,
++		GLuint DestID, GLuint DestTarget,
++		unsigned int width, unsigned int height,
++		bool bInvert = false, GLuint HostFBO = 0) = 0;
++
++	//
++	// DirectX utilities
++	//
++
++	virtual bool OpenDirectX() = 0;
++	virtual void CloseDirectX() = 0;
++
++	// Initialize and prepare DirectX 11
++	virtual bool OpenDirectX11(void * pDevice = nullptr) = 0;
++	virtual void CloseDirectX11() = 0;
++
++	// Return the class device
++	virtual void* GetDX11Device() = 0;
++
++	// Return the class context
++	virtual void* GetDX11Context() = 0;
++	
++	// Library release function
++    virtual void Release() = 0;
++
++};
++
++// Handle type. In C++ language the interface type is used.
++typedef SPOUTLIBRARY* SPOUTHANDLE;
++
++// Factory function that creates an instance of the SPOUT object.
++extern "C" SPOUTAPI SPOUTHANDLE WINAPI GetSpout(VOID);
++
++////////////////////////////////////////////////////////////////////////////////

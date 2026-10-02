@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="AnimationNodeExtension" inherits="AnimationNode" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="_process_animation_node" qualifiers="virtual required">
+			<return type="PackedFloat32Array" />
+			<param index="0" name="playback_info" type="PackedFloat64Array" />
+			<param index="1" name="test_only" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_remaining_time" qualifiers="static">
+			<return type="float" />
+			<param index="0" name="node_info" type="PackedFloat32Array" />
+			<param index="1" name="break_loop" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="is_looping" qualifiers="static">
+			<return type="bool" />
+			<param index="0" name="node_info" type="PackedFloat32Array" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>

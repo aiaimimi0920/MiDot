@@ -1,0 +1,1811 @@
+From cdded424f1496efeff24e727c8d5b24d1c43baa1 Mon Sep 17 00:00:00 2001
+From: aiaimimi0920 <153103332+aiaimimi0920@users.noreply.github.com>
+Date: Mon, 31 Aug 2026 01:28:43 +0800
+Subject: [PATCH] feat(theme): add string theme items
+
+Godot-Patch-Topic: ui.theme-string-items
+---
+ doc/classes/Control.xml                  |  38 +++++
+ doc/classes/Theme.xml                    |  60 +++++++-
+ doc/classes/Window.xml                   |  42 ++++++
+ editor/doc/doc_tools.cpp                 |   4 +
+ editor/scene/gui/theme_editor_plugin.cpp | 158 ++++++++++++++++++-
+ editor/scene/gui/theme_editor_plugin.h   |  10 ++
+ scene/gui/control.cpp                    | 107 ++++++++++++-
+ scene/gui/control.h                      |   7 +
+ scene/main/window.cpp                    | 105 ++++++++++++-
+ scene/main/window.h                      |   7 +
+ scene/resources/theme.cpp                | 184 +++++++++++++++++++++++
+ scene/resources/theme.h                  |  17 +++
+ tests/scene/test_control.cpp             |  24 +++
+ tests/scene/test_theme.cpp               |  26 ++++
+ tests/scene/test_window.cpp              |  24 +++
+ 15 files changed, 789 insertions(+), 24 deletions(-)
+
+diff --git a/doc/classes/Control.xml b/doc/classes/Control.xml
+index 8330738a6b2786b8f9e26aedcd2ad743f46b84de..08341da69685fec8c77908977c8bf7a01aaa7c9a 100644
+--- a/doc/classes/Control.xml
++++ b/doc/classes/Control.xml
+@@ -355,6 +355,14 @@
+ 				See also [method get_theme_icon].
+ 			</description>
+ 		</method>
++		<method name="add_theme_string_override">
++			<return type="void" />
++			<param index="0" name="name" type="StringName" />
++			<param index="1" name="value" type="String" />
++			<description>
++				Creates a local override for a theme string with the specified [param name]. Local overrides take precedence when fetching theme items for this control.
++			</description>
++		</method>
+ 		<method name="add_theme_stylebox_override">
+ 			<return type="void" />
+ 			<param index="0" name="name" type="StringName" />
+@@ -673,6 +681,14 @@
+ 				See [method get_theme_color] for details.
+ 			</description>
+ 		</method>
++		<method name="get_theme_string" qualifiers="const">
++			<return type="String" />
++			<param index="0" name="name" type="StringName" />
++			<param index="1" name="theme_type" type="StringName" default="&amp;&quot;&quot;" />
++			<description>
++				Returns a string from the first matching [Theme] in the tree with the specified [param name] and [param theme_type], or an empty string if it is unavailable.
++			</description>
++		</method>
+ 		<method name="get_theme_stylebox" qualifiers="const">
+ 			<return type="StyleBox" />
+ 			<param index="0" name="name" type="StringName" />
+@@ -841,6 +857,21 @@
+ 				See [method add_theme_icon_override].
+ 			</description>
+ 		</method>
++		<method name="has_theme_string" qualifiers="const">
++			<return type="bool" />
++			<param index="0" name="name" type="StringName" />
++			<param index="1" name="theme_type" type="StringName" default="&amp;&quot;&quot;" />
++			<description>
++				Returns [code]true[/code] if there is a local override or matching [Theme] string with the specified [param name] and [param theme_type].
++			</description>
++		</method>
++		<method name="has_theme_string_override" qualifiers="const">
++			<return type="bool" />
++			<param index="0" name="name" type="StringName" />
++			<description>
++				Returns [code]true[/code] if there is a local override for a theme string with the specified [param name].
++			</description>
++		</method>
+ 		<method name="has_theme_stylebox" qualifiers="const">
+ 			<return type="bool" />
+ 			<param index="0" name="name" type="StringName" />
+@@ -926,6 +957,13 @@
+ 				Removes a local override for a theme icon with the specified [param name] previously added by [method add_theme_icon_override] or via the Inspector dock.
+ 			</description>
+ 		</method>
++		<method name="remove_theme_string_override">
++			<return type="void" />
++			<param index="0" name="name" type="StringName" />
++			<description>
++				Removes a local theme string override with the specified [param name].
++			</description>
++		</method>
+ 		<method name="remove_theme_stylebox_override">
+ 			<return type="void" />
+ 			<param index="0" name="name" type="StringName" />
+diff --git a/doc/classes/Theme.xml b/doc/classes/Theme.xml
+index 77aa2f824585218abc3c173094d2e4643e0db3a7..0c9778bc1844eaeef3ead4a587b7037c56d0a863 100644
+--- a/doc/classes/Theme.xml
++++ b/doc/classes/Theme.xml
+@@ -97,6 +97,14 @@
+ 				Fails if it doesn't exist. Use [method has_stylebox] to check for existence.
+ 			</description>
+ 		</method>
++		<method name="clear_string">
++			<return type="void" />
++			<param index="0" name="name" type="StringName" />
++			<param index="1" name="theme_type" type="StringName" />
++			<description>
++				Removes the string property defined by [param name] and [param theme_type]. Fails if it does not exist; use [method has_string] to check first.
++			</description>
++		</method>
+ 		<method name="clear_theme_item">
+ 			<return type="void" />
+ 			<param index="0" name="data_type" type="int" enum="Theme.DataType" />
+@@ -291,6 +299,27 @@
+ 				Returns a list of all unique theme type names for [StyleBox] properties. Use [method get_type_list] to get a list of all unique theme types.
+ 			</description>
+ 		</method>
++		<method name="get_string" qualifiers="const">
++			<return type="String" />
++			<param index="0" name="name" type="StringName" />
++			<param index="1" name="theme_type" type="StringName" />
++			<description>
++				Returns the string property defined by [param name] and [param theme_type], or an empty string if it is unavailable.
++			</description>
++		</method>
++		<method name="get_string_list" qualifiers="const">
++			<return type="PackedStringArray" />
++			<param index="0" name="theme_type" type="String" />
++			<description>
++				Returns the names of string properties defined for [param theme_type].
++			</description>
++		</method>
++		<method name="get_string_type_list" qualifiers="const">
++			<return type="PackedStringArray" />
++			<description>
++				Returns all unique theme type names that define string properties.
++			</description>
++		</method>
+ 		<method name="get_theme_item" qualifiers="const">
+ 			<return type="Variant" />
+ 			<param index="0" name="data_type" type="int" enum="Theme.DataType" />
+@@ -436,6 +465,14 @@
+ 				Returns [code]false[/code] if it doesn't exist. Use [method set_stylebox] to define it.
+ 			</description>
+ 		</method>
++		<method name="has_string" qualifiers="const">
++			<return type="bool" />
++			<param index="0" name="name" type="StringName" />
++			<param index="1" name="theme_type" type="StringName" />
++			<description>
++				Returns [code]true[/code] if a string property defined by [param name] and [param theme_type] exists. Empty string values still count as existing properties.
++			</description>
++		</method>
+ 		<method name="has_theme_item" qualifiers="const">
+ 			<return type="bool" />
+ 			<param index="0" name="data_type" type="int" enum="Theme.DataType" />
+@@ -548,6 +585,15 @@
+ 				Fails if it doesn't exist, or if a similar property with the new name already exists. Use [method has_stylebox] to check for existence, and [method clear_stylebox] to remove the existing property.
+ 			</description>
+ 		</method>
++		<method name="rename_string">
++			<return type="void" />
++			<param index="0" name="old_name" type="StringName" />
++			<param index="1" name="name" type="StringName" />
++			<param index="2" name="theme_type" type="StringName" />
++			<description>
++				Renames the string property defined by [param old_name] and [param theme_type] to [param name]. Fails if the old property does not exist or the new name is already used.
++			</description>
++		</method>
+ 		<method name="rename_theme_item">
+ 			<return type="void" />
+ 			<param index="0" name="data_type" type="int" enum="Theme.DataType" />
+@@ -641,6 +687,15 @@
+ 				Creates or changes the value of the [StyleBox] property defined by [param name] and [param theme_type]. Use [method clear_stylebox] to remove the property.
+ 			</description>
+ 		</method>
++		<method name="set_string">
++			<return type="void" />
++			<param index="0" name="name" type="StringName" />
++			<param index="1" name="theme_type" type="StringName" />
++			<param index="2" name="value" type="String" />
++			<description>
++				Creates or changes the string property defined by [param name] and [param theme_type].
++			</description>
++		</method>
+ 		<method name="set_theme_item">
+ 			<return type="void" />
+ 			<param index="0" name="data_type" type="int" enum="Theme.DataType" />
+@@ -708,7 +763,10 @@
+ 		<constant name="DATA_TYPE_COLOR_SCHEME" value="7" enum="DataType">
+ 			Theme's [ColorScheme] item type.
+ 		</constant>
+-		<constant name="DATA_TYPE_MAX" value="8" enum="DataType">
++		<constant name="DATA_TYPE_STRING" value="8" enum="DataType">
++			Theme's [String] item type.
++		</constant>
++		<constant name="DATA_TYPE_MAX" value="9" enum="DataType">
+ 			Maximum value for the DataType enum.
+ 		</constant>
+ 	</constants>
+diff --git a/doc/classes/Window.xml b/doc/classes/Window.xml
+index 680df619719bef983eea7879c6a7a3839670aab1..89c24f01274eeb2fb7e50395d505c41505727eb7 100644
+--- a/doc/classes/Window.xml
++++ b/doc/classes/Window.xml
+@@ -79,6 +79,15 @@
+ 				See also [method get_theme_icon].
+ 			</description>
+ 		</method>
++		<method name="add_theme_string_override">
++			<return type="void" />
++			<param index="0" name="name" type="StringName" />
++			<param index="1" name="value" type="String" />
++			<description>
++				Creates a local override for a theme string with the specified [param name]. Local overrides always take precedence when fetching theme items for the window. An override can be removed with [method remove_theme_string_override].
++				See also [method get_theme_string].
++			</description>
++		</method>
+ 		<method name="add_theme_stylebox_override">
+ 			<return type="void" />
+ 			<param index="0" name="name" type="StringName" />
+@@ -273,6 +282,15 @@
+ 				See [method Control.get_theme_color] for details.
+ 			</description>
+ 		</method>
++		<method name="get_theme_string" qualifiers="const">
++			<return type="String" />
++			<param index="0" name="name" type="StringName" />
++			<param index="1" name="theme_type" type="StringName" default="&amp;&quot;&quot;" />
++			<description>
++				Returns a string from the first matching [Theme] in the tree if that [Theme] has a string item with the specified [param name] and [param theme_type].
++				See [method Control.get_theme_color] for details.
++			</description>
++		</method>
+ 		<method name="get_theme_stylebox" qualifiers="const">
+ 			<return type="StyleBox" />
+ 			<param index="0" name="name" type="StringName" />
+@@ -415,6 +433,23 @@
+ 				See [method add_theme_icon_override].
+ 			</description>
+ 		</method>
++		<method name="has_theme_string" qualifiers="const">
++			<return type="bool" />
++			<param index="0" name="name" type="StringName" />
++			<param index="1" name="theme_type" type="StringName" default="&amp;&quot;&quot;" />
++			<description>
++				Returns [code]true[/code] if there is a matching [Theme] in the tree that has a string item with the specified [param name] and [param theme_type].
++				See [method Control.get_theme_color] for details.
++			</description>
++		</method>
++		<method name="has_theme_string_override" qualifiers="const">
++			<return type="bool" />
++			<param index="0" name="name" type="StringName" />
++			<description>
++				Returns [code]true[/code] if there is a local override for a theme string with the specified [param name] in this [Window] node.
++				See [method add_theme_string_override].
++			</description>
++		</method>
+ 		<method name="has_theme_stylebox" qualifiers="const">
+ 			<return type="bool" />
+ 			<param index="0" name="name" type="StringName" />
+@@ -611,6 +646,13 @@
+ 				Removes a local override for a theme icon with the specified [param name] previously added by [method add_theme_icon_override] or via the Inspector dock.
+ 			</description>
+ 		</method>
++		<method name="remove_theme_string_override">
++			<return type="void" />
++			<param index="0" name="name" type="StringName" />
++			<description>
++				Removes a local override for a theme string with the specified [param name] previously added by [method add_theme_string_override] or via the Inspector dock.
++			</description>
++		</method>
+ 		<method name="remove_theme_stylebox_override">
+ 			<return type="void" />
+ 			<param index="0" name="name" type="StringName" />
+diff --git a/editor/doc/doc_tools.cpp b/editor/doc/doc_tools.cpp
+index 1b9a06e4877d3341153997f97b0c74380e8b6dee..b343b001e40f2cbc8f55cb2f720f85af2aadb5e4 100644
+--- a/editor/doc/doc_tools.cpp
++++ b/editor/doc/doc_tools.cpp
+@@ -787,6 +787,10 @@ void DocTools::generate(BitField<GenerateFlags> p_flags) {
+ 							tid.type = "ColorScheme";
+ 							tid.data_type = "color_scheme";
+ 							break;
++						case Theme::DATA_TYPE_STRING:
++							tid.type = "String";
++							tid.data_type = "string";
++							break;
+ 						case Theme::DATA_TYPE_MAX:
+ 							break; // Can't happen, but silences warning.
+ 					}
+diff --git a/editor/scene/gui/theme_editor_plugin.cpp b/editor/scene/gui/theme_editor_plugin.cpp
+index 646d5047b810e9c6606194bde03219c594cdd396..160b61374284ab4ccaa05dd4c36616604838a7bc 100644
+--- a/editor/scene/gui/theme_editor_plugin.cpp
++++ b/editor/scene/gui/theme_editor_plugin.cpp
+@@ -109,6 +109,7 @@ void ThemeItemImportTree::_update_items_tree() {
+ 	int stylebox_amount = 0;
+ 	int color_role_amount = 0;
+ 	int color_scheme_amount = 0;
++	int string_amount = 0;
+ 
+ 	tree_color_items.clear();
+ 	tree_constant_items.clear();
+@@ -118,6 +119,7 @@ void ThemeItemImportTree::_update_items_tree() {
+ 	tree_stylebox_items.clear();
+ 	tree_color_role_items.clear();
+ 	tree_color_scheme_items.clear();
++	tree_string_items.clear();
+ 
+ 	for (const StringName &E : types) {
+ 		String type_name = (String)E;
+@@ -250,6 +252,14 @@ void ThemeItemImportTree::_update_items_tree() {
+ 					color_scheme_amount += filtered_names.size();
+ 					break;
+ 
++				case Theme::DATA_TYPE_STRING:
++					data_type_node->set_icon(0, get_editor_theme_icon(SNAME("String")));
++					data_type_node->set_text(0, TTRC("Strings"));
++
++					item_list = &tree_string_items;
++					string_amount += filtered_names.size();
++					break;
++
+ 				case Theme::DATA_TYPE_MAX:
+ 					break; // Can't happen, but silences warning.
+ 			}
+@@ -392,6 +402,19 @@ void ThemeItemImportTree::_update_items_tree() {
+ 		select_full_color_schemes_button->set_visible(false);
+ 		deselect_all_color_schemes_button->set_visible(false);
+ 	}
++
++	if (string_amount > 0) {
++		Array arr = { string_amount };
++		select_strings_label->set_text(TTRN("1 string", "{num} strings", string_amount).format(arr, "{num}"));
++		select_all_strings_button->set_visible(true);
++		select_full_strings_button->set_visible(true);
++		deselect_all_strings_button->set_visible(true);
++	} else {
++		select_strings_label->set_text(TTR("No strings found."));
++		select_all_strings_button->set_visible(false);
++		select_full_strings_button->set_visible(false);
++		deselect_all_strings_button->set_visible(false);
++	}
+ }
+ 
+ void ThemeItemImportTree::_toggle_type_items(bool p_collapse) {
+@@ -517,6 +540,10 @@ void ThemeItemImportTree::_update_total_selected(Theme::DataType p_data_type) {
+ 			total_selected_items_label = total_selected_color_schemes_label;
+ 			break;
+ 
++		case Theme::DATA_TYPE_STRING:
++			total_selected_items_label = total_selected_strings_label;
++			break;
++
+ 		case Theme::DATA_TYPE_MAX:
+ 			return; // Can't happen, but silences warning.
+ 	}
+@@ -689,6 +716,10 @@ void ThemeItemImportTree::_select_all_data_type_pressed(int p_data_type) {
+ 			item_list = &tree_color_scheme_items;
+ 			break;
+ 
++		case Theme::DATA_TYPE_STRING:
++			item_list = &tree_string_items;
++			break;
++
+ 		case Theme::DATA_TYPE_MAX:
+ 			return; // Can't happen, but silences warning.
+ 	}
+@@ -752,6 +783,10 @@ void ThemeItemImportTree::_select_full_data_type_pressed(int p_data_type) {
+ 			item_list = &tree_color_scheme_items;
+ 			break;
+ 
++		case Theme::DATA_TYPE_STRING:
++			item_list = &tree_string_items;
++			break;
++
+ 		case Theme::DATA_TYPE_MAX:
+ 			return; // Can't happen, but silences warning.
+ 	}
+@@ -817,6 +852,10 @@ void ThemeItemImportTree::_deselect_all_data_type_pressed(int p_data_type) {
+ 			item_list = &tree_color_scheme_items;
+ 			break;
+ 
++		case Theme::DATA_TYPE_STRING:
++			item_list = &tree_string_items;
++			break;
++
+ 		case Theme::DATA_TYPE_MAX:
+ 			return; // Can't happen, but silences warning.
+ 	}
+@@ -901,6 +940,10 @@ void ThemeItemImportTree::_import_selected() {
+ 						item_value = Ref<ColorScheme>();
+ 						break;
+ 
++					case Theme::DATA_TYPE_STRING:
++						item_value = String();
++						break;
++
+ 					case Theme::DATA_TYPE_MAX:
+ 						break; // Can't happen, but silences warning.
+ 				}
+@@ -1018,6 +1061,11 @@ void ThemeItemImportTree::_notification(int p_what) {
+ 			deselect_all_color_schemes_button->set_button_icon(get_editor_theme_icon(SNAME("ThemeDeselectAll")));
+ 			select_all_color_schemes_button->set_button_icon(get_editor_theme_icon(SNAME("ThemeSelectAll")));
+ 			select_full_color_schemes_button->set_button_icon(get_editor_theme_icon(SNAME("ThemeSelectFull")));
++
++			select_strings_icon->set_texture(get_editor_theme_icon(SNAME("String")));
++			deselect_all_strings_button->set_button_icon(get_editor_theme_icon(SNAME("ThemeDeselectAll")));
++			select_all_strings_button->set_button_icon(get_editor_theme_icon(SNAME("ThemeSelectAll")));
++			select_full_strings_button->set_button_icon(get_editor_theme_icon(SNAME("ThemeSelectFull")));
+ 		} break;
+ 	}
+ }
+@@ -1129,6 +1177,13 @@ ThemeItemImportTree::ThemeItemImportTree() {
+ 	select_full_color_schemes_button = memnew(Button);
+ 	total_selected_color_schemes_label = memnew(Label);
+ 
++	select_strings_icon = memnew(TextureRect);
++	select_strings_label = memnew(Label);
++	deselect_all_strings_button = memnew(Button);
++	select_all_strings_button = memnew(Button);
++	select_full_strings_button = memnew(Button);
++	total_selected_strings_label = memnew(Label);
++
+ 	for (int i = 0; i < Theme::DATA_TYPE_MAX; i++) {
+ 		Theme::DataType dt = (Theme::DataType)i;
+ 
+@@ -1257,6 +1312,20 @@ ThemeItemImportTree::ThemeItemImportTree() {
+ 				deselect_all_items_tooltip = TTRC("Deselect all visible color scheme items.");
+ 				break;
+ 
++			case Theme::DATA_TYPE_STRING:
++				select_items_icon = select_strings_icon;
++				select_items_label = select_strings_label;
++				deselect_all_items_button = deselect_all_strings_button;
++				select_all_items_button = select_all_strings_button;
++				select_full_items_button = select_full_strings_button;
++				total_selected_items_label = total_selected_strings_label;
++
++				items_title = TTRC("Strings");
++				select_all_items_tooltip = TTRC("Select all visible string items.");
++				select_full_items_tooltip = TTRC("Select all visible string items and their data.");
++				deselect_all_items_tooltip = TTRC("Deselect all visible string items.");
++				break;
++
+ 			case Theme::DATA_TYPE_MAX:
+ 				continue; // Can't happen, but silences warning.
+ 		}
+@@ -1832,6 +1901,10 @@ void ThemeItemEditorDialog::_add_theme_item(Theme::DataType p_data_type, const S
+ 			ur->add_do_method(*edited_theme, "set_color_scheme", p_item_name, p_item_type, Ref<ColorScheme>());
+ 			ur->add_undo_method(*edited_theme, "clear_color_scheme", p_item_name, p_item_type);
+ 			break;
++		case Theme::DATA_TYPE_STRING:
++			ur->add_do_method(*edited_theme, "set_string", p_item_name, p_item_type, String());
++			ur->add_undo_method(*edited_theme, "clear_string", p_item_name, p_item_type);
++			break;
+ 		case Theme::DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -2024,6 +2097,9 @@ void ThemeItemEditorDialog::_open_add_theme_item_dialog(int p_data_type) {
+ 		case Theme::DATA_TYPE_COLOR_SCHEME:
+ 			edit_theme_item_dialog->set_title(TTRC("Add Color Scheme Item"));
+ 			break;
++		case Theme::DATA_TYPE_STRING:
++			edit_theme_item_dialog->set_title(TTRC("Add String Item"));
++			break;
+ 		case Theme::DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -2066,6 +2142,9 @@ void ThemeItemEditorDialog::_open_rename_theme_item_dialog(Theme::DataType p_dat
+ 		case Theme::DATA_TYPE_COLOR_SCHEME:
+ 			edit_theme_item_dialog->set_title(TTRC("Rename Color Scheme Item"));
+ 			break;
++		case Theme::DATA_TYPE_STRING:
++			edit_theme_item_dialog->set_title(TTRC("Rename String Item"));
++			break;
+ 		case Theme::DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -3118,7 +3197,7 @@ void ThemeTypeEditor::_update_type_items() {
+ 		}
+ 	}
+ 
+-	// Color schemes.
++		// Color schemes.
+ 	{
+ 		for (int i = color_scheme_items_list->get_child_count() - 1; i >= 0; i--) {
+ 			Node *node = color_scheme_items_list->get_child(i);
+@@ -3148,9 +3227,37 @@ void ThemeTypeEditor::_update_type_items() {
+ 			_add_focusable(item_editor);
+ 			color_scheme_items_list->add_child(item_control);
+ 		}
+-	}
++		}
+ 
+-	// Various type settings.
++		// Strings.
++		{
++			for (int i = string_items_list->get_child_count() - 1; i >= 0; i--) {
++				Node *node = string_items_list->get_child(i);
++				node->queue_free();
++				string_items_list->remove_child(node);
++			}
++
++			HashMap<StringName, bool> string_items = _get_type_items(edited_type, Theme::DATA_TYPE_STRING, show_default);
++			for (const KeyValue<StringName, bool> &E : string_items) {
++				HBoxContainer *item_control = _create_property_control(Theme::DATA_TYPE_STRING, E.key, E.value);
++				LineEdit *item_editor = memnew(LineEdit);
++				item_editor->set_h_size_flags(SIZE_EXPAND_FILL);
++				item_control->add_child(item_editor);
++
++				if (E.value) {
++					item_editor->set_text(edited_theme->get_string(E.key, edited_type));
++					item_editor->connect(SceneStringName(text_changed), callable_mp(this, &ThemeTypeEditor::_string_item_changed).bind(E.key));
++				} else {
++					item_editor->set_text(ThemeDB::get_singleton()->get_default_theme()->get_string(E.key, edited_type));
++					item_editor->set_editable(false);
++				}
++
++				_add_focusable(item_editor);
++				string_items_list->add_child(item_control);
++			}
++		}
++
++		// Various type settings.
+ 	if (edited_type.is_empty() || ClassDB::class_exists(edited_type)) {
+ 		type_variation_edit->set_editable(false);
+ 		type_variation_edit->set_text("");
+@@ -3297,14 +3404,23 @@ void ThemeTypeEditor::_add_default_type_items() {
+ 			}
+ 		}
+ 	}
+-	{
+-		names.clear();
+-		ThemeDB::get_singleton()->get_default_theme()->get_color_scheme_list(default_type, &names);
++		{
++			names.clear();
++			ThemeDB::get_singleton()->get_default_theme()->get_color_scheme_list(default_type, &names);
+ 		for (const StringName &E : names) {
+ 			if (!new_snapshot->has_color_scheme_nocheck(E, edited_type)) {
+ 				new_snapshot->set_color_scheme(E, edited_type, ThemeDB::get_singleton()->get_default_theme()->get_color_scheme(E, default_type));
+ 			}
+ 		}
++		{
++			names.clear();
++			ThemeDB::get_singleton()->get_default_theme()->get_string_list(default_type, &names);
++			for (const StringName &E : names) {
++				if (!new_snapshot->has_string(E, edited_type)) {
++					new_snapshot->set_string(E, edited_type, ThemeDB::get_singleton()->get_default_theme()->get_string(E, default_type));
++				}
++			}
++		}
+ 	}
+ 
+ 	updating = false;
+@@ -3376,6 +3492,10 @@ void ThemeTypeEditor::_item_add_cbk(int p_data_type, Control *p_control) {
+ 			ur->add_do_method(*edited_theme, "set_color_scheme", item_name, edited_type, Ref<ColorScheme>());
+ 			ur->add_undo_method(*edited_theme, "clear_color_scheme", item_name, edited_type);
+ 		} break;
++		case Theme::DATA_TYPE_STRING: {
++			ur->add_do_method(*edited_theme, "set_string", item_name, edited_type, String());
++			ur->add_undo_method(*edited_theme, "clear_string", item_name, edited_type);
++		} break;
+ 	}
+ 
+ 	ur->commit_action();
+@@ -3435,6 +3555,10 @@ void ThemeTypeEditor::_item_override_cbk(int p_data_type, String p_item_name) {
+ 			ur->add_do_method(*edited_theme, "set_color_scheme", p_item_name, edited_type, ThemeDB::get_singleton()->get_default_theme()->get_color_scheme(p_item_name, edited_type));
+ 			ur->add_undo_method(*edited_theme, "clear_color_scheme", p_item_name, edited_type);
+ 		} break;
++		case Theme::DATA_TYPE_STRING: {
++			ur->add_do_method(*edited_theme, "set_string", p_item_name, edited_type, ThemeDB::get_singleton()->get_default_theme()->get_string(p_item_name, edited_type));
++			ur->add_undo_method(*edited_theme, "clear_string", p_item_name, edited_type);
++		} break;
+ 	}
+ 
+ 	ur->commit_action();
+@@ -3501,6 +3625,11 @@ void ThemeTypeEditor::_item_remove_cbk(int p_data_type, String p_item_name) {
+ 			ur->add_do_method(*edited_theme, "clear_color_scheme", p_item_name, edited_type);
+ 			ur->add_undo_method(*edited_theme, "set_color_scheme", p_item_name, edited_type, color_scheme);
+ 		} break;
++		case Theme::DATA_TYPE_STRING: {
++			const String value = edited_theme->get_string(p_item_name, edited_type);
++			ur->add_do_method(*edited_theme, "clear_string", p_item_name, edited_type);
++			ur->add_undo_method(*edited_theme, "set_string", p_item_name, edited_type, value);
++		} break;
+ 	}
+ 
+ 	ur->commit_action();
+@@ -3573,6 +3702,10 @@ void ThemeTypeEditor::_item_rename_confirmed(int p_data_type, String p_item_name
+ 			ur->add_do_method(*edited_theme, "rename_color_scheme", p_item_name, new_name, edited_type);
+ 			ur->add_undo_method(*edited_theme, "rename_color_scheme", new_name, p_item_name, edited_type);
+ 		} break;
++		case Theme::DATA_TYPE_STRING: {
++			ur->add_do_method(*edited_theme, "rename_string", p_item_name, new_name, edited_type);
++			ur->add_undo_method(*edited_theme, "rename_string", new_name, p_item_name, edited_type);
++		} break;
+ 	}
+ 
+ 	ur->commit_action();
+@@ -3700,6 +3833,14 @@ void ThemeTypeEditor::_color_scheme_item_changed(Ref<ColorScheme> p_value, Strin
+ 	ur->commit_action();
+ }
+ 
++void ThemeTypeEditor::_string_item_changed(String p_value, String p_item_name) {
++	EditorUndoRedoManager *ur = EditorUndoRedoManager::get_singleton();
++	ur->create_action(TTR("Set String Item in Theme"), UndoRedo::MERGE_ENDS);
++	ur->add_do_method(*edited_theme, "set_string", p_item_name, edited_type, p_value);
++	ur->add_undo_method(*edited_theme, "set_string", p_item_name, edited_type, edited_theme->get_string(p_item_name, edited_type));
++	ur->commit_action();
++}
++
+ void ThemeTypeEditor::_change_pinned_stylebox() {
+ 	if (leading_stylebox.pinned) {
+ 		if (leading_stylebox.stylebox.is_valid()) {
+@@ -3879,7 +4020,8 @@ void ThemeTypeEditor::_notification(int p_what) {
+ 			data_type_tabs->set_tab_icon(5, get_editor_theme_icon(SNAME("StyleBoxFlat")));
+ 			data_type_tabs->set_tab_icon(6, get_editor_theme_icon(SNAME("ColorRole")));
+ 			data_type_tabs->set_tab_icon(7, get_editor_theme_icon(SNAME("ColorScheme")));
+-			data_type_tabs->set_tab_icon(8, get_editor_theme_icon(SNAME("Tools")));
++			data_type_tabs->set_tab_icon(8, get_editor_theme_icon(SNAME("String")));
++			data_type_tabs->set_tab_icon(9, get_editor_theme_icon(SNAME("Tools")));
+ 
+ 			type_variation_button->set_button_icon(get_editor_theme_icon(SNAME("Add")));
+ 		} break;
+@@ -4031,6 +4173,8 @@ ThemeTypeEditor::ThemeTypeEditor() {
+ 	data_type_tabs->set_tab_tooltip(data_type_tabs->get_tab_count() - 1, TTRC("Color Roles"));
+ 	color_scheme_items_list = _create_item_list(Theme::DATA_TYPE_COLOR_SCHEME);
+ 	data_type_tabs->set_tab_tooltip(data_type_tabs->get_tab_count() - 1, TTRC("Color Schemes"));
++	string_items_list = _create_item_list(Theme::DATA_TYPE_STRING);
++	data_type_tabs->set_tab_tooltip(data_type_tabs->get_tab_count() - 1, TTRC("Strings"));
+ 
+ 	VBoxContainer *type_settings_tab = memnew(VBoxContainer);
+ 	type_settings_tab->set_custom_minimum_size(Size2(0, 160) * EDSCALE);
+diff --git a/editor/scene/gui/theme_editor_plugin.h b/editor/scene/gui/theme_editor_plugin.h
+index 02dde689000e16aec37b494b3fa84a8d946621da..080c66555e44a6ed7549ad4d07bb4a4c2b96a458 100644
+--- a/editor/scene/gui/theme_editor_plugin.h
++++ b/editor/scene/gui/theme_editor_plugin.h
+@@ -94,6 +94,7 @@ class ThemeItemImportTree : public VBoxContainer {
+ 	List<TreeItem *> tree_stylebox_items;
+ 	List<TreeItem *> tree_color_role_items;
+ 	List<TreeItem *> tree_color_scheme_items;
++	List<TreeItem *> tree_string_items;
+ 
+ 	bool updating_tree = false;
+ 
+@@ -158,6 +159,13 @@ class ThemeItemImportTree : public VBoxContainer {
+ 	Button *deselect_all_color_schemes_button = nullptr;
+ 	Label *total_selected_color_schemes_label = nullptr;
+ 
++	TextureRect *select_strings_icon = nullptr;
++	Label *select_strings_label = nullptr;
++	Button *select_all_strings_button = nullptr;
++	Button *select_full_strings_button = nullptr;
++	Button *deselect_all_strings_button = nullptr;
++	Label *total_selected_strings_label = nullptr;
++
+ 	HBoxContainer *select_icons_warning_hb = nullptr;
+ 	TextureRect *select_icons_warning_icon = nullptr;
+ 	Label *select_icons_warning = nullptr;
+@@ -383,6 +391,7 @@ class ThemeTypeEditor : public MarginContainer {
+ 	VBoxContainer *stylebox_items_list = nullptr;
+ 	VBoxContainer *color_role_items_list = nullptr;
+ 	VBoxContainer *color_scheme_items_list = nullptr;
++	VBoxContainer *string_items_list = nullptr;
+ 
+ 	LineEdit *type_variation_edit = nullptr;
+ 	Button *type_variation_button = nullptr;
+@@ -423,6 +432,7 @@ class ThemeTypeEditor : public MarginContainer {
+ 	void _item_rename_confirmed(int p_data_type, String p_item_name, Control *p_control);
+ 	void _item_rename_entered(String p_value, int p_data_type, String p_item_name, Control *p_control);
+ 	void _item_rename_canceled(int p_data_type, String p_item_name, Control *p_control);
++	void _string_item_changed(String p_value, String p_item_name);
+ 
+ 	void _color_item_changed(Color p_value, String p_item_name);
+ 	void _constant_item_changed(float p_value, String p_item_name);
+diff --git a/scene/gui/control.cpp b/scene/gui/control.cpp
+index 68f906931dc28d686ab5bce3f2464d9570c430a9..08a3cc4c59ca3249f2fb63391202a1934beee3de 100644
+--- a/scene/gui/control.cpp
++++ b/scene/gui/control.cpp
+@@ -253,8 +253,10 @@ void Control::get_argument_options(const StringName &p_function, int p_idx, List
+ 			type = Theme::DATA_TYPE_COLOR;
+ 		} else if (pf == "add_theme_color_role_override" || pf == "has_theme_color_role" || pf == "has_theme_color_role_override" || pf == "get_theme_color_role" || pf == "remove_theme_color_role_override") {
+ 			type = Theme::DATA_TYPE_COLOR_ROLE;
+-		} else if (pf == "add_theme_color_scheme_override" || pf == "has_theme_color_scheme" || pf == "has_theme_color_scheme_override" || pf == "get_theme_color_scheme" || pf == "remove_theme_color_scheme_override") {
+-			type = Theme::DATA_TYPE_COLOR_SCHEME;
++			} else if (pf == "add_theme_color_scheme_override" || pf == "has_theme_color_scheme" || pf == "has_theme_color_scheme_override" || pf == "get_theme_color_scheme" || pf == "remove_theme_color_scheme_override") {
++				type = Theme::DATA_TYPE_COLOR_SCHEME;
++			} else if (pf == "add_theme_string_override" || pf == "has_theme_string" || pf == "has_theme_string_override" || pf == "get_theme_string" || pf == "remove_theme_string_override") {
++				type = Theme::DATA_TYPE_STRING;
+ 		} else if (pf == "add_theme_constant_override" || pf == "has_theme_constant" || pf == "has_theme_constant_override" || pf == "get_theme_constant" || pf == "remove_theme_constant_override") {
+ 			type = Theme::DATA_TYPE_CONSTANT;
+ 		} else if (pf == "add_theme_font_override" || pf == "has_theme_font" || pf == "has_theme_font_override" || pf == "get_theme_font" || pf == "remove_theme_font_override") {
+@@ -402,10 +404,14 @@ bool Control::_set(const StringName &p_name, const Variant &p_value) {
+ 			}
+ 			data.theme_color_scheme_override.erase(dname);
+ 			_notify_theme_override_changed();
+-		} else if (name.begins_with("theme_override_constants/")) {
++			} else if (name.begins_with("theme_override_constants/")) {
+ 			String dname = name.get_slicec('/', 1);
+-			data.theme_constant_override.erase(dname);
+-			_notify_theme_override_changed();
++				data.theme_constant_override.erase(dname);
++				_notify_theme_override_changed();
++			} else if (name.begins_with("theme_override_strings/")) {
++				String dname = name.get_slicec('/', 1);
++				data.theme_string_override.erase(dname);
++				_notify_theme_override_changed();
+ 		} else {
+ 			return false;
+ 		}
+@@ -431,9 +437,12 @@ bool Control::_set(const StringName &p_name, const Variant &p_value) {
+ 		} else if (name.begins_with("theme_override_color_schemes/")) {
+ 			String dname = name.get_slicec('/', 1);
+ 			add_theme_color_scheme_override(dname, p_value);
+-		} else if (name.begins_with("theme_override_constants/")) {
++			} else if (name.begins_with("theme_override_constants/")) {
+ 			String dname = name.get_slicec('/', 1);
+-			add_theme_constant_override(dname, p_value);
++				add_theme_constant_override(dname, p_value);
++			} else if (name.begins_with("theme_override_strings/")) {
++				String dname = name.get_slicec('/', 1);
++				add_theme_string_override(dname, p_value);
+ 		} else {
+ 			return false;
+ 		}
+@@ -474,6 +483,9 @@ bool Control::_get(const StringName &p_name, Variant &r_ret) const {
+ 	} else if (sname.begins_with("theme_override_constants/")) {
+ 		String name = sname.get_slicec('/', 1);
+ 		r_ret = data.theme_constant_override.has(name) ? Variant(data.theme_constant_override[name]) : Variant();
++	} else if (sname.begins_with("theme_override_strings/")) {
++		String name = sname.get_slicec('/', 1);
++		r_ret = data.theme_string_override.has(name) ? Variant(data.theme_string_override[name]) : Variant();
+ 	} else {
+ 		return false;
+ 	}
+@@ -550,7 +562,14 @@ void Control::_get_property_list(List<PropertyInfo> *p_list) const {
+ 					usage |= PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED;
+ 				}
+ 				p_list->push_back(PropertyInfo(Variant::OBJECT, PNAME("theme_override_styles") + String("/") + E.item_name, PROPERTY_HINT_RESOURCE_TYPE, StyleBox::get_class_static(), usage));
+-			} break;
++				} break;
++
++				case Theme::DATA_TYPE_STRING: {
++					if (data.theme_string_override.has(E.item_name)) {
++						usage |= PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED;
++					}
++					p_list->push_back(PropertyInfo(Variant::STRING, PNAME("theme_override_strings") + String("/") + E.item_name, PROPERTY_HINT_NONE, "", usage));
++				} break;
+ 
+ 			default: {
+ 				// Silences warning.
+@@ -3693,6 +3712,7 @@ void Control::_invalidate_theme_cache() {
+ 	data.theme_constant_cache.clear();
+ 	data.theme_color_role_cache.clear();
+ 	data.theme_color_scheme_cache.clear();
++	data.theme_string_cache.clear();
+ }
+ 
+ void Control::_update_theme_item_cache() {
+@@ -4024,6 +4044,30 @@ Ref<ColorScheme> Control::get_theme_color_scheme(const StringName &p_name, const
+ 	return color_scheme;
+ }
+ 
++String Control::get_theme_string(const StringName &p_name, const StringName &p_theme_type) const {
++	ERR_READ_THREAD_GUARD_V(String());
++	if (!data.initialized) {
++		WARN_PRINT_ONCE(vformat("Attempting to access theme items too early in %s; prefer NOTIFICATION_POSTINITIALIZE and NOTIFICATION_THEME_CHANGED", get_description()));
++	}
++
++	if (p_theme_type == StringName() || p_theme_type == get_class_name() || p_theme_type == data.theme_type_variation) {
++		const String *value = data.theme_string_override.getptr(p_name);
++		if (value) {
++			return *value;
++		}
++	}
++
++	if (data.theme_string_cache.has(p_theme_type) && data.theme_string_cache[p_theme_type].has(p_name)) {
++		return data.theme_string_cache[p_theme_type][p_name];
++	}
++
++	Vector<StringName> theme_types;
++	data.theme_owner->get_theme_type_dependencies(this, p_theme_type, theme_types);
++	String value = data.theme_owner->get_theme_item_in_types(Theme::DATA_TYPE_STRING, p_name, theme_types);
++	data.theme_string_cache[p_theme_type][p_name] = value;
++	return value;
++}
++
+ Variant Control::get_theme_item(Theme::DataType p_data_type, const StringName &p_name, const StringName &p_theme_type) const {
+ 	switch (p_data_type) {
+ 		case Theme::DATA_TYPE_COLOR:
+@@ -4042,6 +4086,8 @@ Variant Control::get_theme_item(Theme::DataType p_data_type, const StringName &p
+ 			return get_theme_color_role(p_name, p_theme_type);
+ 		case Theme::DATA_TYPE_COLOR_SCHEME:
+ 			return get_theme_color_scheme(p_name, p_theme_type);
++		case Theme::DATA_TYPE_STRING:
++			return get_theme_string(p_name, p_theme_type);
+ 		case Theme::DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -4090,6 +4136,11 @@ Variant Control::get_used_theme_item(const String &p_full_name, const StringName
+ 		if (has_theme_constant(name)) {
+ 			return get_theme_constant(name);
+ 		}
++	} else if (p_full_name.begins_with("theme_override_strings/")) {
++		String name = p_full_name.substr(strlen("theme_override_strings/"));
++		if (has_theme_string(name)) {
++			return get_theme_string(name);
++		}
+ 	} else {
+ 		ERR_FAIL_V_MSG(Variant(), vformat("The property %s is not a theme item.", p_full_name));
+ 	}
+@@ -4239,6 +4290,23 @@ bool Control::has_theme_color_scheme(const StringName &p_name, const StringName
+ 	return data.theme_owner->has_theme_item_in_types(Theme::DATA_TYPE_COLOR_SCHEME, p_name, theme_types);
+ }
+ 
++bool Control::has_theme_string(const StringName &p_name, const StringName &p_theme_type) const {
++	ERR_READ_THREAD_GUARD_V(false);
++	if (!data.initialized) {
++		WARN_PRINT_ONCE(vformat("Attempting to access theme items too early in %s; prefer NOTIFICATION_POSTINITIALIZE and NOTIFICATION_THEME_CHANGED", get_description()));
++	}
++
++	if (p_theme_type == StringName() || p_theme_type == get_class_name() || p_theme_type == data.theme_type_variation) {
++		if (has_theme_string_override(p_name)) {
++			return true;
++		}
++	}
++
++	Vector<StringName> theme_types;
++	data.theme_owner->get_theme_type_dependencies(this, p_theme_type, theme_types);
++	return data.theme_owner->has_theme_item_in_types(Theme::DATA_TYPE_STRING, p_name, theme_types);
++}
++
+ /// Local property overrides.
+ 
+ void Control::add_theme_icon_override(const StringName &p_name, RequiredParam<Texture2D> p_icon) {
+@@ -4317,6 +4385,12 @@ void Control::add_theme_color_scheme_override(const StringName &p_name, Required
+ 	_notify_theme_override_changed();
+ }
+ 
++void Control::add_theme_string_override(const StringName &p_name, const String &p_string) {
++	ERR_MAIN_THREAD_GUARD;
++	data.theme_string_override[p_name] = p_string;
++	_notify_theme_override_changed();
++}
++
+ void Control::remove_theme_icon_override(const StringName &p_name) {
+ 	ERR_MAIN_THREAD_GUARD;
+ 	if (data.theme_icon_override.has(p_name)) {
+@@ -4381,6 +4455,12 @@ void Control::remove_theme_color_scheme_override(const StringName &p_name) {
+ 	_notify_theme_override_changed();
+ }
+ 
++void Control::remove_theme_string_override(const StringName &p_name) {
++	ERR_MAIN_THREAD_GUARD;
++	data.theme_string_override.erase(p_name);
++	_notify_theme_override_changed();
++}
++
+ bool Control::has_theme_icon_override(const StringName &p_name) const {
+ 	ERR_READ_THREAD_GUARD_V(false);
+ 	const Ref<Texture2D> *tex = data.theme_icon_override.getptr(p_name);
+@@ -4429,6 +4509,11 @@ bool Control::has_theme_color_scheme_override(const StringName &p_name) const {
+ 	return color_scheme != nullptr;
+ }
+ 
++bool Control::has_theme_string_override(const StringName &p_name) const {
++	ERR_READ_THREAD_GUARD_V(false);
++	return data.theme_string_override.has(p_name);
++}
++
+ /// Default theme properties.
+ 
+ float Control::get_theme_default_base_scale() const {
+@@ -5088,6 +5173,7 @@ void Control::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("add_theme_constant_override", "name", "constant"), &Control::add_theme_constant_override);
+ 	ClassDB::bind_method(D_METHOD("add_theme_color_role_override", "name", "color_role"), &Control::add_theme_color_role_override);
+ 	ClassDB::bind_method(D_METHOD("add_theme_color_scheme_override", "name", "color_scheme"), &Control::add_theme_color_scheme_override);
++	ClassDB::bind_method(D_METHOD("add_theme_string_override", "name", "value"), &Control::add_theme_string_override);
+ 
+ 	ClassDB::bind_method(D_METHOD("remove_theme_icon_override", "name"), &Control::remove_theme_icon_override);
+ 	ClassDB::bind_method(D_METHOD("remove_theme_stylebox_override", "name"), &Control::remove_theme_style_override);
+@@ -5097,6 +5183,7 @@ void Control::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("remove_theme_constant_override", "name"), &Control::remove_theme_constant_override);
+ 	ClassDB::bind_method(D_METHOD("remove_theme_color_role_override", "name"), &Control::remove_theme_color_role_override);
+ 	ClassDB::bind_method(D_METHOD("remove_theme_color_scheme_override", "name"), &Control::remove_theme_color_scheme_override);
++	ClassDB::bind_method(D_METHOD("remove_theme_string_override", "name"), &Control::remove_theme_string_override);
+ 
+ 	ClassDB::bind_method(D_METHOD("get_theme_icon", "name", "theme_type"), &Control::get_theme_icon, DEFVAL(StringName()));
+ 	ClassDB::bind_method(D_METHOD("get_theme_stylebox", "name", "theme_type"), &Control::get_theme_stylebox, DEFVAL(StringName()));
+@@ -5106,6 +5193,7 @@ void Control::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("get_theme_constant", "name", "theme_type"), &Control::get_theme_constant, DEFVAL(StringName()));
+ 	ClassDB::bind_method(D_METHOD("get_theme_color_role", "name", "theme_type"), &Control::get_theme_color_role, DEFVAL(StringName()));
+ 	ClassDB::bind_method(D_METHOD("get_theme_color_scheme", "name", "theme_type"), &Control::get_theme_color_scheme, DEFVAL(StringName()));
++	ClassDB::bind_method(D_METHOD("get_theme_string", "name", "theme_type"), &Control::get_theme_string, DEFVAL(StringName()));
+ 
+ 	ClassDB::bind_method(D_METHOD("has_theme_icon_override", "name"), &Control::has_theme_icon_override);
+ 	ClassDB::bind_method(D_METHOD("has_theme_stylebox_override", "name"), &Control::has_theme_stylebox_override);
+@@ -5115,6 +5203,7 @@ void Control::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("has_theme_constant_override", "name"), &Control::has_theme_constant_override);
+ 	ClassDB::bind_method(D_METHOD("has_theme_color_role_override", "name"), &Control::has_theme_color_role_override);
+ 	ClassDB::bind_method(D_METHOD("has_theme_color_scheme_override", "name"), &Control::has_theme_color_scheme_override);
++	ClassDB::bind_method(D_METHOD("has_theme_string_override", "name"), &Control::has_theme_string_override);
+ 
+ 	ClassDB::bind_method(D_METHOD("has_theme_icon", "name", "theme_type"), &Control::has_theme_icon, DEFVAL(StringName()));
+ 	ClassDB::bind_method(D_METHOD("has_theme_stylebox", "name", "theme_type"), &Control::has_theme_stylebox, DEFVAL(StringName()));
+@@ -5124,6 +5213,7 @@ void Control::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("has_theme_constant", "name", "theme_type"), &Control::has_theme_constant, DEFVAL(StringName()));
+ 	ClassDB::bind_method(D_METHOD("has_theme_color_role", "name", "theme_type"), &Control::has_theme_color_role, DEFVAL(StringName()));
+ 	ClassDB::bind_method(D_METHOD("has_theme_color_scheme", "name", "theme_type"), &Control::has_theme_color_scheme, DEFVAL(StringName()));
++	ClassDB::bind_method(D_METHOD("has_theme_string", "name", "theme_type"), &Control::has_theme_string, DEFVAL(StringName()));
+ 
+ 	ClassDB::bind_method(D_METHOD("get_theme_default_base_scale"), &Control::get_theme_default_base_scale);
+ 	ClassDB::bind_method(D_METHOD("get_theme_default_font"), &Control::get_theme_default_font);
+@@ -5517,4 +5607,5 @@ Control::~Control() {
+ 	data.theme_constant_override.clear();
+ 	data.theme_color_role_override.clear();
+ 	data.theme_color_scheme_override.clear();
++	data.theme_string_override.clear();
+ }
+diff --git a/scene/gui/control.h b/scene/gui/control.h
+index 1e479a4e365befe0d4cd36c679a20d6d97214137..9799ae5776fadc086ae86006e72fbac6ba6c297a 100644
+--- a/scene/gui/control.h
++++ b/scene/gui/control.h
+@@ -325,6 +325,7 @@ private:
+ 		Theme::ThemeConstantMap theme_constant_override;
+ 		Theme::ThemeColorRoleMap theme_color_role_override;
+ 		Theme::ThemeColorSchemeMap theme_color_scheme_override;
++		Theme::ThemeStringMap theme_string_override;
+ 
+ 		mutable HashMap<StringName, Theme::ThemeIconMap> theme_icon_cache;
+ 		mutable HashMap<StringName, Theme::ThemeStyleMap> theme_style_cache;
+@@ -334,6 +335,7 @@ private:
+ 		mutable HashMap<StringName, Theme::ThemeConstantMap> theme_constant_cache;
+ 		mutable HashMap<StringName, Theme::ThemeColorRoleMap> theme_color_role_cache;
+ 		mutable HashMap<StringName, Theme::ThemeColorSchemeMap> theme_color_scheme_cache;
++		mutable HashMap<StringName, Theme::ThemeStringMap> theme_string_cache;
+ 
+ 		// Internationalization.
+ 
+@@ -809,6 +811,7 @@ public:
+ 	void add_theme_constant_override(const StringName &p_name, int p_constant);
+ 	void add_theme_color_role_override(const StringName &p_name, ColorRole p_color_role);
+ 	void add_theme_color_scheme_override(const StringName &p_name, RequiredParam<ColorScheme> p_color_scheme);
++	void add_theme_string_override(const StringName &p_name, const String &p_string);
+ 
+ 	void remove_theme_icon_override(const StringName &p_name);
+ 	void remove_theme_style_override(const StringName &p_name);
+@@ -818,6 +821,7 @@ public:
+ 	void remove_theme_constant_override(const StringName &p_name);
+ 	void remove_theme_color_role_override(const StringName &p_name);
+ 	void remove_theme_color_scheme_override(const StringName &p_name);
++	void remove_theme_string_override(const StringName &p_name);
+ 
+ 	Ref<Texture2D> get_theme_icon(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+ 	Ref<StyleBox> get_theme_stylebox(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+@@ -827,6 +831,7 @@ public:
+ 	int get_theme_constant(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+ 	ColorRole get_theme_color_role(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+ 	Ref<ColorScheme> get_theme_color_scheme(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
++	String get_theme_string(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+ 	Variant get_theme_item(Theme::DataType p_data_type, const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+ 	Variant get_used_theme_item(const String &p_full_name, const StringName &p_theme_type = StringName()) const;
+ #ifdef TOOLS_ENABLED
+@@ -841,6 +846,7 @@ public:
+ 	bool has_theme_constant_override(const StringName &p_name) const;
+ 	bool has_theme_color_role_override(const StringName &p_name) const;
+ 	bool has_theme_color_scheme_override(const StringName &p_name) const;
++	bool has_theme_string_override(const StringName &p_name) const;
+ 
+ 	bool has_theme_icon(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+ 	bool has_theme_stylebox(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+@@ -850,6 +856,7 @@ public:
+ 	bool has_theme_constant(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+ 	bool has_theme_color_role(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+ 	bool has_theme_color_scheme(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
++	bool has_theme_string(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+ 
+ 	float get_theme_default_base_scale() const;
+ 	Ref<Font> get_theme_default_font() const;
+diff --git a/scene/main/window.cpp b/scene/main/window.cpp
+index ca7bce34deaa54214273f4f8a1e2fa933fa5780e..0b62a78e3eb728a1e0be6d35d1f56b84833f44b4 100644
+--- a/scene/main/window.cpp
++++ b/scene/main/window.cpp
+@@ -111,10 +111,14 @@ bool Window::_set(const StringName &p_name, const Variant &p_value) {
+ 			}
+ 			theme_color_scheme_override.erase(dname);
+ 			_notify_theme_override_changed();
+-		} else if (name.begins_with("theme_override_constants/")) {
++			} else if (name.begins_with("theme_override_constants/")) {
+ 			String dname = name.get_slicec('/', 1);
+-			theme_constant_override.erase(dname);
+-			_notify_theme_override_changed();
++				theme_constant_override.erase(dname);
++				_notify_theme_override_changed();
++			} else if (name.begins_with("theme_override_strings/")) {
++				String dname = name.get_slicec('/', 1);
++				theme_string_override.erase(dname);
++				_notify_theme_override_changed();
+ 		} else {
+ 			return false;
+ 		}
+@@ -140,9 +144,12 @@ bool Window::_set(const StringName &p_name, const Variant &p_value) {
+ 		} else if (name.begins_with("theme_override_color_schemes/")) {
+ 			String dname = name.get_slicec('/', 1);
+ 			add_theme_color_scheme_override(dname, p_value);
+-		} else if (name.begins_with("theme_override_constants/")) {
++			} else if (name.begins_with("theme_override_constants/")) {
+ 			String dname = name.get_slicec('/', 1);
+-			add_theme_constant_override(dname, p_value);
++				add_theme_constant_override(dname, p_value);
++			} else if (name.begins_with("theme_override_strings/")) {
++				String dname = name.get_slicec('/', 1);
++				add_theme_string_override(dname, p_value);
+ 		} else {
+ 			return false;
+ 		}
+@@ -182,6 +189,9 @@ bool Window::_get(const StringName &p_name, Variant &r_ret) const {
+ 	} else if (sname.begins_with("theme_override_constants/")) {
+ 		String name = sname.get_slicec('/', 1);
+ 		r_ret = theme_constant_override.has(name) ? Variant(theme_constant_override[name]) : Variant();
++	} else if (sname.begins_with("theme_override_strings/")) {
++		String name = sname.get_slicec('/', 1);
++		r_ret = theme_string_override.has(name) ? Variant(theme_string_override[name]) : Variant();
+ 	} else {
+ 		return false;
+ 	}
+@@ -292,6 +302,18 @@ void Window::_get_property_list(List<PropertyInfo> *p_list) const {
+ 			p_list->push_back(PropertyInfo(Variant::OBJECT, PNAME("theme_override_color_schemes") + String("/") + E, PROPERTY_HINT_RESOURCE_TYPE, ColorScheme::get_class_static(), usage));
+ 		}
+ 	}
++	{
++		List<StringName> names;
++		default_theme->get_string_list(get_class_name(), &names);
++		for (const StringName &E : names) {
++			uint32_t usage = PROPERTY_USAGE_EDITOR | PROPERTY_USAGE_CHECKABLE;
++			if (theme_string_override.has(E)) {
++				usage |= PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED;
++			}
++
++			p_list->push_back(PropertyInfo(Variant::STRING, PNAME("theme_override_strings") + String("/") + E, PROPERTY_HINT_NONE, "", usage));
++		}
++	}
+ }
+ 
+ void Window::_validate_property(PropertyInfo &p_property) const {
+@@ -327,7 +349,7 @@ void Window::_validate_property(PropertyInfo &p_property) const {
+ 				tmp_window = Object::cast_to<Window>(tmp_window->get_parent());
+ 			}
+ 		}
+-		if (get_theme().is_valid()) {
++			if (get_theme().is_valid()) {
+ 			get_theme()->get_type_variation_list(get_class_name(), &names);
+ 		}
+ 		if (ThemeDB::get_singleton()->get_project_theme().is_valid()) {
+@@ -2654,6 +2676,7 @@ void Window::_invalidate_theme_cache() {
+ 	theme_constant_cache.clear();
+ 	theme_color_role_cache.clear();
+ 	theme_color_scheme_cache.clear();
++	theme_string_cache.clear();
+ }
+ 
+ void Window::_update_theme_item_cache() {
+@@ -2946,6 +2969,30 @@ Ref<ColorScheme> Window::get_theme_color_scheme(const StringName &p_name, const
+ 	return color_scheme;
+ }
+ 
++String Window::get_theme_string(const StringName &p_name, const StringName &p_theme_type) const {
++	ERR_READ_THREAD_GUARD_V(String());
++	if (!initialized) {
++		WARN_PRINT_ONCE(vformat("Attempting to access theme items too early in %s; prefer NOTIFICATION_POSTINITIALIZE and NOTIFICATION_THEME_CHANGED", get_description()));
++	}
++
++	if (p_theme_type == StringName() || p_theme_type == get_class_name() || p_theme_type == theme_type_variation) {
++		const String *value = theme_string_override.getptr(p_name);
++		if (value) {
++			return *value;
++		}
++	}
++
++	if (theme_string_cache.has(p_theme_type) && theme_string_cache[p_theme_type].has(p_name)) {
++		return theme_string_cache[p_theme_type][p_name];
++	}
++
++	Vector<StringName> theme_types;
++	theme_owner->get_theme_type_dependencies(this, p_theme_type, theme_types);
++	String value = theme_owner->get_theme_item_in_types(Theme::DATA_TYPE_STRING, p_name, theme_types);
++	theme_string_cache[p_theme_type][p_name] = value;
++	return value;
++}
++
+ Variant Window::get_theme_item(Theme::DataType p_data_type, const StringName &p_name, const StringName &p_theme_type) const {
+ 	switch (p_data_type) {
+ 		case Theme::DATA_TYPE_COLOR:
+@@ -2962,8 +3009,10 @@ Variant Window::get_theme_item(Theme::DataType p_data_type, const StringName &p_
+ 			return get_theme_stylebox(p_name, p_theme_type);
+ 		case Theme::DATA_TYPE_COLOR_ROLE:
+ 			return get_theme_color_role(p_name, p_theme_type);
+-		case Theme::DATA_TYPE_COLOR_SCHEME:
+-			return get_theme_color_scheme(p_name, p_theme_type);
++			case Theme::DATA_TYPE_COLOR_SCHEME:
++				return get_theme_color_scheme(p_name, p_theme_type);
++			case Theme::DATA_TYPE_STRING:
++				return get_theme_string(p_name, p_theme_type);
+ 		case Theme::DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -3113,6 +3162,23 @@ bool Window::has_theme_color_scheme(const StringName &p_name, const StringName &
+ 	return theme_owner->has_theme_item_in_types(Theme::DATA_TYPE_COLOR_SCHEME, p_name, theme_types);
+ }
+ 
++bool Window::has_theme_string(const StringName &p_name, const StringName &p_theme_type) const {
++	ERR_READ_THREAD_GUARD_V(false);
++	if (!initialized) {
++		WARN_PRINT_ONCE(vformat("Attempting to access theme items too early in %s; prefer NOTIFICATION_POSTINITIALIZE and NOTIFICATION_THEME_CHANGED", get_description()));
++	}
++
++	if (p_theme_type == StringName() || p_theme_type == get_class_name() || p_theme_type == theme_type_variation) {
++		if (has_theme_string_override(p_name)) {
++			return true;
++		}
++	}
++
++	Vector<StringName> theme_types;
++	theme_owner->get_theme_type_dependencies(this, p_theme_type, theme_types);
++	return theme_owner->has_theme_item_in_types(Theme::DATA_TYPE_STRING, p_name, theme_types);
++}
++
+ /// Local property overrides.
+ 
+ void Window::add_theme_icon_override(const StringName &p_name, const Ref<Texture2D> &p_icon) {
+@@ -3191,6 +3257,12 @@ void Window::add_theme_color_scheme_override(const StringName &p_name, const Ref
+ 	_notify_theme_override_changed();
+ }
+ 
++void Window::add_theme_string_override(const StringName &p_name, const String &p_string) {
++	ERR_MAIN_THREAD_GUARD;
++	theme_string_override[p_name] = p_string;
++	_notify_theme_override_changed();
++}
++
+ void Window::remove_theme_icon_override(const StringName &p_name) {
+ 	ERR_MAIN_THREAD_GUARD;
+ 	if (theme_icon_override.has(p_name)) {
+@@ -3255,6 +3327,12 @@ void Window::remove_theme_color_scheme_override(const StringName &p_name) {
+ 	_notify_theme_override_changed();
+ }
+ 
++void Window::remove_theme_string_override(const StringName &p_name) {
++	ERR_MAIN_THREAD_GUARD;
++	theme_string_override.erase(p_name);
++	_notify_theme_override_changed();
++}
++
+ bool Window::has_theme_icon_override(const StringName &p_name) const {
+ 	ERR_READ_THREAD_GUARD_V(false);
+ 	const Ref<Texture2D> *tex = theme_icon_override.getptr(p_name);
+@@ -3303,6 +3381,11 @@ bool Window::has_theme_color_scheme_override(const StringName &p_name) const {
+ 	return color_scheme != nullptr;
+ }
+ 
++bool Window::has_theme_string_override(const StringName &p_name) const {
++	ERR_READ_THREAD_GUARD_V(false);
++	return theme_string_override.has(p_name);
++}
++
+ /// Default theme properties.
+ 
+ float Window::get_theme_default_base_scale() const {
+@@ -3754,6 +3837,7 @@ void Window::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("add_theme_constant_override", "name", "constant"), &Window::add_theme_constant_override);
+ 	ClassDB::bind_method(D_METHOD("add_theme_color_role_override", "name", "color_role"), &Window::add_theme_color_role_override);
+ 	ClassDB::bind_method(D_METHOD("add_theme_color_scheme_override", "name", "color_scheme"), &Window::add_theme_color_scheme_override);
++	ClassDB::bind_method(D_METHOD("add_theme_string_override", "name", "value"), &Window::add_theme_string_override);
+ 
+ 	ClassDB::bind_method(D_METHOD("remove_theme_icon_override", "name"), &Window::remove_theme_icon_override);
+ 	ClassDB::bind_method(D_METHOD("remove_theme_stylebox_override", "name"), &Window::remove_theme_style_override);
+@@ -3763,6 +3847,7 @@ void Window::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("remove_theme_constant_override", "name"), &Window::remove_theme_constant_override);
+ 	ClassDB::bind_method(D_METHOD("remove_theme_color_role_override", "name"), &Window::remove_theme_color_role_override);
+ 	ClassDB::bind_method(D_METHOD("remove_theme_color_scheme_override", "name"), &Window::remove_theme_color_scheme_override);
++	ClassDB::bind_method(D_METHOD("remove_theme_string_override", "name"), &Window::remove_theme_string_override);
+ 
+ 	ClassDB::bind_method(D_METHOD("get_theme_icon", "name", "theme_type"), &Window::get_theme_icon, DEFVAL(StringName()));
+ 	ClassDB::bind_method(D_METHOD("get_theme_stylebox", "name", "theme_type"), &Window::get_theme_stylebox, DEFVAL(StringName()));
+@@ -3772,6 +3857,7 @@ void Window::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("get_theme_constant", "name", "theme_type"), &Window::get_theme_constant, DEFVAL(StringName()));
+ 	ClassDB::bind_method(D_METHOD("get_theme_color_role", "name", "theme_type"), &Window::get_theme_color_role, DEFVAL(StringName()));
+ 	ClassDB::bind_method(D_METHOD("get_theme_color_scheme", "name", "theme_type"), &Window::get_theme_color_scheme, DEFVAL(StringName()));
++	ClassDB::bind_method(D_METHOD("get_theme_string", "name", "theme_type"), &Window::get_theme_string, DEFVAL(StringName()));
+ 
+ 	ClassDB::bind_method(D_METHOD("has_theme_icon_override", "name"), &Window::has_theme_icon_override);
+ 	ClassDB::bind_method(D_METHOD("has_theme_stylebox_override", "name"), &Window::has_theme_stylebox_override);
+@@ -3781,6 +3867,7 @@ void Window::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("has_theme_constant_override", "name"), &Window::has_theme_constant_override);
+ 	ClassDB::bind_method(D_METHOD("has_theme_color_role_override", "name"), &Window::has_theme_color_role_override);
+ 	ClassDB::bind_method(D_METHOD("has_theme_color_scheme_override", "name"), &Window::has_theme_color_scheme_override);
++	ClassDB::bind_method(D_METHOD("has_theme_string_override", "name"), &Window::has_theme_string_override);
+ 
+ 	ClassDB::bind_method(D_METHOD("has_theme_icon", "name", "theme_type"), &Window::has_theme_icon, DEFVAL(StringName()));
+ 	ClassDB::bind_method(D_METHOD("has_theme_stylebox", "name", "theme_type"), &Window::has_theme_stylebox, DEFVAL(StringName()));
+@@ -3790,6 +3877,7 @@ void Window::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("has_theme_constant", "name", "theme_type"), &Window::has_theme_constant, DEFVAL(StringName()));
+ 	ClassDB::bind_method(D_METHOD("has_theme_color_role", "name", "theme_type"), &Window::has_theme_color_role, DEFVAL(StringName()));
+ 	ClassDB::bind_method(D_METHOD("has_theme_color_scheme", "name", "theme_type"), &Window::has_theme_color_scheme, DEFVAL(StringName()));
++	ClassDB::bind_method(D_METHOD("has_theme_string", "name", "theme_type"), &Window::has_theme_string, DEFVAL(StringName()));
+ 
+ 	ClassDB::bind_method(D_METHOD("get_theme_default_base_scale"), &Window::get_theme_default_base_scale);
+ 	ClassDB::bind_method(D_METHOD("get_theme_default_font"), &Window::get_theme_default_font);
+@@ -4023,4 +4111,5 @@ Window::~Window() {
+ 	theme_constant_override.clear();
+ 	theme_color_role_override.clear();
+ 	theme_color_scheme_override.clear();
++	theme_string_override.clear();
+ }
+diff --git a/scene/main/window.h b/scene/main/window.h
+index db7213a59b366802365f12a47d859d6f48c5f80e..ef01e60a534cb824ab98136adc69275e43381496 100644
+--- a/scene/main/window.h
++++ b/scene/main/window.h
+@@ -214,6 +214,7 @@ private:
+ 	Theme::ThemeConstantMap theme_constant_override;
+ 	Theme::ThemeColorRoleMap theme_color_role_override;
+ 	Theme::ThemeColorSchemeMap theme_color_scheme_override;
++	Theme::ThemeStringMap theme_string_override;
+ 
+ 	mutable HashMap<StringName, Theme::ThemeIconMap> theme_icon_cache;
+ 	mutable HashMap<StringName, Theme::ThemeStyleMap> theme_style_cache;
+@@ -223,6 +224,7 @@ private:
+ 	mutable HashMap<StringName, Theme::ThemeConstantMap> theme_constant_cache;
+ 	mutable HashMap<StringName, Theme::ThemeColorRoleMap> theme_color_role_cache;
+ 	mutable HashMap<StringName, Theme::ThemeColorSchemeMap> theme_color_scheme_cache;
++	mutable HashMap<StringName, Theme::ThemeStringMap> theme_string_cache;
+ 
+ 	void _theme_changed();
+ 	void _notify_theme_override_changed();
+@@ -507,6 +509,7 @@ public:
+ 	void add_theme_constant_override(const StringName &p_name, int p_constant);
+ 	void add_theme_color_role_override(const StringName &p_name, ColorRole p_color_role);
+ 	void add_theme_color_scheme_override(const StringName &p_name, const Ref<ColorScheme> &p_color_scheme);
++	void add_theme_string_override(const StringName &p_name, const String &p_string);
+ 
+ 	void remove_theme_icon_override(const StringName &p_name);
+ 	void remove_theme_style_override(const StringName &p_name);
+@@ -516,6 +519,7 @@ public:
+ 	void remove_theme_constant_override(const StringName &p_name);
+ 	void remove_theme_color_role_override(const StringName &p_name);
+ 	void remove_theme_color_scheme_override(const StringName &p_name);
++	void remove_theme_string_override(const StringName &p_name);
+ 
+ 	Ref<Texture2D> get_theme_icon(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+ 	Ref<StyleBox> get_theme_stylebox(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+@@ -525,6 +529,7 @@ public:
+ 	int get_theme_constant(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+ 	ColorRole get_theme_color_role(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+ 	Ref<ColorScheme> get_theme_color_scheme(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
++	String get_theme_string(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+ 	Variant get_theme_item(Theme::DataType p_data_type, const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+ #ifdef TOOLS_ENABLED
+ 	Ref<Texture2D> get_editor_theme_icon(const StringName &p_name) const;
+@@ -538,6 +543,7 @@ public:
+ 	bool has_theme_constant_override(const StringName &p_name) const;
+ 	bool has_theme_color_role_override(const StringName &p_name) const;
+ 	bool has_theme_color_scheme_override(const StringName &p_name) const;
++	bool has_theme_string_override(const StringName &p_name) const;
+ 
+ 	bool has_theme_icon(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+ 	bool has_theme_stylebox(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+@@ -547,6 +553,7 @@ public:
+ 	bool has_theme_constant(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+ 	bool has_theme_color_role(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+ 	bool has_theme_color_scheme(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
++	bool has_theme_string(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+ 
+ 	float get_theme_default_base_scale() const;
+ 	Ref<Font> get_theme_default_font() const;
+diff --git a/scene/resources/theme.cpp b/scene/resources/theme.cpp
+index afe0baa9b3da3e7e6389e2d40b2a5b42ec03d39d..2be7af6dde74c7fb13901643618c78aa669b6e6b 100644
+--- a/scene/resources/theme.cpp
++++ b/scene/resources/theme.cpp
+@@ -59,6 +59,8 @@ bool Theme::_set(const StringName &p_name, const Variant &p_value) {
+ 			set_color_role(prop_name, theme_type, p_value);
+ 		} else if (type == "color_schemes") {
+ 			set_color_scheme(prop_name, theme_type, p_value);
++		} else if (type == "strings") {
++			set_string(prop_name, theme_type, p_value);
+ 		} else if (type == "base_type") {
+ 			set_type_variation(theme_type, p_value);
+ 		} else {
+@@ -111,6 +113,8 @@ bool Theme::_get(const StringName &p_name, Variant &r_ret) const {
+ 			} else {
+ 				r_ret = color_scheme_map[theme_type][prop_name];
+ 			}
++		} else if (type == "strings") {
++			r_ret = get_string(prop_name, theme_type);
+ 		} else if (type == "base_type") {
+ 			r_ret = get_type_variation_base(theme_type);
+ 		} else {
+@@ -187,6 +191,13 @@ void Theme::_get_property_list(List<PropertyInfo> *p_list) const {
+ 		}
+ 	}
+ 
++	// Strings.
++	for (const KeyValue<StringName, ThemeStringMap> &E : string_map) {
++		for (const KeyValue<StringName, String> &F : E.value) {
++			list.push_back(PropertyInfo(Variant::STRING, String() + E.key + "/strings/" + F.key));
++		}
++	}
++
+ 	// Sort and store properties.
+ 	list.sort();
+ 	String prev_type;
+@@ -1200,6 +1211,91 @@ void Theme::get_color_scheme_type_list(List<StringName> *p_list) const {
+ 	}
+ }
+ 
++// Strings.
++void Theme::set_string(const StringName &p_name, const StringName &p_theme_type, const String &p_string) {
++	ERR_FAIL_COND_MSG(!is_valid_item_name(p_name), vformat("Invalid item name: '%s'", p_name));
++	ERR_FAIL_COND_MSG(!is_valid_type_name(p_theme_type), vformat("Invalid type name: '%s'", p_theme_type));
++
++	const bool existing = has_string_nocheck(p_name, p_theme_type);
++	string_map[p_theme_type][p_name] = p_string;
++
++	_emit_theme_changed(!existing);
++}
++
++String Theme::get_string(const StringName &p_name, const StringName &p_theme_type) const {
++	if (string_map.has(p_theme_type) && string_map[p_theme_type].has(p_name)) {
++		return string_map[p_theme_type][p_name];
++	}
++	return String();
++}
++
++bool Theme::has_string(const StringName &p_name, const StringName &p_theme_type) const {
++	return string_map.has(p_theme_type) && string_map[p_theme_type].has(p_name);
++}
++
++bool Theme::has_string_nocheck(const StringName &p_name, const StringName &p_theme_type) const {
++	return string_map.has(p_theme_type) && string_map[p_theme_type].has(p_name);
++}
++
++void Theme::rename_string(const StringName &p_old_name, const StringName &p_name, const StringName &p_theme_type) {
++	ERR_FAIL_COND_MSG(!is_valid_item_name(p_name), vformat("Invalid item name: '%s'", p_name));
++	ERR_FAIL_COND_MSG(!is_valid_type_name(p_theme_type), vformat("Invalid type name: '%s'", p_theme_type));
++	ERR_FAIL_COND_MSG(!string_map.has(p_theme_type), "Cannot rename the string '" + String(p_old_name) + "' because the node type '" + String(p_theme_type) + "' does not exist.");
++	ERR_FAIL_COND_MSG(string_map[p_theme_type].has(p_name), "Cannot rename the string '" + String(p_old_name) + "' because the new name '" + String(p_name) + "' already exists.");
++	ERR_FAIL_COND_MSG(!string_map[p_theme_type].has(p_old_name), "Cannot rename the string '" + String(p_old_name) + "' because it does not exist.");
++
++	string_map[p_theme_type][p_name] = string_map[p_theme_type][p_old_name];
++	string_map[p_theme_type].erase(p_old_name);
++
++	_emit_theme_changed(true);
++}
++
++void Theme::clear_string(const StringName &p_name, const StringName &p_theme_type) {
++	ERR_FAIL_COND_MSG(!string_map.has(p_theme_type), "Cannot clear the string '" + String(p_name) + "' because the node type '" + String(p_theme_type) + "' does not exist.");
++	ERR_FAIL_COND_MSG(!string_map[p_theme_type].has(p_name), "Cannot clear the string '" + String(p_name) + "' because it does not exist.");
++
++	string_map[p_theme_type].erase(p_name);
++
++	_emit_theme_changed(true);
++}
++
++void Theme::get_string_list(const StringName &p_theme_type, List<StringName> *p_list) const {
++	ERR_FAIL_NULL(p_list);
++	if (!string_map.has(p_theme_type)) {
++		return;
++	}
++	for (const KeyValue<StringName, String> &E : string_map[p_theme_type]) {
++		p_list->push_back(E.key);
++	}
++}
++
++void Theme::add_string_type(const StringName &p_theme_type) {
++	ERR_FAIL_COND_MSG(!is_valid_type_name(p_theme_type), vformat("Invalid type name: '%s'", p_theme_type));
++	if (!string_map.has(p_theme_type)) {
++		string_map[p_theme_type] = ThemeStringMap();
++	}
++}
++
++void Theme::remove_string_type(const StringName &p_theme_type) {
++	string_map.erase(p_theme_type);
++}
++
++void Theme::rename_string_type(const StringName &p_old_theme_type, const StringName &p_theme_type) {
++	ERR_FAIL_COND_MSG(!is_valid_type_name(p_theme_type), vformat("Invalid type name: '%s'", p_theme_type));
++	if (!string_map.has(p_old_theme_type) || string_map.has(p_theme_type)) {
++		return;
++	}
++	string_map[p_theme_type] = string_map[p_old_theme_type];
++	string_map.erase(p_old_theme_type);
++}
++
++void Theme::get_string_type_list(List<StringName> *p_list) const {
++	ERR_FAIL_NULL(p_list);
++	for (const KeyValue<StringName, ThemeStringMap> &E : string_map) {
++		p_list->push_back(E.key);
++	}
++}
++
+ // Generic methods for managing theme items.
+ void Theme::set_theme_item(DataType p_data_type, const StringName &p_name, const StringName &p_theme_type, const Variant &p_value) {
+ 	switch (p_data_type) {
+@@ -1250,6 +1346,11 @@ void Theme::set_theme_item(DataType p_data_type, const StringName &p_name, const
+ 			Ref<ColorScheme> color_scheme_value = Object::cast_to<ColorScheme>(p_value.get_validated_object());
+ 			set_color_scheme(p_name, p_theme_type, color_scheme_value);
+ 		} break;
++		case DATA_TYPE_STRING: {
++			ERR_FAIL_COND_MSG(p_value.get_type() != Variant::STRING, "Theme item's data type (String) does not match Variant's type (" + Variant::get_type_name(p_value.get_type()) + ").");
++
++			set_string(p_name, p_theme_type, p_value);
++		} break;
+ 		case DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -1273,6 +1374,8 @@ Variant Theme::get_theme_item(DataType p_data_type, const StringName &p_name, co
+ 			return get_color_role(p_name, p_theme_type);
+ 		case DATA_TYPE_COLOR_SCHEME:
+ 			return get_color_scheme(p_name, p_theme_type);
++		case DATA_TYPE_STRING:
++			return get_string(p_name, p_theme_type);
+ 		case DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -1306,6 +1409,8 @@ bool Theme::has_theme_item(DataType p_data_type, const StringName &p_name, const
+ 			return has_color_role(p_name, p_theme_type);
+ 		case DATA_TYPE_COLOR_SCHEME:
+ 			return has_color_scheme(p_name, p_theme_type);
++		case DATA_TYPE_STRING:
++			return has_string(p_name, p_theme_type);
+ 		case DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -1331,6 +1436,8 @@ bool Theme::has_theme_item_nocheck(DataType p_data_type, const StringName &p_nam
+ 			return has_color_role_nocheck(p_name, p_theme_type);
+ 		case DATA_TYPE_COLOR_SCHEME:
+ 			return has_color_scheme_nocheck(p_name, p_theme_type);
++		case DATA_TYPE_STRING:
++			return has_string_nocheck(p_name, p_theme_type);
+ 		case DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -1364,6 +1471,9 @@ void Theme::rename_theme_item(DataType p_data_type, const StringName &p_old_name
+ 		case DATA_TYPE_COLOR_SCHEME:
+ 			rename_color_scheme(p_old_name, p_name, p_theme_type);
+ 			break;
++		case DATA_TYPE_STRING:
++			rename_string(p_old_name, p_name, p_theme_type);
++			break;
+ 		case DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -1395,6 +1505,9 @@ void Theme::clear_theme_item(DataType p_data_type, const StringName &p_name, con
+ 		case DATA_TYPE_COLOR_SCHEME:
+ 			clear_color_scheme(p_name, p_theme_type);
+ 			break;
++		case DATA_TYPE_STRING:
++			clear_string(p_name, p_theme_type);
++			break;
+ 		case DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -1426,6 +1539,9 @@ void Theme::get_theme_item_list(DataType p_data_type, const StringName &p_theme_
+ 		case DATA_TYPE_COLOR_SCHEME:
+ 			get_color_scheme_list(p_theme_type, p_list);
+ 			break;
++		case DATA_TYPE_STRING:
++			get_string_list(p_theme_type, p_list);
++			break;
+ 		case DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -1457,6 +1573,9 @@ void Theme::add_theme_item_type(DataType p_data_type, const StringName &p_theme_
+ 		case DATA_TYPE_COLOR_SCHEME:
+ 			add_color_scheme_type(p_theme_type);
+ 			break;
++		case DATA_TYPE_STRING:
++			add_string_type(p_theme_type);
++			break;
+ 		case DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -1488,6 +1607,9 @@ void Theme::remove_theme_item_type(DataType p_data_type, const StringName &p_the
+ 		case DATA_TYPE_COLOR_SCHEME:
+ 			remove_color_scheme_type(p_theme_type);
+ 			break;
++		case DATA_TYPE_STRING:
++			remove_string_type(p_theme_type);
++			break;
+ 		case DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -1519,6 +1641,9 @@ void Theme::rename_theme_item_type(DataType p_data_type, const StringName &p_old
+ 		case DATA_TYPE_COLOR_SCHEME:
+ 			rename_color_scheme_type(p_old_theme_type, p_theme_type);
+ 			break;
++		case DATA_TYPE_STRING:
++			rename_string_type(p_old_theme_type, p_theme_type);
++			break;
+ 		case DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -1550,6 +1675,9 @@ void Theme::get_theme_item_type_list(DataType p_data_type, List<StringName> *p_l
+ 		case DATA_TYPE_COLOR_SCHEME:
+ 			get_color_scheme_type_list(p_list);
+ 			break;
++		case DATA_TYPE_STRING:
++			get_string_type_list(p_list);
++			break;
+ 		case DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -1725,6 +1853,11 @@ void Theme::get_type_list(List<StringName> *p_list) const {
+ 		types.insert(E.key);
+ 	}
+ 
++	// Strings.
++	for (const KeyValue<StringName, ThemeStringMap> &E : string_map) {
++		types.insert(E.key);
++	}
++
+ 	// Variations.
+ 	for (const KeyValue<StringName, StringName> &E : variation_map) {
+ 		types.insert(E.key);
+@@ -1991,6 +2124,34 @@ Vector<String> Theme::_get_color_scheme_type_list() const {
+ 	return ret;
+ }
+ 
++Vector<String> Theme::_get_string_list(const String &p_theme_type) const {
++	Vector<String> ret;
++	List<StringName> list;
++	get_string_list(p_theme_type, &list);
++	ret.resize(list.size());
++
++	int i = 0;
++	String *write = ret.ptrw();
++	for (List<StringName>::Element *E = list.front(); E; E = E->next(), i++) {
++		write[i] = E->get();
++	}
++	return ret;
++}
++
++Vector<String> Theme::_get_string_type_list() const {
++	Vector<String> ret;
++	List<StringName> list;
++	get_string_type_list(&list);
++	ret.resize(list.size());
++
++	int i = 0;
++	String *write = ret.ptrw();
++	for (List<StringName>::Element *E = list.front(); E; E = E->next(), i++) {
++		write[i] = E->get();
++	}
++	return ret;
++}
++
+ Vector<String> Theme::_get_theme_item_list(DataType p_data_type, const String &p_theme_type) const {
+ 	switch (p_data_type) {
+ 		case DATA_TYPE_COLOR:
+@@ -2009,6 +2170,8 @@ Vector<String> Theme::_get_theme_item_list(DataType p_data_type, const String &p
+ 			return _get_color_role_list(p_theme_type);
+ 		case DATA_TYPE_COLOR_SCHEME:
+ 			return _get_color_scheme_list(p_theme_type);
++		case DATA_TYPE_STRING:
++			return _get_string_list(p_theme_type);
+ 		case DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -2034,6 +2197,8 @@ Vector<String> Theme::_get_theme_item_type_list(DataType p_data_type) const {
+ 			return _get_color_role_type_list();
+ 		case DATA_TYPE_COLOR_SCHEME:
+ 			return _get_color_scheme_type_list();
++		case DATA_TYPE_STRING:
++			return _get_string_type_list();
+ 		case DATA_TYPE_MAX:
+ 			break; // Can't happen, but silences warning.
+ 	}
+@@ -2171,6 +2336,15 @@ void Theme::merge_with(const Ref<Theme> &p_other) {
+ 		}
+ 	}
+ 
++	// Strings.
++	{
++		for (const KeyValue<StringName, ThemeStringMap> &E : p_other->string_map) {
++			for (const KeyValue<StringName, String> &F : E.value) {
++				set_string(F.key, E.key, F.value);
++			}
++		}
++	}
++
+ 	// Type variations.
+ 	{
+ 		for (const KeyValue<StringName, StringName> &E : p_other->variation_map) {
+@@ -2248,6 +2422,7 @@ void Theme::clear() {
+ 	constant_map.clear();
+ 	color_role_map.clear();
+ 	color_scheme_map.clear();
++	string_map.clear();
+ 
+ 	variation_map.clear();
+ 	variation_base_map.clear();
+@@ -2324,6 +2499,14 @@ void Theme::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("get_color_scheme_list", "theme_type"), &Theme::_get_color_scheme_list);
+ 	ClassDB::bind_method(D_METHOD("get_color_scheme_type_list"), &Theme::_get_color_scheme_type_list);
+ 
++	ClassDB::bind_method(D_METHOD("set_string", "name", "theme_type", "value"), &Theme::set_string);
++	ClassDB::bind_method(D_METHOD("get_string", "name", "theme_type"), &Theme::get_string);
++	ClassDB::bind_method(D_METHOD("has_string", "name", "theme_type"), &Theme::has_string);
++	ClassDB::bind_method(D_METHOD("rename_string", "old_name", "name", "theme_type"), &Theme::rename_string);
++	ClassDB::bind_method(D_METHOD("clear_string", "name", "theme_type"), &Theme::clear_string);
++	ClassDB::bind_method(D_METHOD("get_string_list", "theme_type"), &Theme::_get_string_list);
++	ClassDB::bind_method(D_METHOD("get_string_type_list"), &Theme::_get_string_type_list);
++
+ 	ClassDB::bind_method(D_METHOD("set_default_base_scale", "base_scale"), &Theme::set_default_base_scale);
+ 	ClassDB::bind_method(D_METHOD("get_default_base_scale"), &Theme::get_default_base_scale);
+ 	ClassDB::bind_method(D_METHOD("has_default_base_scale"), &Theme::has_default_base_scale);
+@@ -2375,6 +2558,7 @@ void Theme::_bind_methods() {
+ 	BIND_ENUM_CONSTANT(DATA_TYPE_STYLEBOX);
+ 	BIND_ENUM_CONSTANT(DATA_TYPE_COLOR_ROLE);
+ 	BIND_ENUM_CONSTANT(DATA_TYPE_COLOR_SCHEME);
++	BIND_ENUM_CONSTANT(DATA_TYPE_STRING);
+ 	BIND_ENUM_CONSTANT(DATA_TYPE_MAX);
+ }
+ 
+diff --git a/scene/resources/theme.h b/scene/resources/theme.h
+index 9b1d9c579c40758f92bf66e46c9fb0b26f33a466..fc0b351fec25edc010cbd128ab879dcbee5b88c6 100644
+--- a/scene/resources/theme.h
++++ b/scene/resources/theme.h
+@@ -56,6 +56,7 @@ public:
+ 	using ThemeConstantMap = HashMap<StringName, int>;
+ 	using ThemeColorRoleMap = HashMap<StringName, ColorRole>;
+ 	using ThemeColorSchemeMap = HashMap<StringName, Ref<ColorScheme>>;
++	using ThemeStringMap = HashMap<StringName, String>;
+ 
+ 	enum DataType {
+ 		DATA_TYPE_COLOR,
+@@ -66,6 +67,7 @@ public:
+ 		DATA_TYPE_STYLEBOX,
+ 		DATA_TYPE_COLOR_ROLE,
+ 		DATA_TYPE_COLOR_SCHEME,
++		DATA_TYPE_STRING,
+ 		DATA_TYPE_MAX
+ 	};
+ 
+@@ -90,6 +92,8 @@ private:
+ 	Vector<String> _get_color_role_type_list() const;
+ 	Vector<String> _get_color_scheme_list(const String &p_theme_type) const;
+ 	Vector<String> _get_color_scheme_type_list() const;
++	Vector<String> _get_string_list(const String &p_theme_type) const;
++	Vector<String> _get_string_type_list() const;
+ 
+ 	Vector<String> _get_theme_item_list(DataType p_data_type, const String &p_theme_type) const;
+ 	Vector<String> _get_theme_item_type_list(DataType p_data_type) const;
+@@ -116,6 +120,7 @@ protected:
+ 	HashMap<StringName, ThemeConstantMap> constant_map;
+ 	HashMap<StringName, ThemeColorRoleMap> color_role_map;
+ 	HashMap<StringName, ThemeColorSchemeMap> color_scheme_map;
++	HashMap<StringName, ThemeStringMap> string_map;
+ 	HashMap<StringName, StringName> variation_map;
+ 	HashMap<StringName, List<StringName>> variation_base_map;
+ 
+@@ -245,6 +250,18 @@ public:
+ 	void rename_color_scheme_type(const StringName &p_old_theme_type, const StringName &p_theme_type);
+ 	void get_color_scheme_type_list(List<StringName> *p_list) const;
+ 
++	void set_string(const StringName &p_name, const StringName &p_theme_type, const String &p_string);
++	virtual String get_string(const StringName &p_name, const StringName &p_theme_type) const;
++	bool has_string(const StringName &p_name, const StringName &p_theme_type) const;
++	bool has_string_nocheck(const StringName &p_name, const StringName &p_theme_type) const;
++	void rename_string(const StringName &p_old_name, const StringName &p_name, const StringName &p_theme_type);
++	void clear_string(const StringName &p_name, const StringName &p_theme_type);
++	void get_string_list(const StringName &p_theme_type, List<StringName> *p_list) const;
++	void add_string_type(const StringName &p_theme_type);
++	void remove_string_type(const StringName &p_theme_type);
++	void rename_string_type(const StringName &p_old_theme_type, const StringName &p_theme_type);
++	void get_string_type_list(List<StringName> *p_list) const;
++
+ 	void set_theme_item(DataType p_data_type, const StringName &p_name, const StringName &p_theme_type, const Variant &p_value);
+ 	Variant get_theme_item(DataType p_data_type, const StringName &p_name, const StringName &p_theme_type) const;
+ 	bool has_theme_item(DataType p_data_type, const StringName &p_name, const StringName &p_theme_type) const;
+diff --git a/tests/scene/test_control.cpp b/tests/scene/test_control.cpp
+index a4e1efaa26e6269f5e43c164f3c79e28143f18ad..c2bef0b1c531e198451788deb12693ddf570b63c 100644
+--- a/tests/scene/test_control.cpp
++++ b/tests/scene/test_control.cpp
+@@ -86,6 +86,30 @@ TEST_CASE("[SceneTree][Control] Dynamic theme colors") {
+ 	memdelete(control);
+ }
+ 
++TEST_CASE("[SceneTree][Control] String theme overrides") {
++	Control *control = memnew(Control);
++	SceneTree::get_singleton()->get_root()->add_child(control);
++
++	Ref<Theme> theme = memnew(Theme);
++	theme->set_string("label", "Control", "theme value");
++	control->set_theme(theme);
++
++	CHECK(control->get_theme_string("label") == "theme value");
++	control->add_theme_string_override("label", "override value");
++	CHECK(control->has_theme_string_override("label"));
++	CHECK(control->get_theme_string("label") == "override value");
++
++	control->set("theme_override_strings/label", "property value");
++	CHECK(control->get("theme_override_strings/label") == "property value");
++	CHECK(control->get_theme_string("label") == "property value");
++
++	control->remove_theme_string_override("label");
++	CHECK_FALSE(control->has_theme_string_override("label"));
++	CHECK(control->get_theme_string("label") == "theme value");
++
++	memdelete(control);
++}
++
+ TEST_CASE("[SceneTree][Control] Transforms") {
+ 	SUBCASE("[Control][Global Transform] Global Transform should be accessible while not in SceneTree.") { // GH-79453
+ 		Control *test_node = memnew(Control);
+diff --git a/tests/scene/test_theme.cpp b/tests/scene/test_theme.cpp
+index 9614689a02f502105e375e3a91f5877ce1b1d390..8cf19e3df81cd5acac9cfec0caf8f622bf87a1d8 100644
+--- a/tests/scene/test_theme.cpp
++++ b/tests/scene/test_theme.cpp
+@@ -59,6 +59,7 @@ public:
+ 		{ Theme::DATA_TYPE_STYLEBOX, Ref<StyleBox>(memnew(StyleBoxFlat)) },
+ 		{ Theme::DATA_TYPE_COLOR_ROLE, static_cast<int64_t>(ColorRole::PRIMARY) },
+ 		{ Theme::DATA_TYPE_COLOR_SCHEME, Ref<ColorScheme>(memnew(ColorScheme)) },
++		{ Theme::DATA_TYPE_STRING, String("theme string") },
+ 	};
+ 
+ 	const StringName valid_item_name = "valid_item_name";
+@@ -90,6 +91,31 @@ TEST_CASE("[Theme] Color role and color scheme theme items") {
+ 	CHECK_FALSE(theme->has_theme_item_nocheck(Theme::DATA_TYPE_COLOR_SCHEME, "font_color_scheme", "Button"));
+ }
+ 
++TEST_CASE("[Theme] String theme items") {
++	Ref<Theme> theme = memnew(Theme);
++
++	theme->set_string("label", "Button", "Open");
++	CHECK(theme->has_string("label", "Button"));
++	CHECK(theme->get_string("label", "Button") == "Open");
++	CHECK(theme->get_theme_item(Theme::DATA_TYPE_STRING, "label", "Button") == String("Open"));
++
++	theme->set_string("empty", "Button", "");
++	CHECK(theme->has_string("empty", "Button"));
++	CHECK(theme->get_string("empty", "Button").is_empty());
++
++	theme->rename_string("label", "caption", "Button");
++	CHECK_FALSE(theme->has_string("label", "Button"));
++	CHECK(theme->get_string("caption", "Button") == "Open");
++
++	Ref<Theme> copy = memnew(Theme);
++	copy->merge_with(theme);
++	CHECK(copy->get_string("caption", "Button") == "Open");
++	CHECK(copy->has_string("empty", "Button"));
++
++	copy->clear_theme_item(Theme::DATA_TYPE_STRING, "caption", "Button");
++	CHECK_FALSE(copy->has_string("caption", "Button"));
++}
++
+ TEST_CASE("[Theme] StyleBox dynamic colors") {
+ 	Ref<ColorScheme> default_scheme = memnew(ColorScheme(Color("#6750a4")));
+ 	Ref<ColorScheme> explicit_scheme = memnew(ColorScheme(Color("#006495")));
+diff --git a/tests/scene/test_window.cpp b/tests/scene/test_window.cpp
+index 0a6b71bf2e4ae2bcc637c23a48361d598d83a37c..b10cb1e6af745c076798f0991e37b98960b2a8e7 100644
+--- a/tests/scene/test_window.cpp
++++ b/tests/scene/test_window.cpp
+@@ -90,6 +90,30 @@ TEST_CASE("[SceneTree][Window] Dynamic theme colors") {
+ 	memdelete(window);
+ }
+ 
++TEST_CASE("[SceneTree][Window] String theme overrides") {
++	Window *window = memnew(Window);
++	SceneTree::get_singleton()->get_root()->add_child(window);
++
++	Ref<Theme> theme = memnew(Theme);
++	theme->set_string("title", "Window", "theme value");
++	window->set_theme(theme);
++
++	CHECK(window->get_theme_string("title") == "theme value");
++	window->add_theme_string_override("title", "override value");
++	CHECK(window->has_theme_string_override("title"));
++	CHECK(window->get_theme_string("title") == "override value");
++
++	window->set("theme_override_strings/title", "property value");
++	CHECK(window->get("theme_override_strings/title") == "property value");
++	CHECK(window->get_theme_string("title") == "property value");
++
++	window->remove_theme_string_override("title");
++	CHECK_FALSE(window->has_theme_string_override("title"));
++	CHECK(window->get_theme_string("title") == "theme value");
++
++	memdelete(window);
++}
++
+ TEST_CASE("[SceneTree][Window]") {
+ 	Window *root = SceneTree::get_singleton()->get_root();
+ 
+
+base-commit: 5ec4857b340b6284a18b49b2eda462bd250f219a
+prerequisite-patch-id: b38459b409a3326aed65d2433e1341638171f884
+prerequisite-patch-id: bdb0fe8d6ba7fff1b900ae33d9bec552ea61724c
+prerequisite-patch-id: 4dcdddc73066f768cb97c56444abacb21bda061c
+prerequisite-patch-id: 1f2fbc55f35da3e943dcbaeeb3c9a6d798621bf3
+prerequisite-patch-id: 4dd1cec6888d5160c85be2072b9e5dd05411d007
+prerequisite-patch-id: 60110ae09a2d09796ad65e339ee0b5abc2ce541a
+prerequisite-patch-id: bdb0025d4207a7cf0e1466ca96b2824d238b3caf
+prerequisite-patch-id: 8c55a8201fec417bc2629b903ea2d630aedab1d8
+prerequisite-patch-id: 9dfaaac9d4a47edf9d1eccce8fa66b69e674a911
+prerequisite-patch-id: 17fa223ec74d20c7792e45826a4f0d8ecd7f85d7
+prerequisite-patch-id: 0fb9ef780b3f10a7e82968e44defda508734fa91
+prerequisite-patch-id: 2af824bf187ff13746bd620b1032f57d166c0114
+prerequisite-patch-id: dc8aa901272b27086c9045fc0b9335986d3a8128
+prerequisite-patch-id: 0ce30d5045f596dbc6bf72cbcd9bb16472513013
+prerequisite-patch-id: 50d820c0fb3ac27ddef8f76b133637558f8bcc8e
+prerequisite-patch-id: 69b2baab747aed9362c0ca4c161fc02e5970db44
+prerequisite-patch-id: 41b4bd5af73a2a33c2e64048b72e0d4f3c664f19

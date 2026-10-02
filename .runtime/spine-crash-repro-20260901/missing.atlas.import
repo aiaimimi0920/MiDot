@@ -1,0 +1,15 @@
+[remap]
+
+importer="spine.atlas"
+type="SpineAtlasResource"
+uid="uid://be0tdvgetd2ea"
+path="res://.godot/imported/missing.atlas-a0a04d9078ecea654e195dff2b74006f.spatlas"
+
+[deps]
+
+source_file="res://missing.atlas"
+dest_files=["res://.godot/imported/missing.atlas-a0a04d9078ecea654e195dff2b74006f.spatlas"]
+
+[params]
+
+normal_map_prefix="n"

@@ -1,0 +1,274 @@
+From 95aeb355357f335f948ed3d49cac350109c7e329 Mon Sep 17 00:00:00 2001
+From: aiaimimi0920 <153103332+aiaimimi0920@users.noreply.github.com>
+Date: Wed, 23 Sep 2026 02:46:17 -0700
+Subject: [PATCH] fix(color-scheme): refresh on texture change
+
+Godot-Patch-Topic: ui.dynamic-color-theme
+---
+ modules/color_scheme/color_scheme.cpp         |  19 +++
+ modules/color_scheme/color_scheme.h           |   1 +
+ .../color_scheme/test_color_scheme.cpp        | 132 ++++++++++++++++++
+ 3 files changed, 152 insertions(+)
+
+diff --git a/modules/color_scheme/color_scheme.cpp b/modules/color_scheme/color_scheme.cpp
+index 78ecba77b47ad0fe9cc8d3a2767eb79e89569900..6904f9c94a50603014d1db8df1e43be0319354ff 100644
+--- a/modules/color_scheme/color_scheme.cpp
++++ b/modules/color_scheme/color_scheme.cpp
+@@ -30,6 +30,7 @@
+ 
+ #include "color_scheme.h"
+ 
++#include "core/object/callable_mp.h"
+ #include "core/object/class_db.h"
+ 
+ void ColorScheme::_update_color_scheme() {
+@@ -45,6 +46,11 @@ void ColorScheme::_update_color_scheme() {
+ 	emit_changed();
+ }
+ 
++void ColorScheme::_source_texture_changed() {
++	dirty = true;
++	_update_color_scheme();
++}
++
+ material_color_utilities::SchemeContent ColorScheme::_create_scheme_content() {
+ 	Color cur_source_color = source_color;
+ 	if (source_texture.is_valid()) {
+@@ -78,6 +84,9 @@ void ColorScheme::set_source_color(Color p_source_color) {
+ 		return;
+ 	}
+ 
++	if (source_texture.is_valid()) {
++		source_texture->disconnect_changed(callable_mp(this, &ColorScheme::_source_texture_changed));
++	}
+ 	source_color = p_source_color;
+ 	source_texture = Ref<Texture2D>();
+ 	dirty = true;
+@@ -93,7 +102,14 @@ void ColorScheme::set_source_texture(const Ref<Texture2D> &p_source_texture) {
+ 		return;
+ 	}
+ 
++	if (source_texture.is_valid()) {
++		source_texture->disconnect_changed(callable_mp(this, &ColorScheme::_source_texture_changed));
++	}
++
+ 	source_texture = p_source_texture;
++	if (source_texture.is_valid()) {
++		source_texture->connect_changed(callable_mp(this, &ColorScheme::_source_texture_changed), CONNECT_REFERENCE_COUNTED);
++	}
+ 	source_color = Color();
+ 	dirty = true;
+ 	_update_color_scheme();
+@@ -564,4 +580,7 @@ ColorScheme::ColorScheme(const Ref<Texture2D> &p_source_texture, bool p_dark, fl
+ 		dark(p_dark),
+ 		contrast_level(CLAMP(p_contrast_level, -1.0f, 1.0f)),
+ 		scheme(_create_scheme_content()) {
++	if (source_texture.is_valid()) {
++		source_texture->connect_changed(callable_mp(this, &ColorScheme::_source_texture_changed), CONNECT_REFERENCE_COUNTED);
++	}
+ }
+diff --git a/modules/color_scheme/color_scheme.h b/modules/color_scheme/color_scheme.h
+index 59f824866256219ed1ed16fdae2911ac7fea7741..77e3010c87101c2a2ab3689b6470ef8f262cf307 100644
+--- a/modules/color_scheme/color_scheme.h
++++ b/modules/color_scheme/color_scheme.h
+@@ -51,6 +51,7 @@ private:
+ 	material_color_utilities::SchemeContent scheme;
+ 
+ 	void _update_color_scheme();
++	void _source_texture_changed();
+ 	material_color_utilities::SchemeContent _create_scheme_content();
+ 
+ protected:
+diff --git a/tests/modules/color_scheme/test_color_scheme.cpp b/tests/modules/color_scheme/test_color_scheme.cpp
+index c0b1c4fbd2cbb2dc3e20ffd0fe5a75cccae52fcc..825612b19f8918a974925bb6f8a6f7ec5bc1f5f7 100644
+--- a/tests/modules/color_scheme/test_color_scheme.cpp
++++ b/tests/modules/color_scheme/test_color_scheme.cpp
+@@ -36,6 +36,15 @@ TEST_FORCE_LINK(test_color_scheme)
+ 
+ #ifdef MODULE_COLOR_SCHEME_ENABLED
+ 
++#include "core/object/message_queue.h"
++#include "scene/gui/control.h"
++#include "scene/main/scene_tree.h"
++#include "scene/main/window.h"
++#include "scene/resources/image_texture.h"
++#include "scene/resources/style_box_flat.h"
++#include "scene/resources/theme.h"
++#include "tests/signal_watcher.h"
++
+ #include "modules/color_scheme/color_scheme.h"
+ 
+ namespace TestColorScheme {
+@@ -85,6 +94,129 @@ TEST_CASE("[ColorScheme] Contrast level is clamped to the supported range") {
+ 	CHECK(high.get_contrast_level() == 1.0f);
+ }
+ 
++// CPU-backed texture makes palette assertions independent of the render backend.
++class MutableTestTexture : public Texture2D {
++	Ref<Image> image;
++	mutable int image_reads = 0;
++
++public:
++	Ref<Image> get_image() const override {
++		image_reads++;
++		return image;
++	}
++	int get_image_reads() const { return image_reads; }
++	void set_image(const Ref<Image> &p_image) {
++		image = p_image;
++		emit_changed();
++	}
++	void set_color(const Color &p_color) {
++		image = memnew(Image(2, 2, false, Image::FORMAT_RGB8));
++		image->fill(p_color);
++		emit_changed();
++	}
++};
++
++TEST_CASE("[ColorScheme] Texture palette follows content and detaches old sources") {
++	Ref<MutableTestTexture> texture = memnew(MutableTestTexture);
++	texture->set_color(Color(1, 0, 0));
++	Ref<ColorScheme> scheme = memnew(ColorScheme(texture));
++	const Color red_primary = scheme->get_primary();
++	SIGNAL_WATCH(scheme.ptr(), "updated_color_scheme");
++
++	texture->set_color(Color(0, 0, 1));
++	ColorScheme blue(Color(0, 0, 1));
++	CHECK(scheme->get_primary() != red_primary);
++	CHECK(scheme->get_primary() == blue.get_primary());
++	SIGNAL_CHECK("updated_color_scheme", one_empty_signal_args());
++
++	scheme->set_source_texture(texture);
++	SIGNAL_CHECK_FALSE("updated_color_scheme");
++	const Color same_source_primary = scheme->get_primary();
++	texture->set_color(Color(1, 1, 0));
++	CHECK(scheme->get_primary() != same_source_primary);
++	SIGNAL_CHECK("updated_color_scheme", one_empty_signal_args());
++
++	Ref<MutableTestTexture> replacement = memnew(MutableTestTexture);
++	replacement->set_color(Color(0, 1, 0));
++	scheme->set_source_texture(replacement);
++	SIGNAL_DISCARD("updated_color_scheme");
++	texture->set_color(Color(1, 0, 0));
++	SIGNAL_CHECK_FALSE("updated_color_scheme");
++	replacement->set_color(Color(0, 0, 1));
++	CHECK(scheme->get_primary() == blue.get_primary());
++	SIGNAL_CHECK("updated_color_scheme", one_empty_signal_args());
++
++	scheme->set_source_color(Color(1, 0, 0));
++	SIGNAL_DISCARD("updated_color_scheme");
++	replacement->set_color(Color(0, 1, 0));
++	CHECK(scheme->get_primary() == red_primary);
++	SIGNAL_CHECK_FALSE("updated_color_scheme");
++	scheme->set_source_texture(replacement);
++	scheme->set_source_texture(Ref<Texture2D>());
++	SIGNAL_DISCARD("updated_color_scheme");
++	replacement->set_color(Color(0, 0, 1));
++	SIGNAL_CHECK_FALSE("updated_color_scheme");
++	SIGNAL_UNWATCH(scheme.ptr(), "updated_color_scheme");
++	scheme.unref();
++	replacement->set_color(Color(1, 0, 0));
++}
++
++TEST_CASE("[SceneTree][ColorScheme] ImageTexture set_image propagates palette updates") {
++	Ref<Image> image = memnew(Image(2, 2, false, Image::FORMAT_RGB8));
++	image->fill(Color(0.9f, 0.05f, 0.05f));
++	Ref<ImageTexture> texture = ImageTexture::create_from_image(image);
++	Ref<ColorScheme> scheme = memnew(ColorScheme(texture));
++	SIGNAL_WATCH(scheme.ptr(), "updated_color_scheme");
++
++	Ref<Image> updated_image = memnew(Image(2, 2, false, Image::FORMAT_RGB8));
++	updated_image->fill(Color(0.05f, 0.1f, 0.9f));
++	texture->set_image(updated_image);
++
++	SIGNAL_CHECK("updated_color_scheme", one_empty_signal_args());
++	SIGNAL_UNWATCH(scheme.ptr(), "updated_color_scheme");
++}
++
++TEST_CASE("[SceneTree][ColorScheme] Source changes refresh every color consumer") {
++	Ref<MutableTestTexture> texture = memnew(MutableTestTexture);
++	texture->set_color(Color(1, 0, 0));
++	Ref<ColorScheme> color_scheme = memnew(ColorScheme(texture));
++
++	Ref<Theme> theme = memnew(Theme);
++	theme->set_color("accent", "Control", Color(1, 1, 1, 1));
++	theme->set_color_role("accent_role", "Control", ColorRole::PRIMARY);
++	theme->set_color_scheme("accent_scheme", "Control", color_scheme);
++	theme->set_color("window_accent", "Window", Color(1, 1, 1, 1));
++	theme->set_color_role("window_accent_role", "Window", ColorRole::PRIMARY);
++	theme->set_color_scheme("window_accent_scheme", "Window", color_scheme);
++
++	Control *control = memnew(Control);
++	control->set_theme(theme);
++	SceneTree::get_singleton()->get_root()->add_child(control);
++	Window *window = memnew(Window);
++	window->set_theme(theme);
++	SceneTree::get_singleton()->get_root()->add_child(window);
++
++	Ref<StyleBoxFlat> stylebox = memnew(StyleBoxFlat);
++	stylebox->set_bg_color_role(ColorRole::PRIMARY);
++	stylebox->set_color_scheme(color_scheme);
++
++	const Color initial_primary = color_scheme->get_color(ColorRole::PRIMARY);
++	const Color initial_control_color = control->get_theme_color("accent");
++	const Color initial_window_color = window->get_theme_color("window_accent");
++	const Color initial_stylebox_color = stylebox->get_resolved_bg_color();
++
++	texture->set_color(Color(0, 0, 1));
++	MessageQueue::get_singleton()->flush();
++
++	CHECK(color_scheme->get_color(ColorRole::PRIMARY) != initial_primary);
++	CHECK(control->get_theme_color("accent") != initial_control_color);
++	CHECK(window->get_theme_color("window_accent") != initial_window_color);
++	CHECK(stylebox->get_resolved_bg_color() != initial_stylebox_color);
++
++	memdelete(control);
++	memdelete(window);
++}
++
+ } // namespace TestColorScheme
+ 
+ #endif // MODULE_COLOR_SCHEME_ENABLED
+
+base-commit: 5ec4857b340b6284a18b49b2eda462bd250f219a
+prerequisite-patch-id: b38459b409a3326aed65d2433e1341638171f884
+prerequisite-patch-id: bdb0fe8d6ba7fff1b900ae33d9bec552ea61724c
+prerequisite-patch-id: 4dcdddc73066f768cb97c56444abacb21bda061c
+prerequisite-patch-id: 1f2fbc55f35da3e943dcbaeeb3c9a6d798621bf3
+prerequisite-patch-id: 4dd1cec6888d5160c85be2072b9e5dd05411d007
+prerequisite-patch-id: 60110ae09a2d09796ad65e339ee0b5abc2ce541a
+prerequisite-patch-id: bdb0025d4207a7cf0e1466ca96b2824d238b3caf
+prerequisite-patch-id: 8c55a8201fec417bc2629b903ea2d630aedab1d8
+prerequisite-patch-id: 9dfaaac9d4a47edf9d1eccce8fa66b69e674a911
+prerequisite-patch-id: 17fa223ec74d20c7792e45826a4f0d8ecd7f85d7
+prerequisite-patch-id: 0fb9ef780b3f10a7e82968e44defda508734fa91
+prerequisite-patch-id: 2af824bf187ff13746bd620b1032f57d166c0114
+prerequisite-patch-id: dc8aa901272b27086c9045fc0b9335986d3a8128
+prerequisite-patch-id: 0ce30d5045f596dbc6bf72cbcd9bb16472513013
+prerequisite-patch-id: 50d820c0fb3ac27ddef8f76b133637558f8bcc8e
+prerequisite-patch-id: 69b2baab747aed9362c0ca4c161fc02e5970db44
+prerequisite-patch-id: 41b4bd5af73a2a33c2e64048b72e0d4f3c664f19
+prerequisite-patch-id: 67083f15ed3c32a690794c698729f213a5245e20
+prerequisite-patch-id: 14ad80fb2ee81b00b9194186196bba9d350bc28e
+prerequisite-patch-id: 7d791289954a2144845e9b843451c6c9717daf6a
+prerequisite-patch-id: d5e37dc01427a0639bba6123e6afee995d62ef4a
+prerequisite-patch-id: fa2f2bf9521e391400e0151a1a290fca10a3f124
+prerequisite-patch-id: 2e5d11daca8780d00fe2d10677ac0c26098fae5c
+prerequisite-patch-id: 06b6906be778d545881f82f2431b2204eb052a6c
+prerequisite-patch-id: 6f98206b25188cf56bc55e3fbad4fff5da6d6d4e
+prerequisite-patch-id: 9c598b9a701c8d9fb585255c239a2f64c998f3a0
+prerequisite-patch-id: 148113e476c059293ce209839c317a4945cc1899
+prerequisite-patch-id: 68f8ac60d0f60d3ac0bb1fe23aa79abd660c2009
+prerequisite-patch-id: 470ac52175750bf3eadc5e0286a61411eb3f6ebf
+prerequisite-patch-id: 075c9922d2a9fadb91e8c3402b4e7d2f7bf7f8a1
+prerequisite-patch-id: 3b6bc3f484f1654f8bca99626ff2507a0e17a3ca
+prerequisite-patch-id: d4fed2df8ba748ad28488271c1b2c42cc88f8c17
+prerequisite-patch-id: 6a2c61a480ce572ae1c3692257cf60463d4d3cf9
+prerequisite-patch-id: c0be036c6582ae10a9c24249190be04a37c8392a
+prerequisite-patch-id: 02e0656ba365a7fb2cad0c69ca9ecbcf05ea35f1
+prerequisite-patch-id: 6b9471813c5552c60fce6f086172833038fed2ae
+prerequisite-patch-id: 9a80815a3f443dabb008cef85de0783e1530a9c9
+prerequisite-patch-id: 6cbac35a7fd4756f09c6b54a683203752361d1b8
+prerequisite-patch-id: 3f83b289634f3f0c6efc0f2104447c35fa4e6999
+prerequisite-patch-id: 7fa76bc0dcf10c37ddce6dfe863cf8a15db1a4e3
+prerequisite-patch-id: 59285ed00363fbf066365f96211e649c4e9e8707

@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="NavigationMeshSourceGeometryData2D" inherits="Resource" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add_obstruction_outline">
+			<return type="void" />
+			<param index="0" name="shape_outline" type="PackedVector2Array" />
+			<description>
+			</description>
+		</method>
+		<method name="add_projected_obstruction">
+			<return type="void" />
+			<param index="0" name="vertices" type="PackedVector2Array" />
+			<param index="1" name="carve" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="add_traversable_outline">
+			<return type="void" />
+			<param index="0" name="shape_outline" type="PackedVector2Array" />
+			<description>
+			</description>
+		</method>
+		<method name="append_obstruction_outlines">
+			<return type="void" />
+			<param index="0" name="obstruction_outlines" type="PackedVector2Array[]" />
+			<description>
+			</description>
+		</method>
+		<method name="append_traversable_outlines">
+			<return type="void" />
+			<param index="0" name="traversable_outlines" type="PackedVector2Array[]" />
+			<description>
+			</description>
+		</method>
+		<method name="clear">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="clear_projected_obstructions">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="get_bounds">
+			<return type="Rect2" />
+			<description>
+			</description>
+		</method>
+		<method name="get_obstruction_outlines" qualifiers="const">
+			<return type="PackedVector2Array[]" />
+			<description>
+			</description>
+		</method>
+		<method name="get_projected_obstructions" qualifiers="const">
+			<return type="Array" />
+			<description>
+			</description>
+		</method>
+		<method name="get_traversable_outlines" qualifiers="const">
+			<return type="PackedVector2Array[]" />
+			<description>
+			</description>
+		</method>
+		<method name="has_data">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="merge">
+			<return type="void" />
+			<param index="0" name="other_geometry" type="NavigationMeshSourceGeometryData2D" />
+			<description>
+			</description>
+		</method>
+		<method name="set_obstruction_outlines">
+			<return type="void" />
+			<param index="0" name="obstruction_outlines" type="PackedVector2Array[]" />
+			<description>
+			</description>
+		</method>
+		<method name="set_projected_obstructions">
+			<return type="void" />
+			<param index="0" name="projected_obstructions" type="Array" />
+			<description>
+			</description>
+		</method>
+		<method name="set_traversable_outlines">
+			<return type="void" />
+			<param index="0" name="traversable_outlines" type="PackedVector2Array[]" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>

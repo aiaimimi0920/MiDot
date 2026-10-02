@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="JavaClassWrapper" inherits="Object" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="create_proxy">
+			<return type="JavaObject" />
+			<param index="0" name="object" type="Object" />
+			<param index="1" name="interfaces" type="PackedStringArray" />
+			<description>
+			</description>
+		</method>
+		<method name="create_sam_callback">
+			<return type="JavaObject" />
+			<param index="0" name="sam_interface" type="String" />
+			<param index="1" name="callable" type="Callable" />
+			<description>
+			</description>
+		</method>
+		<method name="get_exception">
+			<return type="JavaObject" />
+			<description>
+			</description>
+		</method>
+		<method name="wrap">
+			<return type="JavaClass" />
+			<param index="0" name="name" type="String" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>

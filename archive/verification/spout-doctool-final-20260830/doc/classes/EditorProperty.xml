@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="EditorProperty" inherits="Container" api_type="editor" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="_set_read_only" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="read_only" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="_update_property" qualifiers="virtual">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="add_focusable">
+			<return type="void" />
+			<param index="0" name="control" type="Control" />
+			<description>
+			</description>
+		</method>
+		<method name="deselect">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="emit_changed">
+			<return type="void" />
+			<param index="0" name="property" type="StringName" />
+			<param index="1" name="value" type="Variant" />
+			<param index="2" name="field" type="StringName" default="&amp;&quot;&quot;" />
+			<param index="3" name="changing" type="bool" default="false" />
+			<description>
+			</description>
+		</method>
+		<method name="get_edited_object">
+			<return type="Object" />
+			<description>
+			</description>
+		</method>
+		<method name="get_edited_property" qualifiers="const">
+			<return type="StringName" />
+			<description>
+			</description>
+		</method>
+		<method name="is_selected" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="select">
+			<return type="void" />
+			<param index="0" name="focusable" type="int" default="-1" />
+			<description>
+			</description>
+		</method>
+		<method name="set_bottom_editor">
+			<return type="void" />
+			<param index="0" name="editor" type="Control" />
+			<description>
+			</description>
+		</method>
+		<method name="set_label_reference">
+			<return type="void" />
+			<param index="0" name="control" type="Control" />
+			<description>
+			</description>
+		</method>
+		<method name="set_object_and_property">
+			<return type="void" />
+			<param index="0" name="object" type="Object" />
+			<param index="1" name="property" type="StringName" />
+			<description>
+			</description>
+		</method>
+		<method name="update_property">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="checkable" type="bool" setter="set_checkable" getter="is_checkable" default="false">
+		</member>
+		<member name="checked" type="bool" setter="set_checked" getter="is_checked" default="false">
+		</member>
+		<member name="deletable" type="bool" setter="set_deletable" getter="is_deletable" default="false">
+		</member>
+		<member name="draw_background" type="bool" setter="set_draw_background" getter="is_draw_background" default="true">
+		</member>
+		<member name="draw_label" type="bool" setter="set_draw_label" getter="is_draw_label" default="true">
+		</member>
+		<member name="draw_warning" type="bool" setter="set_draw_warning" getter="is_draw_warning" default="false">
+		</member>
+		<member name="focus_mode" type="int" setter="set_focus_mode" getter="get_focus_mode" overrides="Control" enum="Control.FocusMode" default="3" />
+		<member name="keying" type="bool" setter="set_keying" getter="is_keying" default="false">
+		</member>
+		<member name="label" type="String" setter="set_label" getter="get_label" default="&quot;&quot;">
+		</member>
+		<member name="name_split_ratio" type="float" setter="set_name_split_ratio" getter="get_name_split_ratio" default="0.5">
+		</member>
+		<member name="read_only" type="bool" setter="set_read_only" getter="is_read_only" default="false">
+		</member>
+		<member name="selectable" type="bool" setter="set_selectable" getter="is_selectable" default="true">
+		</member>
+		<member name="use_folding" type="bool" setter="set_use_folding" getter="is_using_folding" default="false">
+		</member>
+	</members>
+	<signals>
+		<signal name="multiple_properties_changed">
+			<param index="0" name="properties" type="PackedStringArray" />
+			<param index="1" name="value" type="Array" />
+			<description>
+			</description>
+		</signal>
+		<signal name="object_id_selected">
+			<param index="0" name="property" type="StringName" />
+			<param index="1" name="id" type="int" />
+			<description>
+			</description>
+		</signal>
+		<signal name="property_can_revert_changed">
+			<param index="0" name="property" type="StringName" />
+			<param index="1" name="can_revert" type="bool" />
+			<description>
+			</description>
+		</signal>
+		<signal name="property_changed">
+			<param index="0" name="property" type="StringName" />
+			<param index="1" name="value" type="Variant" />
+			<param index="2" name="field" type="StringName" />
+			<param index="3" name="changing" type="bool" />
+			<description>
+			</description>
+		</signal>
+		<signal name="property_checked">
+			<param index="0" name="property" type="StringName" />
+			<param index="1" name="checked" type="bool" />
+			<description>
+			</description>
+		</signal>
+		<signal name="property_deleted">
+			<param index="0" name="property" type="StringName" />
+			<description>
+			</description>
+		</signal>
+		<signal name="property_favorited">
+			<param index="0" name="property" type="StringName" />
+			<param index="1" name="favorited" type="bool" />
+			<description>
+			</description>
+		</signal>
+		<signal name="property_keyed">
+			<param index="0" name="property" type="StringName" />
+			<description>
+			</description>
+		</signal>
+		<signal name="property_keyed_with_value">
+			<param index="0" name="property" type="StringName" />
+			<param index="1" name="value" type="Variant" />
+			<description>
+			</description>
+		</signal>
+		<signal name="property_overridden">
+			<description>
+			</description>
+		</signal>
+		<signal name="property_pinned">
+			<param index="0" name="property" type="StringName" />
+			<param index="1" name="pinned" type="bool" />
+			<description>
+			</description>
+		</signal>
+		<signal name="resource_selected">
+			<param index="0" name="path" type="String" />
+			<param index="1" name="resource" type="Resource" />
+			<description>
+			</description>
+		</signal>
+		<signal name="selected">
+			<param index="0" name="path" type="String" />
+			<param index="1" name="focusable_idx" type="int" />
+			<description>
+			</description>
+		</signal>
+	</signals>
+</class>

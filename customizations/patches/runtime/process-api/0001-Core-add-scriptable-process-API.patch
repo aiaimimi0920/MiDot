@@ -1,0 +1,667 @@
+From df077b5fed582a0437149ee09d7ac45dab566af9 Mon Sep 17 00:00:00 2001
+From: aiaimimi0920 <153103332+aiaimimi0920@users.noreply.github.com>
+Date: Sun, 30 Aug 2026 00:46:08 +0800
+Subject: [PATCH] Core: add scriptable process API
+
+Port the legacy asynchronous child-process feature onto the modern OS pipe backends, including independent stdin closure and working-directory support.
+
+Godot-Patch-Topic: runtime.process-api
+---
+ core/io/file_access.h                        |   1 +
+ core/io/process.cpp                          | 188 +++++++++++++++++++
+ core/io/process.h                            |  72 +++++++
+ core/os/os.h                                 |   2 +-
+ core/register_core_types.cpp                 |   2 +
+ doc/classes/Process.xml                      |  79 ++++++++
+ drivers/unix/file_access_unix_pipe.cpp       |  21 ++-
+ drivers/unix/file_access_unix_pipe.h         |   1 +
+ drivers/unix/os_unix.cpp                     |   7 +-
+ drivers/unix/os_unix.h                       |   2 +-
+ drivers/windows/file_access_windows_pipe.cpp |  28 ++-
+ drivers/windows/file_access_windows_pipe.h   |   1 +
+ platform/web/os_web.cpp                      |   2 +-
+ platform/web/os_web.h                        |   2 +-
+ platform/windows/os_windows.cpp              |  13 +-
+ platform/windows/os_windows.h                |   2 +-
+ 16 files changed, 406 insertions(+), 17 deletions(-)
+ create mode 100644 core/io/process.cpp
+ create mode 100644 core/io/process.h
+ create mode 100644 doc/classes/Process.xml
+
+diff --git a/core/io/file_access.h b/core/io/file_access.h
+index 46d4f5b905dc6cb3bce5085903abdd5b456baae4..c229ddb283118422e1f966fcb588d32a7e765774 100644
+--- a/core/io/file_access.h
++++ b/core/io/file_access.h
+@@ -232,6 +232,7 @@ public:
+ 	bool store_var(const Variant &p_var, bool p_full_objects = false);
+ 
+ 	virtual void close() = 0;
++	virtual void close_write() { close(); }
+ 
+ 	virtual bool file_exists(const String &p_name) = 0; ///< return true if a file exists
+ 
+diff --git a/core/io/process.cpp b/core/io/process.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..ff04c15aa9120fef47303f93e97ccb45dc51d432
+--- /dev/null
++++ b/core/io/process.cpp
+@@ -0,0 +1,188 @@
++/**************************************************************************/
++/*  process.cpp                                                           */
++/**************************************************************************/
++/*                         This file is part of:                          */
++/*                             GODOT ENGINE                               */
++/*                        https://godotengine.org                          */
++/**************************************************************************/
++/* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
++/* Copyright (c) 2007-2014 Juan Linietsky, Ariel Manzur.                  */
++/*                                                                        */
++/* Permission is hereby granted, free of charge, to any person obtaining  */
++/* a copy of this software and associated documentation files (the        */
++/* "Software"), to deal in the Software without restriction, including    */
++/* without limitation the rights to use, copy, modify, merge, publish,    */
++/* distribute, sublicense, and/or sell copies of the Software, and to     */
++/* permit persons to whom the Software is furnished to do so, subject to  */
++/* the following conditions:                                              */
++/*                                                                        */
++/* The above copyright notice and this permission notice shall be         */
++/* included in all copies or substantial portions of the Software.        */
++/*                                                                        */
++/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,        */
++/* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF     */
++/* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. */
++/* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY   */
++/* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,   */
++/* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE      */
++/* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
++/**************************************************************************/
++
++#include "process.h"
++
++#include "core/object/class_db.h"
++#include "core/os/os.h"
++
++void Process::_bind_methods() {
++	ClassDB::bind_static_method("Process", D_METHOD("create", "path", "arguments", "working_directory", "open_stdin"), &Process::create, DEFVAL(Vector<String>()), DEFVAL(String()), DEFVAL(false));
++
++	ClassDB::bind_method(D_METHOD("get_available_stdout_lines"), &Process::get_available_stdout_lines);
++	ClassDB::bind_method(D_METHOD("get_stdout_line"), &Process::get_stdout_line);
++	ClassDB::bind_method(D_METHOD("get_available_stderr_lines"), &Process::get_available_stderr_lines);
++	ClassDB::bind_method(D_METHOD("get_stderr_line"), &Process::get_stderr_line);
++	ClassDB::bind_method(D_METHOD("get_exit_status"), &Process::get_exit_status);
++	ClassDB::bind_method(D_METHOD("kill", "force"), &Process::kill, DEFVAL(false));
++	ClassDB::bind_method(D_METHOD("get_id"), &Process::get_id);
++	ClassDB::bind_method(D_METHOD("write", "input"), &Process::write);
++	ClassDB::bind_method(D_METHOD("close_stdin"), &Process::close_stdin);
++}
++
++void Process::_read_available(const Ref<FileAccess> &p_pipe, String &r_remainder, Vector<String> &r_lines) {
++	if (p_pipe.is_null() || !p_pipe->is_open()) {
++		return;
++	}
++
++	const uint64_t available = p_pipe->get_length();
++	if (available == 0) {
++		return;
++	}
++
++	Vector<uint8_t> bytes;
++	bytes.resize(available);
++	const uint64_t read = p_pipe->get_buffer(bytes.ptrw(), available);
++	if (read == 0) {
++		return;
++	}
++
++	String chunk = String::utf8(reinterpret_cast<const char *>(bytes.ptr()), read);
++	r_remainder += chunk.replace("\r\n", "\n").replace_char('\r', '\n');
++
++	int newline = r_remainder.find_char('\n');
++	while (newline >= 0) {
++		r_lines.push_back(r_remainder.left(newline));
++		r_remainder = r_remainder.substr(newline + 1);
++		newline = r_remainder.find_char('\n');
++	}
++}
++
++void Process::_pump_output() const {
++	MutexLock lock(mutex);
++	_read_available(stdio, stdout_remainder, stdout_lines);
++	_read_available(stderr_pipe, stderr_remainder, stderr_lines);
++}
++
++void Process::_flush_remainders_if_exited() const {
++	if (OS::get_singleton()->is_process_running(process_id)) {
++		return;
++	}
++
++	MutexLock lock(mutex);
++	_read_available(stdio, stdout_remainder, stdout_lines);
++	_read_available(stderr_pipe, stderr_remainder, stderr_lines);
++	if (!stdout_remainder.is_empty()) {
++		stdout_lines.push_back(stdout_remainder);
++		stdout_remainder.clear();
++	}
++	if (!stderr_remainder.is_empty()) {
++		stderr_lines.push_back(stderr_remainder);
++		stderr_remainder.clear();
++	}
++}
++
++Ref<Process> Process::create(const String &p_path, const Vector<String> &p_arguments, const String &p_working_directory, bool p_open_stdin) {
++	List<String> arguments;
++	for (const String &argument : p_arguments) {
++		arguments.push_back(argument);
++	}
++
++	const String working_directory = p_working_directory.is_empty() ? OS::get_singleton()->get_executable_path().get_base_dir() : p_working_directory;
++	const Dictionary handles = OS::get_singleton()->execute_with_pipe(p_path, arguments, false, working_directory);
++	ERR_FAIL_COND_V_MSG(handles.is_empty(), Ref<Process>(), "Unable to create child process.");
++
++	Ref<Process> process;
++	process.instantiate();
++	process->stdio = handles["stdio"];
++	process->stderr_pipe = handles["stderr"];
++	process->process_id = handles["pid"];
++	process->stdin_open = p_open_stdin;
++	if (!p_open_stdin) {
++		process->stdio->close_write();
++	}
++	return process;
++}
++
++int Process::get_available_stdout_lines() const {
++	_pump_output();
++	_flush_remainders_if_exited();
++	MutexLock lock(mutex);
++	return stdout_lines.size();
++}
++
++int Process::get_available_stderr_lines() const {
++	_pump_output();
++	_flush_remainders_if_exited();
++	MutexLock lock(mutex);
++	return stderr_lines.size();
++}
++
++String Process::get_stdout_line() {
++	_pump_output();
++	_flush_remainders_if_exited();
++	MutexLock lock(mutex);
++	if (stdout_lines.is_empty()) {
++		return String();
++	}
++	const String line = stdout_lines[0];
++	stdout_lines.remove_at(0);
++	return line;
++}
++
++String Process::get_stderr_line() {
++	_pump_output();
++	_flush_remainders_if_exited();
++	MutexLock lock(mutex);
++	if (stderr_lines.is_empty()) {
++		return String();
++	}
++	const String line = stderr_lines[0];
++	stderr_lines.remove_at(0);
++	return line;
++}
++
++int Process::get_exit_status() const {
++	_pump_output();
++	return OS::get_singleton()->get_process_exit_code(process_id);
++}
++
++int64_t Process::get_id() const {
++	return process_id;
++}
++
++void Process::kill(bool p_force) {
++	(void)p_force;
++	OS::get_singleton()->kill(process_id);
++}
++
++bool Process::write(const String &p_input) {
++	ERR_FAIL_COND_V_MSG(!stdin_open || stdio.is_null() || !stdio->is_open(), false, "Standard input is not open.");
++	const CharString input = p_input.utf8();
++	return stdio->store_buffer(reinterpret_cast<const uint8_t *>(input.ptr()), input.length());
++}
++
++void Process::close_stdin() {
++	if (!stdin_open || stdio.is_null()) {
++		return;
++	}
++	stdio->close_write();
++	stdin_open = false;
++}
+diff --git a/core/io/process.h b/core/io/process.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..bc83d4a948e80ea8a27e465c28281b858e01c4fc
+--- /dev/null
++++ b/core/io/process.h
+@@ -0,0 +1,72 @@
++/**************************************************************************/
++/*  process.h                                                             */
++/**************************************************************************/
++/*                         This file is part of:                          */
++/*                             GODOT ENGINE                               */
++/*                        https://godotengine.org                          */
++/**************************************************************************/
++/* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
++/* Copyright (c) 2007-2014 Juan Linietsky, Ariel Manzur.                  */
++/*                                                                        */
++/* Permission is hereby granted, free of charge, to any person obtaining  */
++/* a copy of this software and associated documentation files (the        */
++/* "Software"), to deal in the Software without restriction, including    */
++/* without limitation the rights to use, copy, modify, merge, publish,    */
++/* distribute, sublicense, and/or sell copies of the Software, and to     */
++/* permit persons to whom the Software is furnished to do so, subject to  */
++/* the following conditions:                                              */
++/*                                                                        */
++/* The above copyright notice and this permission notice shall be         */
++/* included in all copies or substantial portions of the Software.        */
++/*                                                                        */
++/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,        */
++/* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF     */
++/* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. */
++/* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY   */
++/* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,   */
++/* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE      */
++/* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
++/**************************************************************************/
++
++#pragma once
++
++#include "core/io/file_access.h"
++#include "core/object/ref_counted.h"
++#include "core/os/mutex.h"
++#include "core/os/process_id.h"
++
++class Process : public RefCounted {
++	GDCLASS(Process, RefCounted);
++
++	mutable Mutex mutex;
++	mutable Vector<String> stdout_lines;
++	mutable Vector<String> stderr_lines;
++	mutable String stdout_remainder;
++	mutable String stderr_remainder;
++
++	Ref<FileAccess> stdio;
++	Ref<FileAccess> stderr_pipe;
++	ProcessID process_id = -1;
++	bool stdin_open = false;
++
++	static void _read_available(const Ref<FileAccess> &p_pipe, String &r_remainder, Vector<String> &r_lines);
++	void _pump_output() const;
++	void _flush_remainders_if_exited() const;
++
++protected:
++	static void _bind_methods();
++
++public:
++	static Ref<Process> create(const String &p_path, const Vector<String> &p_arguments = Vector<String>(), const String &p_working_directory = String(), bool p_open_stdin = false);
++
++	int get_available_stdout_lines() const;
++	int get_available_stderr_lines() const;
++	String get_stdout_line();
++	String get_stderr_line();
++
++	int get_exit_status() const;
++	int64_t get_id() const;
++	void kill(bool p_force = false);
++	bool write(const String &p_input);
++	void close_stdin();
++};
+diff --git a/core/os/os.h b/core/os/os.h
+index 0a8342fae92c2db40b215e916d02e6defab6471c..5a3105438aac1a0970e31758e1dd3110a1d23fd1 100644
+--- a/core/os/os.h
++++ b/core/os/os.h
+@@ -213,7 +213,7 @@ public:
+ 	virtual Vector<String> get_system_font_path_for_text(const String &p_font_name, const String &p_text, const String &p_locale = String(), const String &p_script = String(), int p_weight = 400, int p_stretch = 100, bool p_italic = false) const { return Vector<String>(); }
+ 	virtual String get_executable_path() const;
+ 	virtual Error execute(const String &p_path, const List<String> &p_arguments, String *r_pipe = nullptr, int *r_exitcode = nullptr, bool p_read_stderr = false, Mutex *p_pipe_mutex = nullptr, bool p_open_console = false) = 0;
+-	virtual Dictionary execute_with_pipe(const String &p_path, const List<String> &p_arguments, bool p_blocking = true) { return Dictionary(); }
++	virtual Dictionary execute_with_pipe(const String &p_path, const List<String> &p_arguments, bool p_blocking = true, const String &p_working_directory = String()) { return Dictionary(); }
+ 	virtual Error create_process(const String &p_path, const List<String> &p_arguments, ProcessID *r_child_id = nullptr, bool p_open_console = false) = 0;
+ 	virtual Error create_instance(const List<String> &p_arguments, ProcessID *r_child_id = nullptr) { return create_process(get_executable_path(), p_arguments, r_child_id); }
+ 	virtual Error open_with_program(const String &p_program_path, const List<String> &p_paths) { return create_process(p_program_path, p_paths); }
+diff --git a/core/register_core_types.cpp b/core/register_core_types.cpp
+index e6f64c7fbdc1b2bb65b7d1a9ad21c74ce4f3dacb..3c340f73f64416efe7e38f206087cddff348d417 100644
+--- a/core/register_core_types.cpp
++++ b/core/register_core_types.cpp
+@@ -59,6 +59,7 @@
+ #include "core/io/packet_peer_dtls.h"
+ #include "core/io/packet_peer_udp.h"
+ #include "core/io/pck_packer.h"
++#include "core/io/process.h"
+ #include "core/io/resource_format_binary.h"
+ #include "core/io/resource_importer.h"
+ #include "core/io/resource_loader.h"
+@@ -268,6 +269,7 @@ void register_core_types() {
+ 	GDREGISTER_CLASS(TriangleMesh);
+ 
+ 	GDREGISTER_ABSTRACT_CLASS(FileAccess);
++	GDREGISTER_ABSTRACT_CLASS(Process);
+ 	GDREGISTER_ABSTRACT_CLASS(DirAccess);
+ 	GDREGISTER_CLASS(CoreBind::Thread);
+ 	GDREGISTER_CLASS(CoreBind::Mutex);
+diff --git a/doc/classes/Process.xml b/doc/classes/Process.xml
+new file mode 100644
+index 0000000000000000000000000000000000000000..2f3a769ad25316897210fd231471078da47fa97b
+--- /dev/null
++++ b/doc/classes/Process.xml
+@@ -0,0 +1,79 @@
++<?xml version="1.0" encoding="UTF-8" ?>
++<class name="Process" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
++	<brief_description>
++		Runs and controls a child process with redirected standard streams.
++	</brief_description>
++	<description>
++		[Process] provides a non-blocking object wrapper around a child process. Create one with [method create], then poll and read its standard output and error lines. Standard input is writable only when [code]open_stdin[/code] is [code]true[/code].
++	</description>
++	<tutorials>
++	</tutorials>
++	<methods>
++		<method name="close_stdin">
++			<return type="void" />
++			<description>
++				Closes standard input without closing the process output streams.
++			</description>
++		</method>
++		<method name="create" qualifiers="static">
++			<return type="Process" />
++			<param index="0" name="path" type="String" />
++			<param index="1" name="arguments" type="PackedStringArray" default="PackedStringArray()" />
++			<param index="2" name="working_directory" type="String" default="&quot;&quot;" />
++			<param index="3" name="open_stdin" type="bool" default="false" />
++			<description>
++				Starts [param path] with [param arguments]. An empty [param working_directory] uses the engine executable directory. Returns [code]null[/code] if the platform cannot create the process.
++			</description>
++		</method>
++		<method name="get_available_stderr_lines" qualifiers="const">
++			<return type="int" />
++			<description>
++				Returns the number of complete standard-error lines ready to read.
++			</description>
++		</method>
++		<method name="get_available_stdout_lines" qualifiers="const">
++			<return type="int" />
++			<description>
++				Returns the number of complete standard-output lines ready to read.
++			</description>
++		</method>
++		<method name="get_exit_status" qualifiers="const">
++			<return type="int" />
++			<description>
++				Returns the child exit status, or [code]-1[/code] while it is still running.
++			</description>
++		</method>
++		<method name="get_id" qualifiers="const">
++			<return type="int" />
++			<description>
++				Returns the child process ID.
++			</description>
++		</method>
++		<method name="get_stderr_line">
++			<return type="String" />
++			<description>
++				Returns and removes the next available standard-error line.
++			</description>
++		</method>
++		<method name="get_stdout_line">
++			<return type="String" />
++			<description>
++				Returns and removes the next available standard-output line.
++			</description>
++		</method>
++		<method name="kill">
++			<return type="void" />
++			<param index="0" name="force" type="bool" default="false" />
++			<description>
++				Terminates the child process. [param force] is retained for compatibility; platform termination behavior is defined by [method OS.kill].
++			</description>
++		</method>
++		<method name="write">
++			<return type="bool" />
++			<param index="0" name="input" type="String" />
++			<description>
++				Writes [param input] to standard input. Returns [code]false[/code] if input was not opened or the write failed.
++			</description>
++		</method>
++	</methods>
++</class>
+diff --git a/drivers/unix/file_access_unix_pipe.cpp b/drivers/unix/file_access_unix_pipe.cpp
+index c3276d9fb70d3e5f531d54d128ceb38614368c29..645470eda15c675ae12f0f841754d8ab8d017b9a 100644
+--- a/drivers/unix/file_access_unix_pipe.cpp
++++ b/drivers/unix/file_access_unix_pipe.cpp
+@@ -109,14 +109,16 @@ Error FileAccessUnixPipe::open_internal(const String &p_path, int p_mode_flags)
+ }
+ 
+ void FileAccessUnixPipe::_close() {
+-	if (fd[0] < 0) {
++	if (fd[0] < 0 && fd[1] < 0) {
+ 		return;
+ 	}
+ 
+-	if (fd[1] != fd[0]) {
++	if (fd[1] >= 0 && fd[1] != fd[0]) {
+ 		::close(fd[1]);
+ 	}
+-	::close(fd[0]);
++	if (fd[0] >= 0) {
++		::close(fd[0]);
++	}
+ 	fd[0] = -1;
+ 	fd[1] = -1;
+ 
+@@ -187,6 +189,19 @@ void FileAccessUnixPipe::close() {
+ 	_close();
+ }
+ 
++void FileAccessUnixPipe::close_write() {
++	if (fd[1] < 0) {
++		return;
++	}
++	if (fd[1] == fd[0]) {
++		::close(fd[0]);
++		fd[0] = -1;
++	} else {
++		::close(fd[1]);
++	}
++	fd[1] = -1;
++}
++
+ FileAccessUnixPipe::~FileAccessUnixPipe() {
+ 	_close();
+ }
+diff --git a/drivers/unix/file_access_unix_pipe.h b/drivers/unix/file_access_unix_pipe.h
+index c55cb7ee09c5c758d0472cc547e3550e783c8337..288df43fe13fa8406dc101bfc0f44b4efb75bc59 100644
+--- a/drivers/unix/file_access_unix_pipe.h
++++ b/drivers/unix/file_access_unix_pipe.h
+@@ -84,6 +84,7 @@ public:
+ 	virtual Error _set_read_only_attribute(const String &p_file, bool p_ro) override { return ERR_UNAVAILABLE; }
+ 
+ 	virtual void close() override;
++	virtual void close_write() override;
+ 
+ 	FileAccessUnixPipe() {}
+ 	virtual ~FileAccessUnixPipe();
+diff --git a/drivers/unix/os_unix.cpp b/drivers/unix/os_unix.cpp
+index 86af7ba6523fac06da83f286a94c2c6a47316a9f..46508be07039a21d6d296d3dd26d858a7dc54ab6 100644
+--- a/drivers/unix/os_unix.cpp
++++ b/drivers/unix/os_unix.cpp
+@@ -672,7 +672,7 @@ PackedByteArray OS_Unix::string_to_multibyte(const String &p_encoding, const Str
+ 	return ret;
+ }
+ 
+-Dictionary OS_Unix::execute_with_pipe(const String &p_path, const List<String> &p_arguments, bool p_blocking) {
++Dictionary OS_Unix::execute_with_pipe(const String &p_path, const List<String> &p_arguments, bool p_blocking, const String &p_working_directory) {
+ #define CLEAN_PIPES \
+ 	if (pipe_in[0] >= 0) { \
+ 		::close(pipe_in[0]); \
+@@ -740,6 +740,11 @@ Dictionary OS_Unix::execute_with_pipe(const String &p_path, const List<String> &
+ 		}
+ 		args.push_back(0);
+ 
++		if (!p_working_directory.is_empty() && chdir(p_working_directory.utf8().get_data()) != 0) {
++			fprintf(stderr, "Could not change child process working directory: %s\n", p_working_directory.utf8().get_data());
++			raise(SIGKILL);
++		}
++
+ 		::close(STDIN_FILENO);
+ 		::dup2(pipe_in[0], STDIN_FILENO);
+ 
+diff --git a/drivers/unix/os_unix.h b/drivers/unix/os_unix.h
+index a1bee9bf44412665a99a89e129a2bc0a12268ad8..79580198fe0b349b84ea10937e9f2e0e0fb807a8 100644
+--- a/drivers/unix/os_unix.h
++++ b/drivers/unix/os_unix.h
+@@ -120,7 +120,7 @@ public:
+ 	virtual PackedByteArray string_to_multibyte(const String &p_encoding, const String &p_string) const override;
+ 
+ 	virtual Error execute(const String &p_path, const List<String> &p_arguments, String *r_pipe = nullptr, int *r_exitcode = nullptr, bool read_stderr = false, Mutex *p_pipe_mutex = nullptr, bool p_open_console = false) override;
+-	virtual Dictionary execute_with_pipe(const String &p_path, const List<String> &p_arguments, bool p_blocking = true) override;
++	virtual Dictionary execute_with_pipe(const String &p_path, const List<String> &p_arguments, bool p_blocking = true, const String &p_working_directory = String()) override;
+ 	virtual Error create_process(const String &p_path, const List<String> &p_arguments, ProcessID *r_child_id = nullptr, bool p_open_console = false) override;
+ 	virtual Error kill(const ProcessID &p_pid) override;
+ 	virtual int get_process_id() const override;
+diff --git a/drivers/windows/file_access_windows_pipe.cpp b/drivers/windows/file_access_windows_pipe.cpp
+index 049b8e7a23ff667d84cf09491a005757f7da050a..462ec28e9911278a919fe68cea8c0f8c13624b47 100644
+--- a/drivers/windows/file_access_windows_pipe.cpp
++++ b/drivers/windows/file_access_windows_pipe.cpp
+@@ -80,13 +80,15 @@ Error FileAccessWindowsPipe::open_internal(const String &p_path, int p_mode_flag
+ }
+ 
+ void FileAccessWindowsPipe::_close() {
+-	if (fd[0] == nullptr) {
++	if (fd[0] == nullptr && fd[1] == nullptr) {
+ 		return;
+ 	}
+-	if (fd[1] != fd[0]) {
++	if (fd[1] != nullptr && fd[1] != fd[0]) {
+ 		CloseHandle(fd[1]);
+ 	}
+-	CloseHandle(fd[0]);
++	if (fd[0] != nullptr) {
++		CloseHandle(fd[0]);
++	}
+ 	fd[0] = nullptr;
+ 	fd[1] = nullptr;
+ }
+@@ -107,7 +109,12 @@ uint64_t FileAccessWindowsPipe::get_length() const {
+ 	ERR_FAIL_COND_V_MSG(fd[0] == nullptr, -1, "Pipe must be opened before use.");
+ 
+ 	DWORD buf_rem = 0;
+-	ERR_FAIL_COND_V(!PeekNamedPipe(fd[0], nullptr, 0, nullptr, &buf_rem, nullptr), 0);
++	if (!PeekNamedPipe(fd[0], nullptr, 0, nullptr, &buf_rem, nullptr)) {
++		if (GetLastError() == ERROR_BROKEN_PIPE) {
++			return 0;
++		}
++		ERR_FAIL_V(0);
++	}
+ 	return buf_rem;
+ }
+ 
+@@ -147,6 +154,19 @@ void FileAccessWindowsPipe::close() {
+ 	_close();
+ }
+ 
++void FileAccessWindowsPipe::close_write() {
++	if (fd[1] == nullptr) {
++		return;
++	}
++	if (fd[1] == fd[0]) {
++		CloseHandle(fd[0]);
++		fd[0] = nullptr;
++	} else {
++		CloseHandle(fd[1]);
++	}
++	fd[1] = nullptr;
++}
++
+ FileAccessWindowsPipe::~FileAccessWindowsPipe() {
+ 	_close();
+ }
+diff --git a/drivers/windows/file_access_windows_pipe.h b/drivers/windows/file_access_windows_pipe.h
+index bd8187f721ad4b6ec01cc58c3c7b6c45d5699107..78aeb12ba1d9e9e58c71c201a0c1265093dd4d2e 100644
+--- a/drivers/windows/file_access_windows_pipe.h
++++ b/drivers/windows/file_access_windows_pipe.h
+@@ -85,6 +85,7 @@ public:
+ 	virtual Error _set_read_only_attribute(const String &p_file, bool p_ro) override { return ERR_UNAVAILABLE; }
+ 
+ 	virtual void close() override;
++	virtual void close_write() override;
+ 
+ 	FileAccessWindowsPipe() {}
+ 	virtual ~FileAccessWindowsPipe();
+diff --git a/platform/web/os_web.cpp b/platform/web/os_web.cpp
+index 0adf0199671cff10b7e697b130de01b6d3fbb632..8b84eaa9dd31d9b7f4265f805f50bd3791a46106 100644
+--- a/platform/web/os_web.cpp
++++ b/platform/web/os_web.cpp
+@@ -108,7 +108,7 @@ Error OS_Web::execute(const String &p_path, const List<String> &p_arguments, Str
+ 	return create_process(p_path, p_arguments);
+ }
+ 
+-Dictionary OS_Web::execute_with_pipe(const String &p_path, const List<String> &p_arguments, bool p_blocking) {
++Dictionary OS_Web::execute_with_pipe(const String &p_path, const List<String> &p_arguments, bool p_blocking, const String &p_working_directory) {
+ 	ERR_FAIL_V_MSG(Dictionary(), "OS::execute_with_pipe is not available on the Web platform.");
+ }
+ 
+diff --git a/platform/web/os_web.h b/platform/web/os_web.h
+index e581e9a945a66f3e0cf94db3aee4502637e6c728..870c7e924aac19f9aad6f1830ee8f6640b039f32 100644
+--- a/platform/web/os_web.h
++++ b/platform/web/os_web.h
+@@ -81,7 +81,7 @@ public:
+ 	bool main_loop_iterate();
+ 
+ 	Error execute(const String &p_path, const List<String> &p_arguments, String *r_pipe = nullptr, int *r_exitcode = nullptr, bool read_stderr = false, Mutex *p_pipe_mutex = nullptr, bool p_open_console = false) override;
+-	Dictionary execute_with_pipe(const String &p_path, const List<String> &p_arguments, bool p_blocking = true) override;
++	Dictionary execute_with_pipe(const String &p_path, const List<String> &p_arguments, bool p_blocking = true, const String &p_working_directory = String()) override;
+ 	Error create_process(const String &p_path, const List<String> &p_arguments, ProcessID *r_child_id = nullptr, bool p_open_console = false) override;
+ 	Error kill(const ProcessID &p_pid) override;
+ 	int get_process_id() const override;
+diff --git a/platform/windows/os_windows.cpp b/platform/windows/os_windows.cpp
+index 335de3a6129ab5e46921ac21bd26d7f2ce1c07ab..f6b5c769282d19a44a1f5a35b2c0db76b5ec2ede 100644
+--- a/platform/windows/os_windows.cpp
++++ b/platform/windows/os_windows.cpp
+@@ -1281,7 +1281,7 @@ Dictionary OS_Windows::get_memory_info() const {
+ 	return meminfo;
+ }
+ 
+-Dictionary OS_Windows::execute_with_pipe(const String &p_path, const List<String> &p_arguments, bool p_blocking) {
++Dictionary OS_Windows::execute_with_pipe(const String &p_path, const List<String> &p_arguments, bool p_blocking, const String &p_working_directory) {
+ #define CLEAN_PIPES \
+ 	if (pipe_in[0] != 0) { \
+ 		CloseHandle(pipe_in[0]); \
+@@ -1367,9 +1367,14 @@ Dictionary OS_Windows::execute_with_pipe(const String &p_path, const List<String
+ 	DWORD creation_flags = NORMAL_PRIORITY_CLASS | CREATE_NO_WINDOW | EXTENDED_STARTUPINFO_PRESENT;
+ 
+ 	Char16String current_dir_name;
+-	size_t str_len = GetCurrentDirectoryW(0, nullptr);
+-	current_dir_name.resize_uninitialized(str_len + 1);
+-	GetCurrentDirectoryW(current_dir_name.size(), (LPWSTR)current_dir_name.ptrw());
++	size_t str_len = 0;
++	if (p_working_directory.is_empty()) {
++		str_len = GetCurrentDirectoryW(0, nullptr);
++		current_dir_name.resize_uninitialized(str_len + 1);
++		GetCurrentDirectoryW(current_dir_name.size(), (LPWSTR)current_dir_name.ptrw());
++	} else {
++		current_dir_name = fix_path(p_working_directory).utf16();
++	}
+ 	if (current_dir_name.size() >= MAX_PATH) {
+ 		Char16String current_short_dir_name;
+ 		str_len = GetShortPathNameW((LPCWSTR)current_dir_name.ptr(), nullptr, 0);
+diff --git a/platform/windows/os_windows.h b/platform/windows/os_windows.h
+index 2eeb11c87136beeb0d705bd2bd6ab84b5ccb2f30..48b86e397539ef6ef33fcc226c526893215018fe 100644
+--- a/platform/windows/os_windows.h
++++ b/platform/windows/os_windows.h
+@@ -201,7 +201,7 @@ public:
+ 	virtual Dictionary get_memory_info() const override;
+ 
+ 	virtual Error execute(const String &p_path, const List<String> &p_arguments, String *r_pipe = nullptr, int *r_exitcode = nullptr, bool read_stderr = false, Mutex *p_pipe_mutex = nullptr, bool p_open_console = false) override;
+-	virtual Dictionary execute_with_pipe(const String &p_path, const List<String> &p_arguments, bool p_blocking = true) override;
++	virtual Dictionary execute_with_pipe(const String &p_path, const List<String> &p_arguments, bool p_blocking = true, const String &p_working_directory = String()) override;
+ 	virtual Error create_process(const String &p_path, const List<String> &p_arguments, ProcessID *r_child_id = nullptr, bool p_open_console = false) override;
+ 	virtual Error kill(const ProcessID &p_pid) override;
+ 	virtual int get_process_id() const override;
+
+base-commit: 5ec4857b340b6284a18b49b2eda462bd250f219a

@@ -1,0 +1,3 @@
+.tmp/
+.patch-stack-backup-*/
+.patch-stack-staging-*/

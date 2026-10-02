@@ -1,0 +1,277 @@
+From 94fc911957625be388c244779ca442853b81da93 Mon Sep 17 00:00:00 2001
+From: aiaimimi0920 <153103332+aiaimimi0920@users.noreply.github.com>
+Date: Wed, 23 Sep 2026 03:35:24 -0700
+Subject: [PATCH] fix(color-scheme): validate inputs and fallback
+
+Godot-Patch-Topic: ui.dynamic-color-theme
+---
+ modules/color_scheme/color_scheme.cpp         | 25 ++++++-
+ .../color_scheme/doc_classes/ColorScheme.xml  | 15 +++--
+ .../color_scheme/test_color_scheme.cpp        | 66 +++++++++++++++++++
+ 3 files changed, 97 insertions(+), 9 deletions(-)
+
+diff --git a/modules/color_scheme/color_scheme.cpp b/modules/color_scheme/color_scheme.cpp
+index 2050f07480d6d9375c91d3a3f2e96e1408b4dcc2..be2607edc7475f78daf8cf6bb29b84588b586986 100644
+--- a/modules/color_scheme/color_scheme.cpp
++++ b/modules/color_scheme/color_scheme.cpp
+@@ -33,6 +33,20 @@
+ #include "core/object/callable_mp.h"
+ #include "core/object/class_db.h"
+ 
++static bool is_finite_source_color(const Color &p_color) {
++	return Math::is_finite(p_color.r) && Math::is_finite(p_color.g) && Math::is_finite(p_color.b) && Math::is_finite(p_color.a);
++}
++
++static Color validated_source_color(const Color &p_color) {
++	ERR_FAIL_COND_V_MSG(!is_finite_source_color(p_color), Color("#6750a4"), "ColorScheme source color components must be finite.");
++	return p_color;
++}
++
++static float validated_contrast_level(float p_contrast_level) {
++	ERR_FAIL_COND_V_MSG(!Math::is_finite(p_contrast_level), 0.0f, "ColorScheme contrast level must be finite.");
++	return CLAMP(p_contrast_level, -1.0f, 1.0f);
++}
++
+ void ColorScheme::_update_color_scheme() {
+ 	if (!dirty) {
+ 		return;
+@@ -75,6 +89,8 @@ material_color_utilities::SchemeContent ColorScheme::_create_scheme_content() {
+ 				if (!ranked.empty()) {
+ 					cur_source_color = get_color_from_argb(ranked.front());
+ 				}
++			} else {
++				WARN_PRINT(vformat("ColorScheme could not read or decompress source texture '%s' (%s); using a black seed.", source_texture->get_path(), source_texture->get_class()));
+ 			}
+ 			source_texture_color = cur_source_color;
+ 			source_texture_color_cached = true;
+@@ -87,6 +103,7 @@ material_color_utilities::SchemeContent ColorScheme::_create_scheme_content() {
+ }
+ 
+ void ColorScheme::set_source_color(Color p_source_color) {
++	ERR_FAIL_COND_MSG(!is_finite_source_color(p_source_color), "ColorScheme source color components must be finite.");
+ 	if (source_color == p_source_color && source_texture.is_null()) {
+ 		return;
+ 	}
+@@ -143,6 +160,7 @@ bool ColorScheme::is_dark() const {
+ }
+ 
+ void ColorScheme::set_contrast_level(float p_contrast_level) {
++	ERR_FAIL_COND_MSG(!Math::is_finite(p_contrast_level), "ColorScheme contrast level must be finite.");
+ 	const float clamped_contrast = CLAMP(p_contrast_level, -1.0f, 1.0f);
+ 	if (Math::is_equal_approx(contrast_level, clamped_contrast)) {
+ 		return;
+@@ -158,6 +176,7 @@ float ColorScheme::get_contrast_level() const {
+ }
+ 
+ Color ColorScheme::get_color(ColorRole p_color_role) {
++	ERR_FAIL_INDEX_V_MSG(static_cast<int>(p_color_role), static_cast<int>(ColorRole::ON_TERTIARY_FIXED_VARIANT) + 1, get_source_color_argb(), "Invalid ColorScheme color role.");
+ #ifdef DEV_ENABLED
+ 	color_query_count++;
+ #endif
+@@ -580,9 +599,9 @@ ColorScheme::ColorScheme() :
+ }
+ 
+ ColorScheme::ColorScheme(Color p_source_color, bool p_dark, float p_contrast_level) :
+-		source_color(p_source_color),
++		source_color(validated_source_color(p_source_color)),
+ 		dark(p_dark),
+-		contrast_level(CLAMP(p_contrast_level, -1.0f, 1.0f)),
++		contrast_level(validated_contrast_level(p_contrast_level)),
+ 		scheme(_create_scheme_content()) {
+ }
+ 
+@@ -590,7 +609,7 @@ ColorScheme::ColorScheme(const Ref<Texture2D> &p_source_texture, bool p_dark, fl
+ 		source_color(Color()),
+ 		source_texture(p_source_texture),
+ 		dark(p_dark),
+-		contrast_level(CLAMP(p_contrast_level, -1.0f, 1.0f)),
++		contrast_level(validated_contrast_level(p_contrast_level)),
+ 		scheme(_create_scheme_content()) {
+ 	if (source_texture.is_valid()) {
+ 		source_texture->connect_changed(callable_mp(this, &ColorScheme::_source_texture_changed), CONNECT_REFERENCE_COUNTED);
+diff --git a/modules/color_scheme/doc_classes/ColorScheme.xml b/modules/color_scheme/doc_classes/ColorScheme.xml
+index 8e0057a8b0e4908bc88ff31880a43848774c136c..e08a8fdd27341a3fc0e2fff34157fc3420ffdd9c 100644
+--- a/modules/color_scheme/doc_classes/ColorScheme.xml
++++ b/modules/color_scheme/doc_classes/ColorScheme.xml
+@@ -5,7 +5,8 @@
+ 	</brief_description>
+ 	<description>
+ 		Generates light or dark semantic colors from [member source_color] or the representative color of [member source_texture]. Colors can be requested by [enum ColorRole] with [method get_color], or through the role-specific getter methods.
+-		The generated palette updates immediately when a source, [member dark], or [member contrast_level] changes. [Theme], [Control], [Window], [ColorRect], and dynamic [StyleBox] properties can use this resource to recolor an interface while retaining static fallback colors.
++		The generated palette updates synchronously when a source, [member dark], or [member contrast_level] changes. The new colors are available before the setter returns and before [signal updated_color_scheme] and [signal Resource.changed] are emitted. Consumers may process their own theme notifications later.
++		[Theme], [Control], [Window], [ColorRect], and dynamic [StyleBox] properties can use this resource to recolor an interface while retaining static fallback colors.
+ 	</description>
+ 	<tutorials>
+ 	</tutorials>
+@@ -20,7 +21,7 @@
+ 			<return type="Color" />
+ 			<param index="0" name="color_role" type="int" enum="ColorRole" />
+ 			<description>
+-				Returns the generated color for [param color_role]. [constant @GlobalScope.COLOR_ROLE_STATIC] and invalid role values return the source color used by the generated scheme.
++				Returns the generated color for [param color_role]. [constant @GlobalScope.COLOR_ROLE_STATIC] returns the source color used by the generated scheme. Invalid role values report an error and return that same source color.
+ 			</description>
+ 		</method>
+ 		<method name="get_error">
+@@ -344,22 +345,24 @@
+ 	</methods>
+ 	<members>
+ 		<member name="contrast_level" type="float" setter="set_contrast_level" getter="get_contrast_level" default="0.0">
+-			Adjusts contrast across the generated palette. Values are clamped to [code]-1.0[/code] through [code]1.0[/code], where negative values reduce contrast and positive values increase it.
++			Adjusts contrast across the generated palette. Finite values are clamped to [code]-1.0[/code] through [code]1.0[/code], where negative values reduce contrast and positive values increase it. Assigning NaN or infinity reports an error and leaves the current value and palette unchanged.
+ 		</member>
+ 		<member name="dark" type="bool" setter="set_dark" getter="is_dark" default="false">
+ 			If [code]true[/code], generates the dark variant of the color scheme; otherwise generates the light variant.
+ 		</member>
+ 		<member name="source_color" type="Color" setter="set_source_color" getter="get_source_color" default="Color(0.40392157, 0.3137255, 0.6431373, 1)">
+-			The source color used to generate the palette. Assigning this property clears [member source_texture].
++			The source color used to generate the palette. Assigning this property clears [member source_texture] and disconnects its change notifications. All components must be finite; an invalid assignment reports an error and leaves both the source and palette unchanged.
+ 		</member>
+ 		<member name="source_texture" type="Texture2D" setter="set_source_texture" getter="get_source_texture">
+-			An optional texture whose representative color is used to generate the palette. Assigning this property clears [member source_color]. Empty or unreadable images safely fall back to the current source color.
++			An optional texture whose representative color is used to generate the palette. Selecting a texture resets [member source_color] to opaque black. Its [signal Resource.changed] signal triggers synchronous extraction and palette regeneration, including when the same texture resource changes in place. Replacing or clearing the texture disconnects the old source.
++			The extracted seed is cached while the texture is unchanged, so updating [member dark] or [member contrast_level] does not read or quantize the image again.
++			Empty, unreadable, or undecompressible images report a warning and use a black seed. A readable image with no suitable candidate, including a fully transparent image, uses the Material Color Utilities fallback [code]#4285f4[/code]. Clearing an active texture also leaves a black seed.
+ 		</member>
+ 	</members>
+ 	<signals>
+ 		<signal name="updated_color_scheme">
+ 			<description>
+-				Emitted after the generated palette is recomputed because a source or generation setting changed.
++				Emitted synchronously after the generated palette is recomputed because a source or generation setting changed. This includes changes signaled by [member source_texture]. Unchanged assignments and rejected non-finite values do not emit this signal.
+ 			</description>
+ 		</signal>
+ 	</signals>
+diff --git a/tests/modules/color_scheme/test_color_scheme.cpp b/tests/modules/color_scheme/test_color_scheme.cpp
+index e778248819b46d38c30ff9a654ec1fb4630df18c..996b9466460158afdd3d146932d8a322bf925b72 100644
+--- a/tests/modules/color_scheme/test_color_scheme.cpp
++++ b/tests/modules/color_scheme/test_color_scheme.cpp
+@@ -47,6 +47,8 @@ TEST_FORCE_LINK(test_color_scheme)
+ 
+ #include "modules/color_scheme/color_scheme.h"
+ 
++#include <limits>
++
+ namespace TestColorScheme {
+ 
+ struct ExpectedColors {
+@@ -131,6 +133,70 @@ TEST_CASE("[ColorScheme] Texture extraction is cached across scheme parameter ch
+ 	CHECK(texture->get_image_reads() == 2);
+ }
+ 
++TEST_CASE("[ColorScheme] Invalid inputs preserve a usable synchronous palette") {
++	const float invalid_values[] = { std::numeric_limits<float>::quiet_NaN(), std::numeric_limits<float>::infinity(), -std::numeric_limits<float>::infinity() };
++	Ref<MutableTestTexture> texture = memnew(MutableTestTexture);
++	texture->set_color(Color(1, 0, 0));
++	Ref<ColorScheme> scheme = memnew(ColorScheme(texture, true, 0.5f));
++	const Color original_primary = scheme->get_primary();
++	SIGNAL_WATCH(scheme.ptr(), "updated_color_scheme");
++	ERR_PRINT_OFF;
++	for (float invalid : invalid_values) {
++		scheme->set_contrast_level(invalid);
++		CHECK(scheme->get_contrast_level() == 0.5f);
++		for (int component = 0; component < 4; component++) {
++			Color source(0.2f, 0.4f, 0.6f);
++			source[component] = invalid;
++			scheme->set_source_color(source);
++			CHECK(scheme->get_source_texture() == texture);
++			CHECK(scheme->get_primary() == original_primary);
++			ColorScheme constructed(source, false, invalid);
++			ColorScheme defaults;
++			CHECK(constructed.get_primary() == defaults.get_primary());
++			CHECK(constructed.get_contrast_level() == 0.0f);
++		}
++		ColorScheme constructed_texture(texture, true, invalid);
++		CHECK(constructed_texture.get_contrast_level() == 0.0f);
++	}
++	CHECK(scheme->get_color(static_cast<ColorRole>(-1)) == scheme->get_source_color_argb());
++	CHECK(scheme->get_color(static_cast<ColorRole>(1000)) == scheme->get_source_color_argb());
++	ERR_PRINT_ON;
++	CHECK(scheme->get_color(ColorRole::STATIC) == scheme->get_source_color_argb());
++	SIGNAL_CHECK_FALSE("updated_color_scheme");
++	texture->set_color(Color(0, 0, 1));
++	ColorScheme blue(Color(0, 0, 1), true, 0.5f);
++	CHECK(scheme->get_primary() == blue.get_primary());
++	SIGNAL_CHECK("updated_color_scheme", one_empty_signal_args());
++	SIGNAL_UNWATCH(scheme.ptr(), "updated_color_scheme");
++}
++
++TEST_CASE("[ColorScheme] Unreadable and transparent textures retain distinct fallback seeds") {
++	Ref<MutableTestTexture> texture = memnew(MutableTestTexture);
++	ERR_PRINT_OFF;
++	ColorScheme scheme(texture);
++	ERR_PRINT_ON;
++	CHECK(scheme.get_source_color_argb() == Color(0, 0, 0));
++	CHECK(texture->get_image_reads() == 1);
++	scheme.set_dark(true);
++	scheme.set_contrast_level(0.5f);
++	CHECK(texture->get_image_reads() == 1);
++
++	ERR_PRINT_OFF;
++	texture->set_image(memnew(Image));
++	ERR_PRINT_ON;
++	CHECK(scheme.get_source_color_argb() == Color(0, 0, 0));
++	CHECK(texture->get_image_reads() == 2);
++	Ref<Image> transparent = memnew(Image(2, 2, false, Image::FORMAT_RGBA8));
++	transparent->fill(Color(1, 0, 0, 0));
++	texture->set_image(transparent);
++	CHECK(scheme.get_source_color_argb().to_argb32() == 0xff4285f4);
++	CHECK(texture->get_image_reads() == 3);
++	texture->set_color(Color(1, 0, 0));
++	ColorScheme red(Color(1, 0, 0), true, 0.5f);
++	CHECK(scheme.get_primary() == red.get_primary());
++	CHECK(texture->get_image_reads() == 4);
++}
++
+ TEST_CASE("[ColorScheme] Texture palette follows content and detaches old sources") {
+ 	Ref<MutableTestTexture> texture = memnew(MutableTestTexture);
+ 	texture->set_color(Color(1, 0, 0));
+
+base-commit: 5ec4857b340b6284a18b49b2eda462bd250f219a
+prerequisite-patch-id: b38459b409a3326aed65d2433e1341638171f884
+prerequisite-patch-id: bdb0fe8d6ba7fff1b900ae33d9bec552ea61724c
+prerequisite-patch-id: 4dcdddc73066f768cb97c56444abacb21bda061c
+prerequisite-patch-id: 1f2fbc55f35da3e943dcbaeeb3c9a6d798621bf3
+prerequisite-patch-id: 4dd1cec6888d5160c85be2072b9e5dd05411d007
+prerequisite-patch-id: 60110ae09a2d09796ad65e339ee0b5abc2ce541a
+prerequisite-patch-id: bdb0025d4207a7cf0e1466ca96b2824d238b3caf
+prerequisite-patch-id: 8c55a8201fec417bc2629b903ea2d630aedab1d8
+prerequisite-patch-id: 9dfaaac9d4a47edf9d1eccce8fa66b69e674a911
+prerequisite-patch-id: 17fa223ec74d20c7792e45826a4f0d8ecd7f85d7
+prerequisite-patch-id: 0fb9ef780b3f10a7e82968e44defda508734fa91
+prerequisite-patch-id: 2af824bf187ff13746bd620b1032f57d166c0114
+prerequisite-patch-id: dc8aa901272b27086c9045fc0b9335986d3a8128
+prerequisite-patch-id: 0ce30d5045f596dbc6bf72cbcd9bb16472513013
+prerequisite-patch-id: 50d820c0fb3ac27ddef8f76b133637558f8bcc8e
+prerequisite-patch-id: 69b2baab747aed9362c0ca4c161fc02e5970db44
+prerequisite-patch-id: 41b4bd5af73a2a33c2e64048b72e0d4f3c664f19
+prerequisite-patch-id: 67083f15ed3c32a690794c698729f213a5245e20
+prerequisite-patch-id: 14ad80fb2ee81b00b9194186196bba9d350bc28e
+prerequisite-patch-id: 7d791289954a2144845e9b843451c6c9717daf6a
+prerequisite-patch-id: d5e37dc01427a0639bba6123e6afee995d62ef4a
+prerequisite-patch-id: fa2f2bf9521e391400e0151a1a290fca10a3f124
+prerequisite-patch-id: 2e5d11daca8780d00fe2d10677ac0c26098fae5c
+prerequisite-patch-id: 06b6906be778d545881f82f2431b2204eb052a6c
+prerequisite-patch-id: 6f98206b25188cf56bc55e3fbad4fff5da6d6d4e
+prerequisite-patch-id: 9c598b9a701c8d9fb585255c239a2f64c998f3a0
+prerequisite-patch-id: 148113e476c059293ce209839c317a4945cc1899
+prerequisite-patch-id: 68f8ac60d0f60d3ac0bb1fe23aa79abd660c2009
+prerequisite-patch-id: 470ac52175750bf3eadc5e0286a61411eb3f6ebf
+prerequisite-patch-id: 075c9922d2a9fadb91e8c3402b4e7d2f7bf7f8a1
+prerequisite-patch-id: 3b6bc3f484f1654f8bca99626ff2507a0e17a3ca
+prerequisite-patch-id: d4fed2df8ba748ad28488271c1b2c42cc88f8c17
+prerequisite-patch-id: 6a2c61a480ce572ae1c3692257cf60463d4d3cf9
+prerequisite-patch-id: c0be036c6582ae10a9c24249190be04a37c8392a
+prerequisite-patch-id: 02e0656ba365a7fb2cad0c69ca9ecbcf05ea35f1
+prerequisite-patch-id: 6b9471813c5552c60fce6f086172833038fed2ae
+prerequisite-patch-id: 9a80815a3f443dabb008cef85de0783e1530a9c9
+prerequisite-patch-id: 6cbac35a7fd4756f09c6b54a683203752361d1b8
+prerequisite-patch-id: 3f83b289634f3f0c6efc0f2104447c35fa4e6999
+prerequisite-patch-id: 7fa76bc0dcf10c37ddce6dfe863cf8a15db1a4e3
+prerequisite-patch-id: 59285ed00363fbf066365f96211e649c4e9e8707
+prerequisite-patch-id: 7fef71675ff2ac560045ba78cb2e69d3d05bf3da
+prerequisite-patch-id: cb3f5d7d6c2d28699fd25638d57711baff02bf35
+prerequisite-patch-id: 77196bacb24fd150ffc6b82969c4d274c01d6f9a
+prerequisite-patch-id: e9942d4f02f72a92af555c51c615991adb95fb8e
+prerequisite-patch-id: d4228c26ec2e9e69226ab4b8a1adfe40be71e2e2
+prerequisite-patch-id: 433f891f57c7f1058f239694b9e5df4630dfb450
+prerequisite-patch-id: 395a24a434c14e0a86c2593175e2c4b2f83d0a15

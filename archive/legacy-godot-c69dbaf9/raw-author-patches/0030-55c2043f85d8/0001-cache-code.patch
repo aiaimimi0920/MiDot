@@ -1,0 +1,103 @@
+From 55c2043f85d8edcd1a20ced04b06dfc3003465f7 Mon Sep 17 00:00:00 2001
+From: aiaimimi0920 <153103332+aiaimimi0920@users.noreply.github.com>
+Date: Mon, 4 Mar 2024 08:58:04 +0800
+Subject: [PATCH] #cache code
+
+---
+ scene/gui/control.cpp | 50 +++++++++++++++++++++----------------------
+ scene/gui/control.h   |  4 ++--
+ 2 files changed, 27 insertions(+), 27 deletions(-)
+
+diff --git a/scene/gui/control.cpp b/scene/gui/control.cpp
+index 927f152701f88e45b51e871ac1e7cb8083fdef2d..e6bd537dfecdaaf321ec334205e75aebd595d88e 100644
+--- a/scene/gui/control.cpp
++++ b/scene/gui/control.cpp
+@@ -2772,29 +2772,29 @@ ColorRole Control::get_theme_color_role(const StringName &p_name, const StringNa
+     return color_role;
+ }
+ 
+-// Ref<ColorScheme> Control::get_theme_color_scheme(const StringName &p_name, const StringName &p_theme_type) const {
+-//     ERR_READ_THREAD_GUARD_V(Ref<ColorScheme>());
+-//     if (!data.initialized) {
+-//         WARN_PRINT_ONCE(vformat("Attempting to access theme items too early in %s; prefer NOTIFICATION_POSTINITIALIZE and NOTIFICATION_THEME_CHANGED", this->get_description()));
+-//     }
++Ref<ColorScheme> Control::get_theme_color_scheme(const StringName &p_name, const StringName &p_theme_type) const {
++    ERR_READ_THREAD_GUARD_V(Ref<ColorScheme>());
++    if (!data.initialized) {
++        WARN_PRINT_ONCE(vformat("Attempting to access theme items too early in %s; prefer NOTIFICATION_POSTINITIALIZE and NOTIFICATION_THEME_CHANGED", this->get_description()));
++    }
+ 
+-//     if (p_theme_type == StringName() || p_theme_type == get_class_name() || p_theme_type == data.theme_type_variation) {
+-//         const Ref<ColorScheme> *color_scheme = data.theme_color_scheme_override.getptr(p_name);
+-//         if (color_scheme) {
+-//             return *color_scheme;
+-//         }
+-//     }
++    if (p_theme_type == StringName() || p_theme_type == get_class_name() || p_theme_type == data.theme_type_variation) {
++        const Ref<ColorScheme> *color_scheme = data.theme_color_scheme_override.getptr(p_name);
++        if (color_scheme) {
++            return *color_scheme;
++        }
++    }
+ 
+-//     if (data.theme_color_scheme_cache.has(p_theme_type) && data.theme_color_scheme_cache[p_theme_type].has(p_name)) {
+-//         return data.theme_color_scheme_cache[p_theme_type][p_name];
+-//     }
++    if (data.theme_color_scheme_cache.has(p_theme_type) && data.theme_color_scheme_cache[p_theme_type].has(p_name)) {
++        return data.theme_color_scheme_cache[p_theme_type][p_name];
++    }
+ 
+-//     List<StringName> theme_types;
+-//     data.theme_owner->get_theme_type_dependencies(this, p_theme_type, &theme_types);
+-//     Ref<ColorScheme> color_scheme = data.theme_owner->get_theme_item_in_types(Theme::DATA_TYPE_COLOR_SCHEME, p_name, theme_types);
+-//     data.theme_color_scheme_cache[p_theme_type][p_name] = color_scheme;
+-//     return color_scheme;
+-// }
++    List<StringName> theme_types;
++    data.theme_owner->get_theme_type_dependencies(this, p_theme_type, &theme_types);
++    Ref<ColorScheme> color_scheme = data.theme_owner->get_theme_item_in_types(Theme::DATA_TYPE_COLOR_SCHEME, p_name, theme_types);
++    data.theme_color_scheme_cache[p_theme_type][p_name] = color_scheme;
++    return color_scheme;
++}
+ 
+ 
+ Variant Control::get_theme_item(Theme::DataType p_data_type, const StringName &p_name, const StringName &p_theme_type) const {
+@@ -3091,11 +3091,11 @@ void Control::remove_theme_color_role_override(const StringName &p_name) {
+     _notify_theme_override_changed();
+ }
+ 
+-// void Control::remove_theme_color_scheme_override(const StringName &p_name) {
+-//     ERR_MAIN_THREAD_GUARD;
+-//     data.theme_color_scheme_override.erase(p_name);
+-//     _notify_theme_override_changed();
+-// }
++void Control::remove_theme_color_scheme_override(const StringName &p_name) {
++    ERR_MAIN_THREAD_GUARD;
++    data.theme_color_scheme_override.erase(p_name);
++    _notify_theme_override_changed();
++}
+ 
+ bool Control::has_theme_icon_override(const StringName &p_name) const {
+ 	ERR_READ_THREAD_GUARD_V(false);
+diff --git a/scene/gui/control.h b/scene/gui/control.h
+index e2f68d821974373695c260617cb63b9590635c75..b21ea016304f899eda4589897a5a6d2106c7d590 100644
+--- a/scene/gui/control.h
++++ b/scene/gui/control.h
+@@ -588,7 +588,7 @@ public:
+ 	void remove_theme_color_override(const StringName &p_name);
+ 	void remove_theme_constant_override(const StringName &p_name);
+ 	void remove_theme_color_role_override(const StringName &p_name);
+-    // void remove_theme_color_scheme_override(const StringName &p_name);
++    void remove_theme_color_scheme_override(const StringName &p_name);
+ 
+ 	Ref<Texture2D> get_theme_icon(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+ 	Ref<StyleBox> get_theme_stylebox(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+@@ -597,7 +597,7 @@ public:
+ 	Color get_theme_color(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+ 	int get_theme_constant(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+ 	ColorRole get_theme_color_role(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+-    // Ref<ColorScheme> get_theme_color_scheme(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
++    Ref<ColorScheme> get_theme_color_scheme(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+ 
+ 	Variant get_theme_item(Theme::DataType p_data_type, const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+ #ifdef TOOLS_ENABLED

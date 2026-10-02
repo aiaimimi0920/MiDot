@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="OpenXRSpatialAnchorCapability" inherits="OpenXRExtensionWrapper" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="create_default_persistence_context">
+			<return type="OpenXRFutureResult" />
+			<param index="0" name="user_callback" type="Callable" default="Callable()" />
+			<description>
+			</description>
+		</method>
+		<method name="create_new_anchor">
+			<return type="OpenXRAnchorTracker" />
+			<param index="0" name="transform" type="Transform3D" />
+			<param index="1" name="spatial_context" type="RID" default="RID()" />
+			<param index="2" name="next" type="OpenXRStructureBase" default="null" />
+			<description>
+			</description>
+		</method>
+		<method name="create_persistence_context">
+			<return type="OpenXRFutureResult" />
+			<param index="0" name="scope" type="int" enum="OpenXRSpatialAnchorCapability.PersistenceScope" />
+			<param index="1" name="user_callback" type="Callable" default="Callable()" />
+			<description>
+			</description>
+		</method>
+		<method name="do_entity_update">
+			<return type="void" />
+			<param index="0" name="spatial_context" type="RID" />
+			<param index="1" name="component_data" type="OpenXRSpatialComponentData[]" />
+			<param index="2" name="next_snapshot_create" type="OpenXRStructureBase" default="null" />
+			<param index="3" name="next_snapshot_query" type="OpenXRStructureBase" default="null" />
+			<description>
+			</description>
+		</method>
+		<method name="free_persistence_context">
+			<return type="void" />
+			<param index="0" name="persistence_context" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="get_persistence_context_handle" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="persistence_context" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="is_persistence_scope_supported">
+			<return type="bool" />
+			<param index="0" name="scope" type="int" enum="OpenXRSpatialAnchorCapability.PersistenceScope" />
+			<description>
+			</description>
+		</method>
+		<method name="is_spatial_anchor_supported">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="is_spatial_persistence_supported">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="persist_anchor">
+			<return type="OpenXRFutureResult" />
+			<param index="0" name="anchor_tracker" type="OpenXRAnchorTracker" />
+			<param index="1" name="persistence_context" type="RID" default="RID()" />
+			<param index="2" name="user_callback" type="Callable" default="Callable()" />
+			<description>
+			</description>
+		</method>
+		<method name="remove_anchor">
+			<return type="void" />
+			<param index="0" name="anchor_tracker" type="OpenXRAnchorTracker" />
+			<description>
+			</description>
+		</method>
+		<method name="start_entity_discovery">
+			<return type="OpenXRFutureResult" />
+			<param index="0" name="spatial_context" type="RID" />
+			<param index="1" name="component_data" type="OpenXRSpatialComponentData[]" />
+			<param index="2" name="next_snapshot_create" type="OpenXRStructureBase" default="null" />
+			<param index="3" name="next_snapshot_query" type="OpenXRStructureBase" default="null" />
+			<param index="4" name="user_callback" type="Callable" default="Callable()" />
+			<description>
+			</description>
+		</method>
+		<method name="unpersist_anchor">
+			<return type="OpenXRFutureResult" />
+			<param index="0" name="anchor_tracker" type="OpenXRAnchorTracker" />
+			<param index="1" name="persistence_context" type="RID" default="RID()" />
+			<param index="2" name="user_callback" type="Callable" default="Callable()" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="PERSISTENCE_SCOPE_SYSTEM_MANAGED" value="1" enum="PersistenceScope">
+		</constant>
+		<constant name="PERSISTENCE_SCOPE_LOCAL_ANCHORS" value="1000781000" enum="PersistenceScope">
+		</constant>
+	</constants>
+</class>

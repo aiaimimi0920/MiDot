@@ -1,0 +1,79 @@
+From 821d01f0533e2a52ef525bb3e943ae904af8d9a2 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E9=9B=85=E8=A7=85=E5=A8=B1=5C=E7=93=B6=E5=AD=90?=
+ <pingzi@yamiyu.com>
+Date: Fri, 20 Oct 2023 09:59:17 +0800
+Subject: [PATCH] =?UTF-8?q?=E5=90=88=E5=B9=B6?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ servers/rendering/renderer_canvas_cull.cpp   | 3 +++
+ servers/rendering/renderer_canvas_cull.h     | 3 +++
+ servers/rendering/rendering_server_default.h | 3 +++
+ servers/rendering_server.h                   | 3 +++
+ 4 files changed, 12 insertions(+)
+
+diff --git a/servers/rendering/renderer_canvas_cull.cpp b/servers/rendering/renderer_canvas_cull.cpp
+index c5206017f7a43e9198e256eb6ed1bc6b782eaa28..d881a57174a201a65eda484985357fd0220da395 100644
+--- a/servers/rendering/renderer_canvas_cull.cpp
++++ b/servers/rendering/renderer_canvas_cull.cpp
+@@ -1623,10 +1623,13 @@ void RendererCanvasCull::canvas_item_set_debug_redraw(bool p_enabled) {
+ 	RSG::canvas_render->set_debug_redraw(p_enabled, debug_redraw_time, debug_redraw_color);
+ }
+ 
++<<<<<<< HEAD
+ bool RendererCanvasCull::canvas_item_get_debug_redraw() const {
+ 	return debug_redraw;
+ }
+ 
++=======
++>>>>>>> cca51a6f9a (Debug CanvasItem redraw)
+ void RendererCanvasCull::canvas_item_set_canvas_group_mode(RID p_item, RS::CanvasGroupMode p_mode, float p_clear_margin, bool p_fit_empty, float p_fit_margin, bool p_blur_mipmaps) {
+ 	Item *canvas_item = canvas_item_owner.get_or_null(p_item);
+ 	ERR_FAIL_NULL(canvas_item);
+diff --git a/servers/rendering/renderer_canvas_cull.h b/servers/rendering/renderer_canvas_cull.h
+index 0f51abbb266ae4b3ddd5c8fd5f76b216dcc2b7c1..aea9ac755551b94e255e313d98c217e2e3ce1896 100644
+--- a/servers/rendering/renderer_canvas_cull.h
++++ b/servers/rendering/renderer_canvas_cull.h
+@@ -265,7 +265,10 @@ public:
+ 	void canvas_item_set_canvas_group_mode(RID p_item, RS::CanvasGroupMode p_mode, float p_clear_margin = 5.0, bool p_fit_empty = false, float p_fit_margin = 0.0, bool p_blur_mipmaps = false);
+ 
+ 	void canvas_item_set_debug_redraw(bool p_enabled);
++<<<<<<< HEAD
+ 	bool canvas_item_get_debug_redraw() const;
++=======
++>>>>>>> cca51a6f9a (Debug CanvasItem redraw)
+ 
+ 	RID canvas_light_allocate();
+ 	void canvas_light_initialize(RID p_rid);
+diff --git a/servers/rendering/rendering_server_default.h b/servers/rendering/rendering_server_default.h
+index cd5904f175791348f5086d323867718f86d6da6b..32d30e5a26892f217fc35e23be5c496bd67d5029 100644
+--- a/servers/rendering/rendering_server_default.h
++++ b/servers/rendering/rendering_server_default.h
+@@ -897,7 +897,10 @@ public:
+ 	FUNC6(canvas_item_set_canvas_group_mode, RID, CanvasGroupMode, float, bool, float, bool)
+ 
+ 	FUNC1(canvas_item_set_debug_redraw, bool)
++<<<<<<< HEAD
+ 	FUNC0RC(bool, canvas_item_get_debug_redraw)
++=======
++>>>>>>> cca51a6f9a (Debug CanvasItem redraw)
+ 
+ 	FUNCRIDSPLIT(canvas_light)
+ 
+diff --git a/servers/rendering_server.h b/servers/rendering_server.h
+index fbc67fc84dfc612b56f32c1dc0931d42f8701ba5..5ed5a01b145ffdab2f7902a28df5946861fc42cc 100644
+--- a/servers/rendering_server.h
++++ b/servers/rendering_server.h
+@@ -1417,7 +1417,10 @@ public:
+ 	virtual void canvas_item_set_canvas_group_mode(RID p_item, CanvasGroupMode p_mode, float p_clear_margin = 5.0, bool p_fit_empty = false, float p_fit_margin = 0.0, bool p_blur_mipmaps = false) = 0;
+ 
+ 	virtual void canvas_item_set_debug_redraw(bool p_enabled) = 0;
++<<<<<<< HEAD
+ 	virtual bool canvas_item_get_debug_redraw() const = 0;
++=======
++>>>>>>> cca51a6f9a (Debug CanvasItem redraw)
+ 
+ 	/* CANVAS LIGHT */
+ 	virtual RID canvas_light_create() = 0;

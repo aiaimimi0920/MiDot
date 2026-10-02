@@ -1,0 +1,608 @@
+From fd3d3181aada4b3250148ccae5b45af2eb317bae Mon Sep 17 00:00:00 2001
+From: aiaimimi0920 <153103332+aiaimimi0920@users.noreply.github.com>
+Date: Sun, 30 Aug 2026 23:49:09 +0800
+Subject: [PATCH] feat(gui): add TextureButton state text
+
+Retain per-state icon-font fallbacks while using current theme colors, localization, and sizing behavior.
+
+Godot-Patch-Topic: ui.texture-button-state-text
+---
+ doc/classes/TextureButton.xml       |  47 +++++-
+ scene/gui/texture_button.cpp        | 222 +++++++++++++++++++++++++++-
+ scene/gui/texture_button.h          |  38 +++++
+ scene/theme/default_theme.cpp       |  10 ++
+ tests/scene/test_texture_button.cpp |  53 +++++++
+ 5 files changed, 363 insertions(+), 7 deletions(-)
+
+diff --git a/doc/classes/TextureButton.xml b/doc/classes/TextureButton.xml
+index 39cbacb98a7bfac7c66fc1f4c9943fb6d18e3921..c66cdda2c362068490d6e72895c774cd45bc5f66 100644
+--- a/doc/classes/TextureButton.xml
++++ b/doc/classes/TextureButton.xml
+@@ -4,9 +4,9 @@
+ 		Texture-based button. Supports Pressed, Hover, Disabled and Focused states.
+ 	</brief_description>
+ 	<description>
+-		[TextureButton] has the same functionality as [Button], except it uses sprites instead of Godot's [Theme] resource. It is faster to create, but it doesn't support localization like more complex [Control]s.
++		[TextureButton] has the same functionality as [Button], except it primarily uses sprites instead of Godot's [Theme] resource. It can also use localized text or icon-font glyphs as state visuals when the corresponding texture is unavailable.
+ 		See also [BaseButton] which contains common properties and methods associated with this node.
+-		[b]Note:[/b] Setting a texture for the "normal" state ([member texture_normal]) is recommended. If [member texture_normal] is not set, the [TextureButton] will still receive input events and be clickable, but the user will not be able to see it unless they activate another one of its states with a texture assigned (e.g., hover over it to show [member texture_hover]).
++		[b]Note:[/b] Setting a texture or state text for the normal state ([member texture_normal] or [member text_normal]) is recommended. Without either, the [TextureButton] remains clickable but may not be visible until another configured state is activated.
+ 	</description>
+ 	<tutorials>
+ 		<link title="3D Voxel Demo">https://godotengine.org/asset-library/asset/2755</link>
+@@ -28,11 +28,26 @@
+ 			If [code]true[/code], texture is flipped vertically.
+ 		</member>
+ 		<member name="ignore_texture_size" type="bool" setter="set_ignore_texture_size" getter="get_ignore_texture_size" default="false">
+-			If [code]true[/code], the size of the texture won't be considered for minimum size calculation, so the [TextureButton] can be shrunk down past the texture size.
++			If [code]true[/code], texture and state text sizes aren't considered for minimum size calculation, so the [TextureButton] can be shrunk below its visual size.
+ 		</member>
+ 		<member name="stretch_mode" type="int" setter="set_stretch_mode" getter="get_stretch_mode" enum="TextureButton.StretchMode" default="2">
+ 			Controls the texture's behavior when you resize the node's bounding rectangle. See the [enum StretchMode] constants for available options.
+ 		</member>
++		<member name="text_disabled" type="String" setter="set_text_disabled" getter="get_text_disabled" default="&quot;&quot;">
++			Text or icon-font glyph displayed when the button is disabled and [member texture_disabled] is unavailable. If empty, [member text_normal] is used.
++		</member>
++		<member name="text_focused" type="String" setter="set_text_focused" getter="get_text_focused" default="&quot;&quot;">
++			Text or icon-font glyph overlaid when the button has focus. It can also serve as the only visual when no state texture or state text is available.
++		</member>
++		<member name="text_hover" type="String" setter="set_text_hover" getter="get_text_hover" default="&quot;&quot;">
++			Text or icon-font glyph displayed while hovering when [member texture_hover] is unavailable. If empty, the pressed or normal state text is used as appropriate.
++		</member>
++		<member name="text_normal" type="String" setter="set_text_normal" getter="get_text_normal" default="&quot;&quot;">
++			Default text or icon-font glyph displayed when no state texture is available.
++		</member>
++		<member name="text_pressed" type="String" setter="set_text_pressed" getter="get_text_pressed" default="&quot;&quot;">
++			Text or icon-font glyph displayed while pressed when [member texture_pressed] is unavailable. If empty, [member text_hover] or [member text_normal] is used.
++		</member>
+ 		<member name="texture_click_mask" type="BitMap" setter="set_click_mask" getter="get_click_mask">
+ 			Pure black and white [BitMap] image to use for click detection. On the mask, white pixels represent the button's clickable area. Use it to create buttons with curved shapes.
+ 		</member>
+@@ -52,6 +67,32 @@
+ 			Texture to display on mouse down over the node, if the node has keyboard focus and the player presses the Enter key or if the player presses the [member BaseButton.shortcut] key. If not assigned, the [TextureButton] displays [member texture_hover] instead when pressed.
+ 		</member>
+ 	</members>
++	<theme_items>
++		<theme_item name="icon_max_width" data_type="constant" type="int" default="0">
++			Maximum width of a state text glyph. A value of [code]0[/code] leaves the font size unconstrained.
++		</theme_item>
++		<theme_item name="text_disabled_color" data_type="color" type="Color" default="Color(0.875, 0.875, 0.875, 0.5)">
++			State text color used while the button is disabled.
++		</theme_item>
++		<theme_item name="text_focused_color" data_type="color" type="Color" default="Color(0.95, 0.95, 0.95, 1)">
++			Color of the focus state text overlay.
++		</theme_item>
++		<theme_item name="text_hover_color" data_type="color" type="Color" default="Color(0.95, 0.95, 0.95, 1)">
++			State text color used while hovering.
++		</theme_item>
++		<theme_item name="text_normal_color" data_type="color" type="Color" default="Color(0.875, 0.875, 0.875, 1)">
++			Default state text color.
++		</theme_item>
++		<theme_item name="text_pressed_color" data_type="color" type="Color" default="Color(1, 1, 1, 1)">
++			State text color used while pressed.
++		</theme_item>
++		<theme_item name="text_icon_font" data_type="font" type="Font">
++			Font used for state text and icon-font glyphs.
++		</theme_item>
++		<theme_item name="text_icon_font_size" data_type="font_size" type="int">
++			Font size used for state text and icon-font glyphs.
++		</theme_item>
++	</theme_items>
+ 	<constants>
+ 		<constant name="STRETCH_SCALE" value="0" enum="StretchMode">
+ 			Scale to fit the node's bounding rectangle.
+diff --git a/scene/gui/texture_button.cpp b/scene/gui/texture_button.cpp
+index 09bfabf1c926acfd41fb5248ef9922c607fc5148..f8be6ef7431b5d9bdd36062f073b88cba6d3273c 100644
+--- a/scene/gui/texture_button.cpp
++++ b/scene/gui/texture_button.cpp
+@@ -33,6 +33,7 @@
+ #include "core/object/callable_mp.h"
+ #include "core/object/class_db.h"
+ #include "core/typedefs.h"
++#include "scene/theme/theme_db.h"
+ 
+ Size2 TextureButton::get_minimum_size() const {
+ 	Size2 rscale = Control::get_minimum_size();
+@@ -56,11 +57,107 @@ Size2 TextureButton::get_minimum_size() const {
+ 		} else {
+ 			rscale = normal->get_size();
+ 		}
++
++		if (!text_normal.is_empty() || !text_pressed.is_empty() || !text_hover.is_empty() || !text_disabled.is_empty() || !text_focused.is_empty()) {
++			const int text_icon_size = _get_text_icon_size();
++			rscale = rscale.max(Size2(text_icon_size, text_icon_size));
++		}
+ 	}
+ 
+ 	return rscale.abs();
+ }
+ 
++String TextureButton::_get_state_text(DrawMode p_draw_mode) const {
++	switch (p_draw_mode) {
++		case DRAW_NORMAL:
++			return text_normal;
++		case DRAW_HOVER_PRESSED:
++		case DRAW_PRESSED:
++			return !text_pressed.is_empty() ? text_pressed : (!text_hover.is_empty() ? text_hover : text_normal);
++		case DRAW_HOVER:
++			return !text_hover.is_empty() ? text_hover : (is_pressed() && !text_pressed.is_empty() ? text_pressed : text_normal);
++		case DRAW_DISABLED:
++			return !text_disabled.is_empty() ? text_disabled : text_normal;
++	}
++
++	return String();
++}
++
++Color TextureButton::_get_state_text_color(DrawMode p_draw_mode) const {
++	switch (p_draw_mode) {
++		case DRAW_NORMAL:
++			return theme_cache.text_normal_color;
++		case DRAW_HOVER_PRESSED:
++		case DRAW_PRESSED:
++			return theme_cache.text_pressed_color;
++		case DRAW_HOVER:
++			return theme_cache.text_hover_color;
++		case DRAW_DISABLED:
++			return theme_cache.text_disabled_color;
++	}
++
++	return theme_cache.text_normal_color;
++}
++
++int TextureButton::_get_text_icon_size() const {
++	int text_icon_size = theme_cache.text_icon_font_size;
++	if (text_icon_size <= 0) {
++		text_icon_size = get_theme_default_font_size();
++	}
++	if (theme_cache.icon_max_width > 0) {
++		text_icon_size = MIN(text_icon_size, theme_cache.icon_max_width);
++	}
++	return MAX(0, text_icon_size);
++}
++
++Rect2 TextureButton::_get_text_icon_rect() const {
++	const float text_icon_size = _get_text_icon_size();
++	Rect2 text_rect(Point2(), Size2(text_icon_size, text_icon_size));
++
++	switch (stretch_mode) {
++		case STRETCH_KEEP:
++			break;
++		case STRETCH_KEEP_CENTERED:
++			text_rect.position = (get_size() - text_rect.size) / 2.0f;
++			break;
++		case STRETCH_SCALE:
++		case STRETCH_TILE:
++		case STRETCH_KEEP_ASPECT:
++		case STRETCH_KEEP_ASPECT_CENTERED:
++		case STRETCH_KEEP_ASPECT_COVERED: {
++			const float fitted_size = MIN(get_size().x, get_size().y);
++			text_rect.size = Size2(fitted_size, fitted_size);
++			if (theme_cache.icon_max_width > 0 && text_rect.size.x > theme_cache.icon_max_width) {
++				text_rect.size = Size2(theme_cache.icon_max_width, theme_cache.icon_max_width);
++			}
++			if (stretch_mode != STRETCH_KEEP_ASPECT) {
++				text_rect.position = (get_size() - text_rect.size) / 2.0f;
++			}
++		} break;
++	}
++
++	return text_rect;
++}
++
++void TextureButton::_draw_text_icon(const String &p_text, const Color &p_color, const Rect2 &p_rect) const {
++	if (p_text.is_empty() || !p_rect.has_area()) {
++		return;
++	}
++
++	Ref<Font> font = theme_cache.text_icon_font;
++	if (font.is_null()) {
++		font = get_theme_default_font();
++	}
++	if (font.is_null()) {
++		return;
++	}
++
++	const int font_size = MAX(1, static_cast<int>(Math::floor(p_rect.size.y)));
++	const float text_height = font->get_height(font_size);
++	const Point2 baseline(p_rect.position.x, p_rect.position.y + (p_rect.size.y - text_height) / 2.0f + font->get_ascent(font_size));
++	draw_string(font, baseline, p_text, HORIZONTAL_ALIGNMENT_CENTER, p_rect.size.x, font_size, p_color);
++}
++
+ bool TextureButton::has_point(const Point2 &p_point) const {
+ 	if (click_mask.is_valid()) {
+ 		Point2 point = p_point;
+@@ -115,10 +212,15 @@ bool TextureButton::has_point(const Point2 &p_point) const {
+ 
+ void TextureButton::_notification(int p_what) {
+ 	switch (p_what) {
++		case NOTIFICATION_TRANSLATION_CHANGED: {
++			_text_changed();
++		} break;
+ 		case NOTIFICATION_DRAW: {
+ 			DrawMode draw_mode = get_draw_mode();
+ 
+ 			Ref<Texture2D> texdraw;
++			String textdraw = atr(_get_state_text(draw_mode));
++			const Color textdraw_color = _get_state_text_color(draw_mode);
+ 
+ 			switch (draw_mode) {
+ 				case DRAW_NORMAL: {
+@@ -165,15 +267,18 @@ void TextureButton::_notification(int p_what) {
+ 
+ 			Point2 ofs;
+ 			Size2 size;
+-			bool draw_focus = (has_focus(true) && focused.is_valid());
++			bool draw_focus = has_focus(true) && (focused.is_valid() || !text_focused.is_empty());
+ 
+ 			// If no other texture is valid, try using focused texture.
+-			bool draw_focus_only = draw_focus && texdraw.is_null();
++			bool draw_focus_only = draw_focus && texdraw.is_null() && textdraw.is_empty() && focused.is_valid();
++			bool draw_focus_text_only = draw_focus && texdraw.is_null() && textdraw.is_empty() && focused.is_null() && !text_focused.is_empty();
+ 			if (draw_focus_only) {
+ 				texdraw = focused;
++			} else if (draw_focus_text_only) {
++				textdraw = atr(text_focused);
+ 			}
+ 
+-			if (texdraw.is_valid() || click_mask.is_valid()) {
++			if (texdraw.is_valid() || (textdraw.is_empty() && click_mask.is_valid())) {
+ 				const Size2 texdraw_size = texdraw.is_valid() ? texdraw->get_size() : Size2(click_mask->get_size());
+ 
+ 				size = texdraw_size;
+@@ -234,12 +339,24 @@ void TextureButton::_notification(int p_what) {
+ 						draw_texture_rect_region(texdraw, Rect2(ofs, size), _texture_region);
+ 					}
+ 				}
++			} else if (!textdraw.is_empty()) {
++				_position_rect = _get_text_icon_rect();
++				_texture_region = click_mask.is_valid() ? Rect2(Point2(), click_mask->get_size()) : Rect2(Point2(), _position_rect.size);
++				_tile = false;
++				_draw_text_icon(textdraw, draw_focus_text_only ? theme_cache.text_focused_color : textdraw_color, _position_rect);
+ 			} else {
+ 				_position_rect = Rect2();
+ 			}
+ 
+ 			if (draw_focus) {
+-				draw_texture_rect(focused, Rect2(ofs, size), false);
++				if (focused.is_valid()) {
++					const Rect2 focus_rect = texdraw.is_valid() ? Rect2(ofs, size) : _position_rect;
++					draw_texture_rect(focused, focus_rect, false);
++				}
++				if (!text_focused.is_empty() && !draw_focus_text_only) {
++					const Rect2 focus_text_rect = _position_rect.has_area() ? _position_rect : _get_text_icon_rect();
++					_draw_text_icon(atr(text_focused), theme_cache.text_focused_color, focus_text_rect);
++				}
+ 			};
+ 		} break;
+ 	}
+@@ -252,6 +369,11 @@ void TextureButton::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("set_texture_disabled", "texture"), &TextureButton::set_texture_disabled);
+ 	ClassDB::bind_method(D_METHOD("set_texture_focused", "texture"), &TextureButton::set_texture_focused);
+ 	ClassDB::bind_method(D_METHOD("set_click_mask", "mask"), &TextureButton::set_click_mask);
++	ClassDB::bind_method(D_METHOD("set_text_normal", "text"), &TextureButton::set_text_normal);
++	ClassDB::bind_method(D_METHOD("set_text_pressed", "text"), &TextureButton::set_text_pressed);
++	ClassDB::bind_method(D_METHOD("set_text_hover", "text"), &TextureButton::set_text_hover);
++	ClassDB::bind_method(D_METHOD("set_text_disabled", "text"), &TextureButton::set_text_disabled);
++	ClassDB::bind_method(D_METHOD("set_text_focused", "text"), &TextureButton::set_text_focused);
+ 	ClassDB::bind_method(D_METHOD("set_ignore_texture_size", "ignore"), &TextureButton::set_ignore_texture_size);
+ 	ClassDB::bind_method(D_METHOD("set_stretch_mode", "mode"), &TextureButton::set_stretch_mode);
+ 	ClassDB::bind_method(D_METHOD("set_flip_h", "enable"), &TextureButton::set_flip_h);
+@@ -265,6 +387,11 @@ void TextureButton::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("get_texture_disabled"), &TextureButton::get_texture_disabled);
+ 	ClassDB::bind_method(D_METHOD("get_texture_focused"), &TextureButton::get_texture_focused);
+ 	ClassDB::bind_method(D_METHOD("get_click_mask"), &TextureButton::get_click_mask);
++	ClassDB::bind_method(D_METHOD("get_text_normal"), &TextureButton::get_text_normal);
++	ClassDB::bind_method(D_METHOD("get_text_pressed"), &TextureButton::get_text_pressed);
++	ClassDB::bind_method(D_METHOD("get_text_hover"), &TextureButton::get_text_hover);
++	ClassDB::bind_method(D_METHOD("get_text_disabled"), &TextureButton::get_text_disabled);
++	ClassDB::bind_method(D_METHOD("get_text_focused"), &TextureButton::get_text_focused);
+ 	ClassDB::bind_method(D_METHOD("get_ignore_texture_size"), &TextureButton::get_ignore_texture_size);
+ 	ClassDB::bind_method(D_METHOD("get_stretch_mode"), &TextureButton::get_stretch_mode);
+ 	ClassDB::bind_method(D_METHOD("has_point", "point"), &TextureButton::has_point);
+@@ -276,6 +403,13 @@ void TextureButton::_bind_methods() {
+ 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "texture_disabled", PROPERTY_HINT_RESOURCE_TYPE, Texture2D::get_class_static()), "set_texture_disabled", "get_texture_disabled");
+ 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "texture_focused", PROPERTY_HINT_RESOURCE_TYPE, Texture2D::get_class_static()), "set_texture_focused", "get_texture_focused");
+ 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "texture_click_mask", PROPERTY_HINT_RESOURCE_TYPE, BitMap::get_class_static()), "set_click_mask", "get_click_mask");
++	ADD_GROUP("State Text", "text_");
++	ADD_PROPERTY(PropertyInfo(Variant::STRING, "text_normal"), "set_text_normal", "get_text_normal");
++	ADD_PROPERTY(PropertyInfo(Variant::STRING, "text_pressed"), "set_text_pressed", "get_text_pressed");
++	ADD_PROPERTY(PropertyInfo(Variant::STRING, "text_hover"), "set_text_hover", "get_text_hover");
++	ADD_PROPERTY(PropertyInfo(Variant::STRING, "text_disabled"), "set_text_disabled", "get_text_disabled");
++	ADD_PROPERTY(PropertyInfo(Variant::STRING, "text_focused"), "set_text_focused", "get_text_focused");
++	ADD_GROUP("", "");
+ 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "ignore_texture_size"), "set_ignore_texture_size", "get_ignore_texture_size");
+ 	ADD_PROPERTY(PropertyInfo(Variant::INT, "stretch_mode", PROPERTY_HINT_ENUM, "Scale,Tile,Keep,Keep Centered,Keep Aspect,Keep Aspect Centered,Keep Aspect Covered"), "set_stretch_mode", "get_stretch_mode");
+ 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "flip_h"), "set_flip_h", "is_flipped_h");
+@@ -288,6 +422,20 @@ void TextureButton::_bind_methods() {
+ 	BIND_ENUM_CONSTANT(STRETCH_KEEP_ASPECT);
+ 	BIND_ENUM_CONSTANT(STRETCH_KEEP_ASPECT_CENTERED);
+ 	BIND_ENUM_CONSTANT(STRETCH_KEEP_ASPECT_COVERED);
++
++	BIND_THEME_ITEM(Theme::DATA_TYPE_FONT, TextureButton, text_icon_font);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_FONT_SIZE, TextureButton, text_icon_font_size);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_CONSTANT, TextureButton, icon_max_width);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, TextureButton, text_normal_color);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, TextureButton, text_pressed_color);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, TextureButton, text_hover_color);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, TextureButton, text_disabled_color);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, TextureButton, text_focused_color);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_ROLE, TextureButton, text_normal_color_role);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_ROLE, TextureButton, text_pressed_color_role);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_ROLE, TextureButton, text_hover_color_role);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_ROLE, TextureButton, text_disabled_color_role);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_ROLE, TextureButton, text_focused_color_role);
+ }
+ 
+ void TextureButton::set_texture_normal(const Ref<Texture2D> &p_normal) {
+@@ -314,6 +462,66 @@ void TextureButton::set_click_mask(const Ref<BitMap> &p_click_mask) {
+ 	_texture_changed();
+ }
+ 
++void TextureButton::set_text_normal(const String &p_text) {
++	if (text_normal == p_text) {
++		return;
++	}
++	text_normal = p_text;
++	_text_changed();
++}
++
++void TextureButton::set_text_pressed(const String &p_text) {
++	if (text_pressed == p_text) {
++		return;
++	}
++	text_pressed = p_text;
++	_text_changed();
++}
++
++void TextureButton::set_text_hover(const String &p_text) {
++	if (text_hover == p_text) {
++		return;
++	}
++	text_hover = p_text;
++	_text_changed();
++}
++
++void TextureButton::set_text_disabled(const String &p_text) {
++	if (text_disabled == p_text) {
++		return;
++	}
++	text_disabled = p_text;
++	_text_changed();
++}
++
++void TextureButton::set_text_focused(const String &p_text) {
++	if (text_focused == p_text) {
++		return;
++	}
++	text_focused = p_text;
++	_text_changed();
++}
++
++String TextureButton::get_text_normal() const {
++	return text_normal;
++}
++
++String TextureButton::get_text_pressed() const {
++	return text_pressed;
++}
++
++String TextureButton::get_text_hover() const {
++	return text_hover;
++}
++
++String TextureButton::get_text_disabled() const {
++	return text_disabled;
++}
++
++String TextureButton::get_text_focused() const {
++	return text_focused;
++}
++
+ Ref<Texture2D> TextureButton::get_texture_normal() const {
+ 	return normal;
+ }
+@@ -364,6 +572,12 @@ void TextureButton::_texture_changed() {
+ 	update_minimum_size();
+ }
+ 
++void TextureButton::_text_changed() {
++	queue_redraw();
++	update_minimum_size();
++	queue_accessibility_update();
++}
++
+ bool TextureButton::get_ignore_texture_size() const {
+ 	return ignore_texture_size;
+ }
+diff --git a/scene/gui/texture_button.h b/scene/gui/texture_button.h
+index 6f80d33754acfeb9bc279c50a29ca4fece818fd2..2ab9168bc4728756ce6d7a975b97c674805c4e83 100644
+--- a/scene/gui/texture_button.h
++++ b/scene/gui/texture_button.h
+@@ -32,6 +32,7 @@
+ 
+ #include "scene/gui/base_button.h"
+ #include "scene/resources/bit_map.h"
++
+ class TextureButton : public BaseButton {
+ 	GDCLASS(TextureButton, BaseButton);
+ 
+@@ -53,6 +54,11 @@ private:
+ 	Ref<Texture2D> disabled;
+ 	Ref<Texture2D> focused;
+ 	Ref<BitMap> click_mask;
++	String text_normal;
++	String text_pressed;
++	String text_hover;
++	String text_disabled;
++	String text_focused;
+ 	bool ignore_texture_size = false;
+ 	StretchMode stretch_mode = STRETCH_KEEP;
+ 
+@@ -63,11 +69,33 @@ private:
+ 	bool hflip = false;
+ 	bool vflip = false;
+ 
++	struct ThemeCache {
++		Ref<Font> text_icon_font;
++		int text_icon_font_size = 0;
++		int icon_max_width = 0;
++		Color text_normal_color;
++		Color text_pressed_color;
++		Color text_hover_color;
++		Color text_disabled_color;
++		Color text_focused_color;
++		ColorRole text_normal_color_role = ColorRole::STATIC;
++		ColorRole text_pressed_color_role = ColorRole::STATIC;
++		ColorRole text_hover_color_role = ColorRole::STATIC;
++		ColorRole text_disabled_color_role = ColorRole::STATIC;
++		ColorRole text_focused_color_role = ColorRole::STATIC;
++	} theme_cache;
++
+ 	void _set_texture(Ref<Texture2D> *p_destination, const Ref<Texture2D> &p_texture);
+ 	void _texture_changed();
++	void _text_changed();
++	int _get_text_icon_size() const;
++	Rect2 _get_text_icon_rect() const;
++	void _draw_text_icon(const String &p_text, const Color &p_color, const Rect2 &p_rect) const;
++	Color _get_state_text_color(DrawMode p_draw_mode) const;
+ 
+ protected:
+ 	virtual bool has_point(const Point2 &p_point) const override;
++	String _get_state_text(DrawMode p_draw_mode) const;
+ 	void _notification(int p_what);
+ 	static void _bind_methods();
+ 
+@@ -87,6 +115,16 @@ public:
+ 	Ref<Texture2D> get_texture_disabled() const;
+ 	Ref<Texture2D> get_texture_focused() const;
+ 	Ref<BitMap> get_click_mask() const;
++	void set_text_normal(const String &p_text);
++	void set_text_pressed(const String &p_text);
++	void set_text_hover(const String &p_text);
++	void set_text_disabled(const String &p_text);
++	void set_text_focused(const String &p_text);
++	String get_text_normal() const;
++	String get_text_pressed() const;
++	String get_text_hover() const;
++	String get_text_disabled() const;
++	String get_text_focused() const;
+ 
+ 	bool get_ignore_texture_size() const;
+ 	void set_ignore_texture_size(bool p_ignore);
+diff --git a/scene/theme/default_theme.cpp b/scene/theme/default_theme.cpp
+index 1b3f0187ff2c5c905aee7880d9a7bb277a963d03..a48df6cfad7fb97640d1016108bb59c0148bafc2 100644
+--- a/scene/theme/default_theme.cpp
++++ b/scene/theme/default_theme.cpp
+@@ -177,6 +177,16 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 
+ 	theme->set_constant("align_to_largest_stylebox", "Button", 0); // Disabled.
+ 
++	// TextureButton state text.
++	theme->set_font("text_icon_font", "TextureButton", Ref<Font>());
++	theme->set_font_size("text_icon_font_size", "TextureButton", -1);
++	theme->set_constant("icon_max_width", "TextureButton", 0);
++	theme->set_color("text_normal_color", "TextureButton", control_font_color);
++	theme->set_color("text_pressed_color", "TextureButton", control_font_pressed_color);
++	theme->set_color("text_hover_color", "TextureButton", control_font_hover_color);
++	theme->set_color("text_disabled_color", "TextureButton", control_font_disabled_color);
++	theme->set_color("text_focused_color", "TextureButton", control_font_focus_color);
++
+ 	// MenuBar
+ 	theme->set_stylebox(CoreStringName(normal), "MenuBar", button_normal);
+ 	theme->set_stylebox(SceneStringName(hover), "MenuBar", button_hover);
+diff --git a/tests/scene/test_texture_button.cpp b/tests/scene/test_texture_button.cpp
+index 8e7027cb47a3e37db6419c281bc53b53bb8c2686..9492b932efbce110346cd6b4720b98e4a2cff1fb 100644
+--- a/tests/scene/test_texture_button.cpp
++++ b/tests/scene/test_texture_button.cpp
+@@ -41,6 +41,13 @@ TEST_FORCE_LINK(test_texture_button)
+ 
+ namespace TestTextureButton {
+ 
++class TestableTextureButton : public TextureButton {
++public:
++	String get_state_text(DrawMode p_draw_mode) const {
++		return _get_state_text(p_draw_mode);
++	}
++};
++
+ static Ref<ImageTexture> make_test_texture(int p_w, int p_h) {
+ 	Ref<Image> image = memnew(Image(p_w, p_h, false, Image::FORMAT_RGB8));
+ 	return ImageTexture::create_from_image(image);
+@@ -55,6 +62,11 @@ TEST_CASE("[SceneTree][TextureButton] Default properties") {
+ 	CHECK(texture_button->get_texture_disabled().is_null());
+ 	CHECK(texture_button->get_texture_focused().is_null());
+ 	CHECK(texture_button->get_click_mask().is_null());
++	CHECK(texture_button->get_text_normal().is_empty());
++	CHECK(texture_button->get_text_pressed().is_empty());
++	CHECK(texture_button->get_text_hover().is_empty());
++	CHECK(texture_button->get_text_disabled().is_empty());
++	CHECK(texture_button->get_text_focused().is_empty());
+ 
+ 	CHECK_FALSE(texture_button->get_ignore_texture_size());
+ 	CHECK(texture_button->get_stretch_mode() == TextureButton::STRETCH_KEEP);
+@@ -68,6 +80,47 @@ TEST_CASE("[SceneTree][TextureButton] Default properties") {
+ 	memdelete(texture_button);
+ }
+ 
++TEST_CASE("[SceneTree][TextureButton] State text setters and fallback") {
++	TestableTextureButton *texture_button = memnew(TestableTextureButton);
++
++	texture_button->set_text_normal("normal");
++	texture_button->set_text_hover("hover");
++	texture_button->set_text_focused("focused");
++	CHECK(texture_button->get_text_normal() == "normal");
++	CHECK(texture_button->get_text_hover() == "hover");
++	CHECK(texture_button->get_text_focused() == "focused");
++	CHECK(texture_button->get_state_text(BaseButton::DRAW_NORMAL) == "normal");
++	CHECK(texture_button->get_state_text(BaseButton::DRAW_PRESSED) == "hover");
++	CHECK(texture_button->get_state_text(BaseButton::DRAW_DISABLED) == "normal");
++
++	texture_button->set_text_pressed("pressed");
++	texture_button->set_text_disabled("disabled");
++	CHECK(texture_button->get_text_pressed() == "pressed");
++	CHECK(texture_button->get_text_disabled() == "disabled");
++	CHECK(texture_button->get_state_text(BaseButton::DRAW_PRESSED) == "pressed");
++	CHECK(texture_button->get_state_text(BaseButton::DRAW_DISABLED) == "disabled");
++
++	memdelete(texture_button);
++}
++
++TEST_CASE("[SceneTree][TextureButton] State text contributes to minimum size") {
++	TextureButton *texture_button = memnew(TextureButton);
++	Window *root = SceneTree::get_singleton()->get_root();
++	root->add_child(texture_button);
++
++	texture_button->add_theme_font_size_override("text_icon_font_size", 32);
++	texture_button->add_theme_constant_override("icon_max_width", 20);
++	texture_button->set_text_normal("A");
++	SceneTree::get_singleton()->process(0);
++	CHECK(texture_button->get_combined_minimum_size() == Size2(20, 20));
++
++	texture_button->set_ignore_texture_size(true);
++	SceneTree::get_singleton()->process(0);
++	CHECK(texture_button->get_combined_minimum_size() == Size2());
++
++	memdelete(texture_button);
++}
++
+ TEST_CASE("[SceneTree][TextureButton] Texture setters and getters") {
+ 	TextureButton *texture_button = memnew(TextureButton);
+ 
+
+base-commit: 5ec4857b340b6284a18b49b2eda462bd250f219a
+prerequisite-patch-id: b38459b409a3326aed65d2433e1341638171f884
+prerequisite-patch-id: bdb0fe8d6ba7fff1b900ae33d9bec552ea61724c
+prerequisite-patch-id: 4dcdddc73066f768cb97c56444abacb21bda061c
+prerequisite-patch-id: 1f2fbc55f35da3e943dcbaeeb3c9a6d798621bf3
+prerequisite-patch-id: 4dd1cec6888d5160c85be2072b9e5dd05411d007
+prerequisite-patch-id: 60110ae09a2d09796ad65e339ee0b5abc2ce541a
+prerequisite-patch-id: bdb0025d4207a7cf0e1466ca96b2824d238b3caf
+prerequisite-patch-id: 8c55a8201fec417bc2629b903ea2d630aedab1d8
+prerequisite-patch-id: 9dfaaac9d4a47edf9d1eccce8fa66b69e674a911
+prerequisite-patch-id: 17fa223ec74d20c7792e45826a4f0d8ecd7f85d7
+prerequisite-patch-id: 0fb9ef780b3f10a7e82968e44defda508734fa91
+prerequisite-patch-id: 2af824bf187ff13746bd620b1032f57d166c0114
+prerequisite-patch-id: dc8aa901272b27086c9045fc0b9335986d3a8128
+prerequisite-patch-id: 0ce30d5045f596dbc6bf72cbcd9bb16472513013
+prerequisite-patch-id: 50d820c0fb3ac27ddef8f76b133637558f8bcc8e
+prerequisite-patch-id: 69b2baab747aed9362c0ca4c161fc02e5970db44

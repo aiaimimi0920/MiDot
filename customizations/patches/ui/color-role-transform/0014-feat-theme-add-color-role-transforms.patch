@@ -1,0 +1,644 @@
+From bb8d8c4c70023c73c05046ac385e4830d79424dd Mon Sep 17 00:00:00 2001
+From: aiaimimi0920 <153103332+aiaimimi0920@users.noreply.github.com>
+Date: Sun, 30 Aug 2026 22:08:39 +0800
+Subject: [PATCH] feat(theme): add color role transforms
+
+Preserve composable Material color adjustments without replacing the current global ColorRole enum.
+
+Godot-Patch-Topic: ui.color-role-transform
+---
+ modules/color_scheme/color_role_transform.cpp | 295 ++++++++++++++++++
+ modules/color_scheme/color_role_transform.h   | 100 ++++++
+ modules/color_scheme/config.py                |   1 +
+ .../doc_classes/ColorRoleTransform.xml        |  59 ++++
+ modules/color_scheme/register_types.cpp       |   2 +
+ .../test_color_role_transform.cpp             |  98 ++++++
+ 6 files changed, 555 insertions(+)
+ create mode 100644 modules/color_scheme/color_role_transform.cpp
+ create mode 100644 modules/color_scheme/color_role_transform.h
+ create mode 100644 modules/color_scheme/doc_classes/ColorRoleTransform.xml
+ create mode 100644 tests/modules/color_scheme/test_color_role_transform.cpp
+
+diff --git a/modules/color_scheme/color_role_transform.cpp b/modules/color_scheme/color_role_transform.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..c60ed5dd8b9d6ddd6f8021c66d8776dedbf2cf5e
+--- /dev/null
++++ b/modules/color_scheme/color_role_transform.cpp
+@@ -0,0 +1,295 @@
++/**************************************************************************/
++/*  color_role_transform.cpp                                              */
++/**************************************************************************/
++/*                         This file is part of:                          */
++/*                             GODOT ENGINE                               */
++/*                        https://godotengine.org                          */
++/**************************************************************************/
++/* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
++/* Copyright (c) 2007-2014 Juan Linietsky, Ariel Manzur.                  */
++/*                                                                        */
++/* Permission is hereby granted, free of charge, to any person obtaining  */
++/* a copy of this software and associated documentation files (the        */
++/* "Software"), to deal in the Software without restriction, including    */
++/* without limitation the rights to use, copy, modify, merge, publish,    */
++/* distribute, sublicense, and/or sell copies of the Software, and to     */
++/* permit persons to whom the Software is furnished to do so, subject to  */
++/* the following conditions:                                              */
++/*                                                                        */
++/* The above copyright notice and this permission notice shall be         */
++/* included in all copies or substantial portions of the Software.        */
++/*                                                                        */
++/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,        */
++/* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF     */
++/* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. */
++/* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY   */
++/* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,   */
++/* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE      */
++/* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
++/**************************************************************************/
++
++#include "color_role_transform.h"
++
++#include "color_scheme.h"
++
++#include "core/object/callable_mp.h"
++#include "core/object/class_db.h"
++
++Color ColorRoleTransform::_resolve(const Ref<ColorScheme> &p_color_scheme, HashSet<ObjectID> &r_visited) const {
++	const ObjectID instance_id = get_instance_id();
++	if (r_visited.has(instance_id)) {
++		ERR_PRINT("ColorRoleTransform contains a cyclic lerp_transform reference.");
++		return Color();
++	}
++	r_visited.insert(instance_id);
++
++	Color result = static_color;
++	if (color_role != ColorRole::STATIC) {
++		if (p_color_scheme.is_null()) {
++			ERR_PRINT("A ColorScheme is required to resolve a non-static ColorRoleTransform.");
++			r_visited.erase(instance_id);
++			return Color();
++		}
++		result = p_color_scheme->get_color(color_role);
++	}
++
++	result *= color_scale;
++	if (inverted) {
++		result = result.inverted();
++	}
++	if (!Math::is_zero_approx(darkened_amount)) {
++		result = result.darkened(darkened_amount);
++	}
++	if (!Math::is_zero_approx(lightened_amount)) {
++		result = result.lightened(lightened_amount);
++	}
++
++	if (!Math::is_zero_approx(lerp_weight)) {
++		Color target = lerp_color;
++		if (lerp_transform.is_valid()) {
++			target = lerp_transform->_resolve(p_color_scheme, r_visited);
++		} else if (lerp_color_role_enabled) {
++			if (lerp_color_role == ColorRole::STATIC) {
++				target = lerp_color;
++			} else if (p_color_scheme.is_valid()) {
++				target = p_color_scheme->get_color(lerp_color_role);
++			} else {
++				ERR_PRINT("A ColorScheme is required to resolve a lerp color role.");
++				r_visited.erase(instance_id);
++				return Color();
++			}
++		}
++		result = result.lerp(target, lerp_weight);
++	}
++
++	if (clamp) {
++		result = result.clamp();
++	}
++
++	r_visited.erase(instance_id);
++	return result;
++}
++
++void ColorRoleTransform::_on_lerp_transform_changed() {
++	emit_changed();
++}
++
++void ColorRoleTransform::set_color_role(ColorRole p_color_role) {
++	if (color_role == p_color_role) {
++		return;
++	}
++	color_role = p_color_role;
++	emit_changed();
++}
++
++ColorRole ColorRoleTransform::get_color_role() const {
++	return color_role;
++}
++
++void ColorRoleTransform::set_static_color(const Color &p_color) {
++	if (static_color == p_color) {
++		return;
++	}
++	static_color = p_color;
++	emit_changed();
++}
++
++Color ColorRoleTransform::get_static_color() const {
++	return static_color;
++}
++
++void ColorRoleTransform::set_color_scale(const Color &p_color_scale) {
++	if (color_scale == p_color_scale) {
++		return;
++	}
++	color_scale = p_color_scale;
++	emit_changed();
++}
++
++Color ColorRoleTransform::get_color_scale() const {
++	return color_scale;
++}
++
++void ColorRoleTransform::set_inverted(bool p_inverted) {
++	if (inverted == p_inverted) {
++		return;
++	}
++	inverted = p_inverted;
++	emit_changed();
++}
++
++bool ColorRoleTransform::is_inverted() const {
++	return inverted;
++}
++
++void ColorRoleTransform::set_darkened_amount(float p_amount) {
++	p_amount = CLAMP(p_amount, 0.0f, 1.0f);
++	if (Math::is_equal_approx(darkened_amount, p_amount)) {
++		return;
++	}
++	darkened_amount = p_amount;
++	emit_changed();
++}
++
++float ColorRoleTransform::get_darkened_amount() const {
++	return darkened_amount;
++}
++
++void ColorRoleTransform::set_lightened_amount(float p_amount) {
++	p_amount = CLAMP(p_amount, 0.0f, 1.0f);
++	if (Math::is_equal_approx(lightened_amount, p_amount)) {
++		return;
++	}
++	lightened_amount = p_amount;
++	emit_changed();
++}
++
++float ColorRoleTransform::get_lightened_amount() const {
++	return lightened_amount;
++}
++
++void ColorRoleTransform::set_lerp_weight(float p_weight) {
++	p_weight = CLAMP(p_weight, 0.0f, 1.0f);
++	if (Math::is_equal_approx(lerp_weight, p_weight)) {
++		return;
++	}
++	lerp_weight = p_weight;
++	emit_changed();
++}
++
++float ColorRoleTransform::get_lerp_weight() const {
++	return lerp_weight;
++}
++
++void ColorRoleTransform::set_lerp_color_role_enabled(bool p_enabled) {
++	if (lerp_color_role_enabled == p_enabled) {
++		return;
++	}
++	lerp_color_role_enabled = p_enabled;
++	emit_changed();
++}
++
++bool ColorRoleTransform::is_lerp_color_role_enabled() const {
++	return lerp_color_role_enabled;
++}
++
++void ColorRoleTransform::set_lerp_color_role(ColorRole p_color_role) {
++	if (lerp_color_role == p_color_role) {
++		return;
++	}
++	lerp_color_role = p_color_role;
++	emit_changed();
++}
++
++ColorRole ColorRoleTransform::get_lerp_color_role() const {
++	return lerp_color_role;
++}
++
++void ColorRoleTransform::set_lerp_color(const Color &p_color) {
++	if (lerp_color == p_color) {
++		return;
++	}
++	lerp_color = p_color;
++	emit_changed();
++}
++
++Color ColorRoleTransform::get_lerp_color() const {
++	return lerp_color;
++}
++
++void ColorRoleTransform::set_lerp_transform(const Ref<ColorRoleTransform> &p_transform) {
++	ERR_FAIL_COND_MSG(p_transform.ptr() == this, "A ColorRoleTransform cannot reference itself.");
++	if (lerp_transform == p_transform) {
++		return;
++	}
++	if (lerp_transform.is_valid()) {
++		lerp_transform->disconnect_changed(callable_mp(this, &ColorRoleTransform::_on_lerp_transform_changed));
++	}
++	lerp_transform = p_transform;
++	if (lerp_transform.is_valid()) {
++		lerp_transform->connect_changed(callable_mp(this, &ColorRoleTransform::_on_lerp_transform_changed), CONNECT_REFERENCE_COUNTED);
++	}
++	emit_changed();
++}
++
++Ref<ColorRoleTransform> ColorRoleTransform::get_lerp_transform() const {
++	return lerp_transform;
++}
++
++void ColorRoleTransform::set_clamp(bool p_clamp) {
++	if (clamp == p_clamp) {
++		return;
++	}
++	clamp = p_clamp;
++	emit_changed();
++}
++
++bool ColorRoleTransform::is_clamp_enabled() const {
++	return clamp;
++}
++
++Color ColorRoleTransform::resolve(const Ref<ColorScheme> &p_color_scheme) const {
++	HashSet<ObjectID> visited;
++	return _resolve(p_color_scheme, visited);
++}
++
++void ColorRoleTransform::_bind_methods() {
++	ClassDB::bind_method(D_METHOD("set_color_role", "color_role"), &ColorRoleTransform::set_color_role);
++	ClassDB::bind_method(D_METHOD("get_color_role"), &ColorRoleTransform::get_color_role);
++	ClassDB::bind_method(D_METHOD("set_static_color", "color"), &ColorRoleTransform::set_static_color);
++	ClassDB::bind_method(D_METHOD("get_static_color"), &ColorRoleTransform::get_static_color);
++	ClassDB::bind_method(D_METHOD("set_color_scale", "scale"), &ColorRoleTransform::set_color_scale);
++	ClassDB::bind_method(D_METHOD("get_color_scale"), &ColorRoleTransform::get_color_scale);
++	ClassDB::bind_method(D_METHOD("set_inverted", "inverted"), &ColorRoleTransform::set_inverted);
++	ClassDB::bind_method(D_METHOD("is_inverted"), &ColorRoleTransform::is_inverted);
++	ClassDB::bind_method(D_METHOD("set_darkened_amount", "amount"), &ColorRoleTransform::set_darkened_amount);
++	ClassDB::bind_method(D_METHOD("get_darkened_amount"), &ColorRoleTransform::get_darkened_amount);
++	ClassDB::bind_method(D_METHOD("set_lightened_amount", "amount"), &ColorRoleTransform::set_lightened_amount);
++	ClassDB::bind_method(D_METHOD("get_lightened_amount"), &ColorRoleTransform::get_lightened_amount);
++	ClassDB::bind_method(D_METHOD("set_lerp_weight", "weight"), &ColorRoleTransform::set_lerp_weight);
++	ClassDB::bind_method(D_METHOD("get_lerp_weight"), &ColorRoleTransform::get_lerp_weight);
++	ClassDB::bind_method(D_METHOD("set_lerp_color_role_enabled", "enabled"), &ColorRoleTransform::set_lerp_color_role_enabled);
++	ClassDB::bind_method(D_METHOD("is_lerp_color_role_enabled"), &ColorRoleTransform::is_lerp_color_role_enabled);
++	ClassDB::bind_method(D_METHOD("set_lerp_color_role", "color_role"), &ColorRoleTransform::set_lerp_color_role);
++	ClassDB::bind_method(D_METHOD("get_lerp_color_role"), &ColorRoleTransform::get_lerp_color_role);
++	ClassDB::bind_method(D_METHOD("set_lerp_color", "color"), &ColorRoleTransform::set_lerp_color);
++	ClassDB::bind_method(D_METHOD("get_lerp_color"), &ColorRoleTransform::get_lerp_color);
++	ClassDB::bind_method(D_METHOD("set_lerp_transform", "transform"), &ColorRoleTransform::set_lerp_transform);
++	ClassDB::bind_method(D_METHOD("get_lerp_transform"), &ColorRoleTransform::get_lerp_transform);
++	ClassDB::bind_method(D_METHOD("set_clamp", "enabled"), &ColorRoleTransform::set_clamp);
++	ClassDB::bind_method(D_METHOD("is_clamp_enabled"), &ColorRoleTransform::is_clamp_enabled);
++	ClassDB::bind_method(D_METHOD("resolve", "color_scheme"), &ColorRoleTransform::resolve);
++
++	ADD_PROPERTY(PropertyInfo(Variant::INT, "color_role", PROPERTY_HINT_ENUM, color_role_hint), "set_color_role", "get_color_role");
++	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "static_color"), "set_static_color", "get_static_color");
++	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "color_scale"), "set_color_scale", "get_color_scale");
++	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "inverted"), "set_inverted", "is_inverted");
++	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "darkened_amount", PROPERTY_HINT_RANGE, "0,1,0.01"), "set_darkened_amount", "get_darkened_amount");
++	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "lightened_amount", PROPERTY_HINT_RANGE, "0,1,0.01"), "set_lightened_amount", "get_lightened_amount");
++	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "lerp_weight", PROPERTY_HINT_RANGE, "0,1,0.01"), "set_lerp_weight", "get_lerp_weight");
++	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "lerp_color_role_enabled"), "set_lerp_color_role_enabled", "is_lerp_color_role_enabled");
++	ADD_PROPERTY(PropertyInfo(Variant::INT, "lerp_color_role", PROPERTY_HINT_ENUM, color_role_hint), "set_lerp_color_role", "get_lerp_color_role");
++	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "lerp_color"), "set_lerp_color", "get_lerp_color");
++	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "lerp_transform", PROPERTY_HINT_RESOURCE_TYPE, "ColorRoleTransform"), "set_lerp_transform", "get_lerp_transform");
++	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "clamp"), "set_clamp", "is_clamp_enabled");
++}
+diff --git a/modules/color_scheme/color_role_transform.h b/modules/color_scheme/color_role_transform.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..d77309e76c4759cbb68b7ba7ff9bdf9a33958456
+--- /dev/null
++++ b/modules/color_scheme/color_role_transform.h
+@@ -0,0 +1,100 @@
++/**************************************************************************/
++/*  color_role_transform.h                                                */
++/**************************************************************************/
++/*                         This file is part of:                          */
++/*                             GODOT ENGINE                               */
++/*                        https://godotengine.org                          */
++/**************************************************************************/
++/* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
++/* Copyright (c) 2007-2014 Juan Linietsky, Ariel Manzur.                  */
++/*                                                                        */
++/* Permission is hereby granted, free of charge, to any person obtaining  */
++/* a copy of this software and associated documentation files (the        */
++/* "Software"), to deal in the Software without restriction, including    */
++/* without limitation the rights to use, copy, modify, merge, publish,    */
++/* distribute, sublicense, and/or sell copies of the Software, and to     */
++/* permit persons to whom the Software is furnished to do so, subject to  */
++/* the following conditions:                                              */
++/*                                                                        */
++/* The above copyright notice and this permission notice shall be         */
++/* included in all copies or substantial portions of the Software.        */
++/*                                                                        */
++/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,        */
++/* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF     */
++/* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. */
++/* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY   */
++/* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,   */
++/* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE      */
++/* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
++/**************************************************************************/
++
++#pragma once
++
++#include "color_role.h"
++
++#include "core/io/resource.h"
++#include "core/templates/hash_set.h"
++
++class ColorScheme;
++
++class ColorRoleTransform : public Resource {
++	GDCLASS(ColorRoleTransform, Resource);
++
++	ColorRole color_role = ColorRole::STATIC;
++	Color static_color = Color(1, 1, 1, 1);
++	Color color_scale = Color(1, 1, 1, 1);
++	bool inverted = false;
++	float darkened_amount = 0.0f;
++	float lightened_amount = 0.0f;
++	float lerp_weight = 0.0f;
++	bool lerp_color_role_enabled = false;
++	ColorRole lerp_color_role = ColorRole::STATIC;
++	Color lerp_color = Color(1, 1, 1, 1);
++	Ref<ColorRoleTransform> lerp_transform;
++	bool clamp = false;
++
++	Color _resolve(const Ref<ColorScheme> &p_color_scheme, HashSet<ObjectID> &r_visited) const;
++	void _on_lerp_transform_changed();
++
++protected:
++	static void _bind_methods();
++
++public:
++	void set_color_role(ColorRole p_color_role);
++	ColorRole get_color_role() const;
++
++	void set_static_color(const Color &p_color);
++	Color get_static_color() const;
++
++	void set_color_scale(const Color &p_color_scale);
++	Color get_color_scale() const;
++
++	void set_inverted(bool p_inverted);
++	bool is_inverted() const;
++
++	void set_darkened_amount(float p_amount);
++	float get_darkened_amount() const;
++
++	void set_lightened_amount(float p_amount);
++	float get_lightened_amount() const;
++
++	void set_lerp_weight(float p_weight);
++	float get_lerp_weight() const;
++
++	void set_lerp_color_role_enabled(bool p_enabled);
++	bool is_lerp_color_role_enabled() const;
++
++	void set_lerp_color_role(ColorRole p_color_role);
++	ColorRole get_lerp_color_role() const;
++
++	void set_lerp_color(const Color &p_color);
++	Color get_lerp_color() const;
++
++	void set_lerp_transform(const Ref<ColorRoleTransform> &p_transform);
++	Ref<ColorRoleTransform> get_lerp_transform() const;
++
++	void set_clamp(bool p_clamp);
++	bool is_clamp_enabled() const;
++
++	Color resolve(const Ref<ColorScheme> &p_color_scheme) const;
++};
+diff --git a/modules/color_scheme/config.py b/modules/color_scheme/config.py
+index 1db24e1f76d23449b89cad4c90a43739888867d8..7780333f4289e6adef75b001a5b06162309394e4 100644
+--- a/modules/color_scheme/config.py
++++ b/modules/color_scheme/config.py
+@@ -9,6 +9,7 @@ def configure(env):
+ def get_doc_classes():
+     return [
+         "ColorScheme",
++        "ColorRoleTransform",
+     ]
+ 
+ 
+diff --git a/modules/color_scheme/doc_classes/ColorRoleTransform.xml b/modules/color_scheme/doc_classes/ColorRoleTransform.xml
+new file mode 100644
+index 0000000000000000000000000000000000000000..97f7121c56f27d5bb0440388d8f349e51a7256b8
+--- /dev/null
++++ b/modules/color_scheme/doc_classes/ColorRoleTransform.xml
+@@ -0,0 +1,59 @@
++<?xml version="1.0" encoding="UTF-8" ?>
++<class name="ColorRoleTransform" inherits="Resource" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
++	<brief_description>
++		Resolves and transforms a semantic color from a [ColorScheme].
++	</brief_description>
++	<description>
++		[ColorRoleTransform] preserves the personal Material color-role transformation workflow without replacing Godot's global [enum ColorRole] enum. It resolves [member color_role] from a [ColorScheme], or uses [member static_color] for [constant COLOR_ROLE_STATIC], then applies scaling, inversion, darkening, lightening, interpolation, and optional clamping in that order.
++		A transform can interpolate toward [member lerp_color], a second semantic role, or another [ColorRoleTransform]. Cyclic transform references are rejected while resolving.
++	</description>
++	<tutorials>
++	</tutorials>
++	<methods>
++		<method name="resolve" qualifiers="const">
++			<return type="Color" />
++			<param index="0" name="color_scheme" type="ColorScheme" />
++			<description>
++				Resolves the configured color. [param color_scheme] may be [code]null[/code] only when the base color and interpolation target are both static.
++			</description>
++		</method>
++	</methods>
++	<members>
++		<member name="clamp" type="bool" setter="set_clamp" getter="is_clamp_enabled" default="false">
++			Clamps the final color components to the [code]0.0[/code] through [code]1.0[/code] range.
++		</member>
++		<member name="color_role" type="int" setter="set_color_role" getter="get_color_role" enum="ColorRole" default="0">
++			Semantic role used as the base color. [constant COLOR_ROLE_STATIC] selects [member static_color].
++		</member>
++		<member name="color_scale" type="Color" setter="set_color_scale" getter="get_color_scale" default="Color(1, 1, 1, 1)">
++			Component-wise multiplier applied before the other transforms.
++		</member>
++		<member name="darkened_amount" type="float" setter="set_darkened_amount" getter="get_darkened_amount" default="0.0">
++			Amount passed to [method Color.darkened].
++		</member>
++		<member name="inverted" type="bool" setter="set_inverted" getter="is_inverted" default="false">
++			If [code]true[/code], applies [method Color.inverted] after scaling.
++		</member>
++		<member name="lerp_color" type="Color" setter="set_lerp_color" getter="get_lerp_color" default="Color(1, 1, 1, 1)">
++			Static interpolation target and fallback for [constant COLOR_ROLE_STATIC].
++		</member>
++		<member name="lerp_color_role" type="int" setter="set_lerp_color_role" getter="get_lerp_color_role" enum="ColorRole" default="0">
++			Semantic interpolation target used when [member lerp_color_role_enabled] is [code]true[/code] and [member lerp_transform] is empty.
++		</member>
++		<member name="lerp_color_role_enabled" type="bool" setter="set_lerp_color_role_enabled" getter="is_lerp_color_role_enabled" default="false">
++			Uses [member lerp_color_role] instead of [member lerp_color] as the interpolation target.
++		</member>
++		<member name="lerp_transform" type="ColorRoleTransform" setter="set_lerp_transform" getter="get_lerp_transform">
++			Optional transformed interpolation target. This takes precedence over [member lerp_color_role].
++		</member>
++		<member name="lerp_weight" type="float" setter="set_lerp_weight" getter="get_lerp_weight" default="0.0">
++			Interpolation weight from the transformed base color to the configured target.
++		</member>
++		<member name="lightened_amount" type="float" setter="set_lightened_amount" getter="get_lightened_amount" default="0.0">
++			Amount passed to [method Color.lightened] after darkening.
++		</member>
++		<member name="static_color" type="Color" setter="set_static_color" getter="get_static_color" default="Color(1, 1, 1, 1)">
++			Base color used when [member color_role] is [constant COLOR_ROLE_STATIC].
++		</member>
++	</members>
++</class>
+diff --git a/modules/color_scheme/register_types.cpp b/modules/color_scheme/register_types.cpp
+index 89a0e463f902c8e1b12b4ba0a4cc816f75f2fd20..fd794612bae840dac179666bbc9e862bb2df2f8a 100644
+--- a/modules/color_scheme/register_types.cpp
++++ b/modules/color_scheme/register_types.cpp
+@@ -30,6 +30,7 @@
+ 
+ #include "register_types.h"
+ 
++#include "color_role_transform.h"
+ #include "color_scheme.h"
+ 
+ #include "core/object/class_db.h"
+@@ -40,6 +41,7 @@ void initialize_color_scheme_module(ModuleInitializationLevel p_level) {
+ 	}
+ 
+ 	GDREGISTER_CLASS(ColorScheme);
++	GDREGISTER_CLASS(ColorRoleTransform);
+ }
+ 
+ void uninitialize_color_scheme_module(ModuleInitializationLevel p_level) {
+diff --git a/tests/modules/color_scheme/test_color_role_transform.cpp b/tests/modules/color_scheme/test_color_role_transform.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..9d05c2b1e53d6f841a23d1e13ac733e731b7ed41
+--- /dev/null
++++ b/tests/modules/color_scheme/test_color_role_transform.cpp
+@@ -0,0 +1,98 @@
++/**************************************************************************/
++/*  test_color_role_transform.cpp                                         */
++/**************************************************************************/
++/*                         This file is part of:                          */
++/*                             GODOT ENGINE                               */
++/*                        https://godotengine.org                          */
++/**************************************************************************/
++/* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
++/* Copyright (c) 2007-2014 Juan Linietsky, Ariel Manzur.                  */
++/*                                                                        */
++/* Permission is hereby granted, free of charge, to any person obtaining  */
++/* a copy of this software and associated documentation files (the        */
++/* "Software"), to deal in the Software without restriction, including   */
++/* without limitation the rights to use, copy, modify, merge, publish,   */
++/* distribute, sublicense, and/or sell copies of the Software, and to     */
++/* permit persons to whom the Software is furnished to do so, subject to */
++/* the following conditions:                                             */
++/*                                                                        */
++/* The above copyright notice and this permission notice shall be        */
++/* included in all copies or substantial portions of the Software.       */
++/*                                                                        */
++/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,       */
++/* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF    */
++/* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.*/
++/* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY  */
++/* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,   */
++/* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
++/* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
++/**************************************************************************/
++
++#include "tests/test_macros.h"
++
++TEST_FORCE_LINK(test_color_role_transform)
++
++#include "modules/modules_enabled.gen.h"
++
++#ifdef MODULE_COLOR_SCHEME_ENABLED
++
++#include "core/object/class_db.h"
++
++#include "modules/color_scheme/color_role_transform.h"
++#include "modules/color_scheme/color_scheme.h"
++
++namespace TestColorRoleTransform {
++
++TEST_CASE("[ColorScheme] ColorRoleTransform resolves transformation pipeline") {
++	CHECK(ClassDB::class_exists(SNAME("ColorRoleTransform")));
++
++	Ref<ColorRoleTransform> transform;
++	transform.instantiate();
++	transform->set_static_color(Color(0.2f, 0.4f, 0.6f, 0.8f));
++	CHECK(transform->resolve(Ref<ColorScheme>()).is_equal_approx(Color(0.2f, 0.4f, 0.6f, 0.8f)));
++
++	transform->set_color_scale(Color(2.0f, 0.5f, 1.0f, 0.5f));
++	CHECK(transform->resolve(Ref<ColorScheme>()).is_equal_approx(Color(0.4f, 0.2f, 0.6f, 0.4f)));
++
++	transform->set_color_scale(Color(1, 1, 1, 1));
++	transform->set_inverted(true);
++	CHECK(transform->resolve(Ref<ColorScheme>()).is_equal_approx(Color(0.8f, 0.6f, 0.4f, 0.8f)));
++
++	transform->set_inverted(false);
++	transform->set_lerp_color(Color(1, 1, 1, 1));
++	transform->set_lerp_weight(0.5f);
++	CHECK(transform->resolve(Ref<ColorScheme>()).is_equal_approx(Color(0.6f, 0.7f, 0.8f, 0.9f)));
++
++	transform->set_lerp_weight(0.0f);
++	transform->set_color_scale(Color(10, 10, 10, 10));
++	transform->set_clamp(true);
++	CHECK(transform->resolve(Ref<ColorScheme>()).is_equal_approx(Color(1, 1, 1, 1)));
++}
++
++TEST_CASE("[ColorScheme] ColorRoleTransform resolves roles and nested targets") {
++	Ref<ColorScheme> scheme;
++	scheme.instantiate();
++
++	Ref<ColorRoleTransform> transform;
++	transform.instantiate();
++	transform->set_color_role(ColorRole::PRIMARY);
++	CHECK(transform->resolve(scheme).is_equal_approx(scheme->get_color(ColorRole::PRIMARY)));
++
++	Ref<ColorRoleTransform> target;
++	target.instantiate();
++	target->set_static_color(Color(1, 0, 0, 1));
++	transform->set_color_role(ColorRole::STATIC);
++	transform->set_static_color(Color(0, 0, 1, 1));
++	transform->set_lerp_transform(target);
++	transform->set_lerp_weight(0.25f);
++	CHECK(transform->resolve(scheme).is_equal_approx(Color(0.25f, 0, 0.75f, 1)));
++
++	ERR_PRINT_OFF;
++	transform->set_lerp_transform(transform);
++	ERR_PRINT_ON;
++	CHECK(transform->get_lerp_transform() == target);
++}
++
++} // namespace TestColorRoleTransform
++
++#endif // MODULE_COLOR_SCHEME_ENABLED
+
+base-commit: 5ec4857b340b6284a18b49b2eda462bd250f219a
+prerequisite-patch-id: b38459b409a3326aed65d2433e1341638171f884
+prerequisite-patch-id: bdb0fe8d6ba7fff1b900ae33d9bec552ea61724c
+prerequisite-patch-id: 4dcdddc73066f768cb97c56444abacb21bda061c
+prerequisite-patch-id: 1f2fbc55f35da3e943dcbaeeb3c9a6d798621bf3
+prerequisite-patch-id: 4dd1cec6888d5160c85be2072b9e5dd05411d007
+prerequisite-patch-id: 60110ae09a2d09796ad65e339ee0b5abc2ce541a
+prerequisite-patch-id: bdb0025d4207a7cf0e1466ca96b2824d238b3caf
+prerequisite-patch-id: 8c55a8201fec417bc2629b903ea2d630aedab1d8
+prerequisite-patch-id: 9dfaaac9d4a47edf9d1eccce8fa66b69e674a911
+prerequisite-patch-id: 17fa223ec74d20c7792e45826a4f0d8ecd7f85d7
+prerequisite-patch-id: 0fb9ef780b3f10a7e82968e44defda508734fa91
+prerequisite-patch-id: 2af824bf187ff13746bd620b1032f57d166c0114
+prerequisite-patch-id: dc8aa901272b27086c9045fc0b9335986d3a8128

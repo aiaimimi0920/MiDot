@@ -1,0 +1,15 @@
+[remap]
+
+importer="sprite_frames"
+type="SpriteFrames"
+uid="uid://582704mvhgma"
+path="res://.godot/imported/fixture.gif-451bf120db9769329fe59d7a7ee09052.res"
+
+[deps]
+
+source_file="res://fixture.gif"
+dest_files=["res://.godot/imported/fixture.gif-451bf120db9769329fe59d7a7ee09052.res"]
+
+[params]
+
+max_frames=0

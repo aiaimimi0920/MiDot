@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Parallax2D" inherits="Node2D" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="autoscroll" type="Vector2" setter="set_autoscroll" getter="get_autoscroll" default="Vector2(0, 0)">
+		</member>
+		<member name="follow_viewport" type="bool" setter="set_follow_viewport" getter="get_follow_viewport" default="true">
+		</member>
+		<member name="ignore_camera_scroll" type="bool" setter="set_ignore_camera_scroll" getter="is_ignore_camera_scroll" default="false">
+		</member>
+		<member name="limit_begin" type="Vector2" setter="set_limit_begin" getter="get_limit_begin" default="Vector2(-10000000, -10000000)">
+		</member>
+		<member name="limit_end" type="Vector2" setter="set_limit_end" getter="get_limit_end" default="Vector2(10000000, 10000000)">
+		</member>
+		<member name="physics_interpolation_mode" type="int" setter="set_physics_interpolation_mode" getter="get_physics_interpolation_mode" overrides="Node" enum="Node.PhysicsInterpolationMode" default="2" />
+		<member name="repeat_size" type="Vector2" setter="set_repeat_size" getter="get_repeat_size" default="Vector2(0, 0)">
+		</member>
+		<member name="repeat_times" type="int" setter="set_repeat_times" getter="get_repeat_times" default="1">
+		</member>
+		<member name="screen_offset" type="Vector2" setter="set_screen_offset" getter="get_screen_offset" default="Vector2(0, 0)">
+		</member>
+		<member name="scroll_offset" type="Vector2" setter="set_scroll_offset" getter="get_scroll_offset" default="Vector2(0, 0)">
+		</member>
+		<member name="scroll_scale" type="Vector2" setter="set_scroll_scale" getter="get_scroll_scale" default="Vector2(1, 1)">
+		</member>
+	</members>
+</class>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="OpenXRMarkerTracker" inherits="OpenXRSpatialEntityTracker" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_marker_data" qualifiers="const">
+			<return type="Variant" />
+			<description>
+			</description>
+		</method>
+		<method name="set_marker_data">
+			<return type="void" />
+			<param index="0" name="marker_data" type="Variant" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="bounds_size" type="Vector2" setter="set_bounds_size" getter="get_bounds_size" default="Vector2(0, 0)">
+		</member>
+		<member name="marker_id" type="int" setter="set_marker_id" getter="get_marker_id" default="0">
+		</member>
+		<member name="marker_type" type="int" setter="set_marker_type" getter="get_marker_type" enum="OpenXRSpatialComponentMarkerList.MarkerType" default="0">
+		</member>
+	</members>
+</class>

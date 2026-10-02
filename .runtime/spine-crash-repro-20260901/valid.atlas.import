@@ -1,0 +1,15 @@
+[remap]
+
+importer="spine.atlas"
+type="SpineAtlasResource"
+uid="uid://day5jdkupsgqo"
+path="res://.godot/imported/valid.atlas-678439b07b57bac19dd0c4d0ab75db13.spatlas"
+
+[deps]
+
+source_file="res://valid.atlas"
+dest_files=["res://.godot/imported/valid.atlas-678439b07b57bac19dd0c4d0ab75db13.spatlas"]
+
+[params]
+
+normal_map_prefix="n"

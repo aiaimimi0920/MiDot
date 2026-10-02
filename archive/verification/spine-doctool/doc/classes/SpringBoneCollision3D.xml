@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="SpringBoneCollision3D" inherits="Node3D" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_skeleton" qualifiers="const">
+			<return type="Skeleton3D" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="bone" type="int" setter="set_bone" getter="get_bone" default="-1">
+		</member>
+		<member name="bone_name" type="String" setter="set_bone_name" getter="get_bone_name" default="&quot;&quot;">
+		</member>
+		<member name="physics_interpolation_mode" type="int" setter="set_physics_interpolation_mode" getter="get_physics_interpolation_mode" overrides="Node" enum="Node.PhysicsInterpolationMode" default="2" />
+		<member name="position_offset" type="Vector3" setter="set_position_offset" getter="get_position_offset">
+		</member>
+		<member name="rotation_offset" type="Quaternion" setter="set_rotation_offset" getter="get_rotation_offset">
+		</member>
+	</members>
+</class>

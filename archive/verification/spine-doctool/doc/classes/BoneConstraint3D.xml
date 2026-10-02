@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="BoneConstraint3D" inherits="SkeletonModifier3D" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="clear_setting">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="get_amount" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_apply_bone" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_apply_bone_name" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_reference_bone" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_reference_bone_name" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_reference_node" qualifiers="const">
+			<return type="NodePath" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_reference_type" qualifiers="const">
+			<return type="int" enum="BoneConstraint3D.ReferenceType" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_setting_count" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_amount">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="amount" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="set_apply_bone">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="bone" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_apply_bone_name">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="bone_name" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="set_reference_bone">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="bone" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_reference_bone_name">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="bone_name" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="set_reference_node">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="node" type="NodePath" />
+			<description>
+			</description>
+		</method>
+		<method name="set_reference_type">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="type" type="int" enum="BoneConstraint3D.ReferenceType" />
+			<description>
+			</description>
+		</method>
+		<method name="set_setting_count">
+			<return type="void" />
+			<param index="0" name="count" type="int" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="REFERENCE_TYPE_BONE" value="0" enum="ReferenceType">
+		</constant>
+		<constant name="REFERENCE_TYPE_NODE" value="1" enum="ReferenceType">
+		</constant>
+	</constants>
+</class>

@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="EditorExportPlatformExtension" inherits="EditorExportPlatform" api_type="editor" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="_can_export" qualifiers="virtual const">
+			<return type="bool" />
+			<param index="0" name="preset" type="EditorExportPreset" />
+			<param index="1" name="debug" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="_cleanup" qualifiers="virtual">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="_export_pack" qualifiers="virtual">
+			<return type="int" enum="Error" />
+			<param index="0" name="preset" type="EditorExportPreset" />
+			<param index="1" name="debug" type="bool" />
+			<param index="2" name="path" type="String" />
+			<param index="3" name="flags" type="int" enum="EditorExportPlatform.DebugFlags" is_bitfield="true" />
+			<description>
+			</description>
+		</method>
+		<method name="_export_pack_patch" qualifiers="virtual">
+			<return type="int" enum="Error" />
+			<param index="0" name="preset" type="EditorExportPreset" />
+			<param index="1" name="debug" type="bool" />
+			<param index="2" name="path" type="String" />
+			<param index="3" name="patches" type="PackedStringArray" />
+			<param index="4" name="flags" type="int" enum="EditorExportPlatform.DebugFlags" is_bitfield="true" />
+			<description>
+			</description>
+		</method>
+		<method name="_export_project" qualifiers="virtual required">
+			<return type="int" enum="Error" />
+			<param index="0" name="preset" type="EditorExportPreset" />
+			<param index="1" name="debug" type="bool" />
+			<param index="2" name="path" type="String" />
+			<param index="3" name="flags" type="int" enum="EditorExportPlatform.DebugFlags" is_bitfield="true" />
+			<description>
+			</description>
+		</method>
+		<method name="_export_zip" qualifiers="virtual">
+			<return type="int" enum="Error" />
+			<param index="0" name="preset" type="EditorExportPreset" />
+			<param index="1" name="debug" type="bool" />
+			<param index="2" name="path" type="String" />
+			<param index="3" name="flags" type="int" enum="EditorExportPlatform.DebugFlags" is_bitfield="true" />
+			<description>
+			</description>
+		</method>
+		<method name="_export_zip_patch" qualifiers="virtual">
+			<return type="int" enum="Error" />
+			<param index="0" name="preset" type="EditorExportPreset" />
+			<param index="1" name="debug" type="bool" />
+			<param index="2" name="path" type="String" />
+			<param index="3" name="patches" type="PackedStringArray" />
+			<param index="4" name="flags" type="int" enum="EditorExportPlatform.DebugFlags" is_bitfield="true" />
+			<description>
+			</description>
+		</method>
+		<method name="_get_binary_extensions" qualifiers="virtual required const">
+			<return type="PackedStringArray" />
+			<param index="0" name="preset" type="EditorExportPreset" />
+			<description>
+			</description>
+		</method>
+		<method name="_get_debug_protocol" qualifiers="virtual const">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="_get_device_architecture" qualifiers="virtual const">
+			<return type="String" />
+			<param index="0" name="device" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="_get_export_option_visibility" qualifiers="virtual const">
+			<return type="bool" />
+			<param index="0" name="preset" type="EditorExportPreset" />
+			<param index="1" name="option" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="_get_export_option_warning" qualifiers="virtual const">
+			<return type="String" />
+			<param index="0" name="preset" type="EditorExportPreset" />
+			<param index="1" name="option" type="StringName" />
+			<description>
+			</description>
+		</method>
+		<method name="_get_export_options" qualifiers="virtual const">
+			<return type="Dictionary[]" />
+			<description>
+			</description>
+		</method>
+		<method name="_get_logo" qualifiers="virtual required const">
+			<return type="Texture2D" />
+			<description>
+			</description>
+		</method>
+		<method name="_get_name" qualifiers="virtual required const">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="_get_option_icon" qualifiers="virtual const">
+			<return type="Texture2D" />
+			<param index="0" name="device" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="_get_option_label" qualifiers="virtual const">
+			<return type="String" />
+			<param index="0" name="device" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="_get_option_tooltip" qualifiers="virtual const">
+			<return type="String" />
+			<param index="0" name="device" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="_get_options_count" qualifiers="virtual const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="_get_options_tooltip" qualifiers="virtual const">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="_get_os_name" qualifiers="virtual required const">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="_get_platform_features" qualifiers="virtual required const">
+			<return type="PackedStringArray" />
+			<description>
+			</description>
+		</method>
+		<method name="_get_preset_features" qualifiers="virtual required const">
+			<return type="PackedStringArray" />
+			<param index="0" name="preset" type="EditorExportPreset" />
+			<description>
+			</description>
+		</method>
+		<method name="_get_run_icon" qualifiers="virtual const">
+			<return type="Texture2D" />
+			<description>
+			</description>
+		</method>
+		<method name="_has_valid_export_configuration" qualifiers="virtual required const">
+			<return type="bool" />
+			<param index="0" name="preset" type="EditorExportPreset" />
+			<param index="1" name="debug" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="_has_valid_project_configuration" qualifiers="virtual required const">
+			<return type="bool" />
+			<param index="0" name="preset" type="EditorExportPreset" />
+			<description>
+			</description>
+		</method>
+		<method name="_initialize" qualifiers="virtual">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="_is_executable" qualifiers="virtual const">
+			<return type="bool" />
+			<param index="0" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="_poll_export" qualifiers="virtual">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="_run" qualifiers="virtual">
+			<return type="int" enum="Error" />
+			<param index="0" name="preset" type="EditorExportPreset" />
+			<param index="1" name="device" type="int" />
+			<param index="2" name="debug_flags" type="int" enum="EditorExportPlatform.DebugFlags" is_bitfield="true" />
+			<description>
+			</description>
+		</method>
+		<method name="_should_update_export_options" qualifiers="virtual">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_config_error" qualifiers="const">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="get_config_missing_templates" qualifiers="const">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="set_config_error" qualifiers="const">
+			<return type="void" />
+			<param index="0" name="error_text" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="set_config_missing_templates" qualifiers="const">
+			<return type="void" />
+			<param index="0" name="missing_templates" type="bool" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>

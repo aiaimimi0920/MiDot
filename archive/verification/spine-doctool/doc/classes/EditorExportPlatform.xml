@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="EditorExportPlatform" inherits="RefCounted" api_type="editor" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add_message">
+			<return type="void" />
+			<param index="0" name="type" type="int" enum="EditorExportPlatform.ExportMessageType" />
+			<param index="1" name="category" type="String" />
+			<param index="2" name="message" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="clear_messages">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="create_preset">
+			<return type="EditorExportPreset" />
+			<description>
+			</description>
+		</method>
+		<method name="export_pack">
+			<return type="int" enum="Error" />
+			<param index="0" name="preset" type="EditorExportPreset" />
+			<param index="1" name="debug" type="bool" />
+			<param index="2" name="path" type="String" />
+			<param index="3" name="flags" type="int" enum="EditorExportPlatform.DebugFlags" is_bitfield="true" default="0" />
+			<description>
+			</description>
+		</method>
+		<method name="export_pack_patch">
+			<return type="int" enum="Error" />
+			<param index="0" name="preset" type="EditorExportPreset" />
+			<param index="1" name="debug" type="bool" />
+			<param index="2" name="path" type="String" />
+			<param index="3" name="patches" type="PackedStringArray" default="PackedStringArray()" />
+			<param index="4" name="flags" type="int" enum="EditorExportPlatform.DebugFlags" is_bitfield="true" default="0" />
+			<description>
+			</description>
+		</method>
+		<method name="export_project">
+			<return type="int" enum="Error" />
+			<param index="0" name="preset" type="EditorExportPreset" />
+			<param index="1" name="debug" type="bool" />
+			<param index="2" name="path" type="String" />
+			<param index="3" name="flags" type="int" enum="EditorExportPlatform.DebugFlags" is_bitfield="true" default="0" />
+			<param index="4" name="notify" type="bool" default="true" />
+			<description>
+			</description>
+		</method>
+		<method name="export_project_files">
+			<return type="int" enum="Error" />
+			<param index="0" name="preset" type="EditorExportPreset" />
+			<param index="1" name="debug" type="bool" />
+			<param index="2" name="save_cb" type="Callable" />
+			<param index="3" name="shared_cb" type="Callable" default="Callable()" />
+			<description>
+			</description>
+		</method>
+		<method name="export_zip">
+			<return type="int" enum="Error" />
+			<param index="0" name="preset" type="EditorExportPreset" />
+			<param index="1" name="debug" type="bool" />
+			<param index="2" name="path" type="String" />
+			<param index="3" name="flags" type="int" enum="EditorExportPlatform.DebugFlags" is_bitfield="true" default="0" />
+			<description>
+			</description>
+		</method>
+		<method name="export_zip_patch">
+			<return type="int" enum="Error" />
+			<param index="0" name="preset" type="EditorExportPreset" />
+			<param index="1" name="debug" type="bool" />
+			<param index="2" name="path" type="String" />
+			<param index="3" name="patches" type="PackedStringArray" default="PackedStringArray()" />
+			<param index="4" name="flags" type="int" enum="EditorExportPlatform.DebugFlags" is_bitfield="true" default="0" />
+			<description>
+			</description>
+		</method>
+		<method name="find_export_template" qualifiers="const">
+			<return type="Dictionary" />
+			<param index="0" name="template_file_name" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="gen_export_flags">
+			<return type="PackedStringArray" />
+			<param index="0" name="flags" type="int" enum="EditorExportPlatform.DebugFlags" is_bitfield="true" />
+			<description>
+			</description>
+		</method>
+		<method name="get_current_presets" qualifiers="const">
+			<return type="Array" />
+			<description>
+			</description>
+		</method>
+		<method name="get_forced_export_files" qualifiers="static">
+			<return type="PackedStringArray" />
+			<param index="0" name="preset" type="EditorExportPreset" default="null" />
+			<description>
+			</description>
+		</method>
+		<method name="get_internal_export_files">
+			<return type="Dictionary" />
+			<param index="0" name="preset" type="EditorExportPreset" />
+			<param index="1" name="debug" type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="get_message_category" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_message_count" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_message_text" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_message_type" qualifiers="const">
+			<return type="int" enum="EditorExportPlatform.ExportMessageType" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_os_name" qualifiers="const">
+			<return type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="get_worst_message_type" qualifiers="const">
+			<return type="int" enum="EditorExportPlatform.ExportMessageType" />
+			<description>
+			</description>
+		</method>
+		<method name="save_pack">
+			<return type="Dictionary" />
+			<param index="0" name="preset" type="EditorExportPreset" />
+			<param index="1" name="debug" type="bool" />
+			<param index="2" name="path" type="String" />
+			<param index="3" name="embed" type="bool" default="false" />
+			<description>
+			</description>
+		</method>
+		<method name="save_pack_patch">
+			<return type="Dictionary" />
+			<param index="0" name="preset" type="EditorExportPreset" />
+			<param index="1" name="debug" type="bool" />
+			<param index="2" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="save_zip">
+			<return type="Dictionary" />
+			<param index="0" name="preset" type="EditorExportPreset" />
+			<param index="1" name="debug" type="bool" />
+			<param index="2" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="save_zip_patch">
+			<return type="Dictionary" />
+			<param index="0" name="preset" type="EditorExportPreset" />
+			<param index="1" name="debug" type="bool" />
+			<param index="2" name="path" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="ssh_push_to_remote" qualifiers="const">
+			<return type="int" enum="Error" />
+			<param index="0" name="host" type="String" />
+			<param index="1" name="port" type="String" />
+			<param index="2" name="scp_args" type="PackedStringArray" />
+			<param index="3" name="src_file" type="String" />
+			<param index="4" name="dst_file" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="ssh_run_on_remote" qualifiers="const">
+			<return type="int" enum="Error" />
+			<param index="0" name="host" type="String" />
+			<param index="1" name="port" type="String" />
+			<param index="2" name="ssh_arg" type="PackedStringArray" />
+			<param index="3" name="cmd_args" type="String" />
+			<param index="4" name="output" type="Array" default="[]" />
+			<param index="5" name="port_fwd" type="int" default="-1" />
+			<description>
+			</description>
+		</method>
+		<method name="ssh_run_on_remote_no_wait" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="host" type="String" />
+			<param index="1" name="port" type="String" />
+			<param index="2" name="ssh_args" type="PackedStringArray" />
+			<param index="3" name="cmd_args" type="String" />
+			<param index="4" name="port_fwd" type="int" default="-1" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="EXPORT_MESSAGE_NONE" value="0" enum="ExportMessageType">
+		</constant>
+		<constant name="EXPORT_MESSAGE_INFO" value="1" enum="ExportMessageType">
+		</constant>
+		<constant name="EXPORT_MESSAGE_WARNING" value="2" enum="ExportMessageType">
+		</constant>
+		<constant name="EXPORT_MESSAGE_ERROR" value="3" enum="ExportMessageType">
+		</constant>
+		<constant name="DEBUG_FLAG_DUMB_CLIENT" value="1" enum="DebugFlags" is_bitfield="true">
+		</constant>
+		<constant name="DEBUG_FLAG_REMOTE_DEBUG" value="2" enum="DebugFlags" is_bitfield="true">
+		</constant>
+		<constant name="DEBUG_FLAG_REMOTE_DEBUG_LOCALHOST" value="4" enum="DebugFlags" is_bitfield="true">
+		</constant>
+		<constant name="DEBUG_FLAG_VIEW_COLLISIONS" value="8" enum="DebugFlags" is_bitfield="true">
+		</constant>
+		<constant name="DEBUG_FLAG_VIEW_NAVIGATION" value="16" enum="DebugFlags" is_bitfield="true">
+		</constant>
+	</constants>
+</class>

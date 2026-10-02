@@ -1,0 +1,80 @@
+From 3c0d7f49afd133792775813a1d585c6544167cc9 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E9=9B=85=E8=A7=85=E5=A8=B1=5C=E7=93=B6=E5=AD=90?=
+ <pingzi@yamiyu.com>
+Date: Fri, 20 Oct 2023 09:51:19 +0800
+Subject: [PATCH] =?UTF-8?q?=E5=90=88=E5=B9=B6?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ core/SCsub                                   | 17 +++++++++++++++++
+ modules/navigation/nav_mesh_generator_2d.cpp |  1 -
+ scene/resources/navigation_polygon.cpp       |  1 +
+ thirdparty/README.md                         |  1 +
+ 4 files changed, 19 insertions(+), 1 deletion(-)
+
+diff --git a/core/SCsub b/core/SCsub
+index d34e21ecec4af6f76495e47fcab6b7289c09d457..56b008633bd85c6e4703f13f7d4dee84bc5e8e37 100644
+--- a/core/SCsub
++++ b/core/SCsub
+@@ -121,6 +121,23 @@ thirdparty_tiny_process_library_sources = [
+ ]
+ env_thirdparty.add_source_files(thirdparty_obj, thirdparty_tiny_process_library_sources)
+ 
++# Clipper2 Thirdparty source files used for polygon and polyline boolean operations.
++if env["builtin_clipper2"]:
++    thirdparty_clipper_dir = "#thirdparty/clipper2/"
++    thirdparty_clipper_sources = [
++        "src/clipper.engine.cpp",
++        "src/clipper.offset.cpp",
++        "src/clipper.rectclip.cpp",
++    ]
++    thirdparty_clipper_sources = [thirdparty_clipper_dir + file for file in thirdparty_clipper_sources]
++
++    env_thirdparty.Prepend(CPPPATH=[thirdparty_clipper_dir + "include"])
++    env.Prepend(CPPPATH=[thirdparty_clipper_dir + "include"])
++
++    env_thirdparty.Append(CPPDEFINES=["CLIPPER2_ENABLED"])
++    env.Append(CPPDEFINES=["CLIPPER2_ENABLED"])
++
++    env_thirdparty.add_source_files(thirdparty_obj, thirdparty_clipper_sources)
+ 
+ # Zlib library, can be unbundled
+ if env["builtin_zlib"]:
+diff --git a/modules/navigation/nav_mesh_generator_2d.cpp b/modules/navigation/nav_mesh_generator_2d.cpp
+index f8c12935b484b0162f6da55ac8d2ed3eebd1bdd8..09e950689908d64823be53999db6fa96ec2e0c04 100644
+--- a/modules/navigation/nav_mesh_generator_2d.cpp
++++ b/modules/navigation/nav_mesh_generator_2d.cpp
+@@ -93,7 +93,6 @@ void NavMeshGenerator2D::sync() {
+ 
+ 			NavMeshGeneratorTask2D *generator_task = E.value;
+ 			DEV_ASSERT(generator_task->status == NavMeshGeneratorTask2D::TaskStatus::BAKING_FINISHED);
+-
+ 			baking_navmeshes.erase(generator_task->navigation_mesh);
+ 			if (generator_task->callback.is_valid()) {
+ 				generator_emit_callback(generator_task->callback);
+diff --git a/scene/resources/navigation_polygon.cpp b/scene/resources/navigation_polygon.cpp
+index 52840eaa657288929171b2ab0832706f44ba795b..7243744d94032b793126941082ddef961fae20ee 100644
+--- a/scene/resources/navigation_polygon.cpp
++++ b/scene/resources/navigation_polygon.cpp
+@@ -485,6 +485,7 @@ void NavigationPolygon::_bind_methods() {
+ 	BIND_ENUM_CONSTANT(SOURCE_GEOMETRY_GROUPS_WITH_CHILDREN);
+ 	BIND_ENUM_CONSTANT(SOURCE_GEOMETRY_GROUPS_EXPLICIT);
+ 	BIND_ENUM_CONSTANT(SOURCE_GEOMETRY_MAX);
++
+ }
+ 
+ void NavigationPolygon::_validate_property(PropertyInfo &p_property) const {
+diff --git a/thirdparty/README.md b/thirdparty/README.md
+index 86c828301370f8bb713c247e5e8c180d13169a0f..f62ee6eb83d982916d62f3b59944ffe60a6acd99 100644
+--- a/thirdparty/README.md
++++ b/thirdparty/README.md
+@@ -97,6 +97,7 @@ Files extracted from upstream source:
+ - Version: 1.2.2 (756c5079aacab5837e812a143c59dc48a09f22e7, 2023)
+ - License: BSL 1.0
+ 
++
+ Files extracted from upstream source:
+ 
+ - `CPP/Clipper2Lib` folder

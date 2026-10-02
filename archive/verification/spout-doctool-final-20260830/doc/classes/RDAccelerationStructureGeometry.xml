@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="RDAccelerationStructureGeometry" inherits="RefCounted" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="flags" type="int" setter="set_flags" getter="get_flags" enum="RenderingDevice.AccelerationStructureGeometryFlagBits" is_bitfield="true" default="0">
+		</member>
+		<member name="index_buffer" type="RID" setter="set_index_buffer" getter="get_index_buffer" default="RID()">
+		</member>
+		<member name="index_count" type="int" setter="set_index_count" getter="get_index_count" default="0">
+		</member>
+		<member name="index_offset" type="int" setter="set_index_offset" getter="get_index_offset" default="0">
+		</member>
+		<member name="vertex_buffer" type="RID" setter="set_vertex_buffer" getter="get_vertex_buffer" default="RID()">
+		</member>
+		<member name="vertex_count" type="int" setter="set_vertex_count" getter="get_vertex_count" default="0">
+		</member>
+		<member name="vertex_format" type="int" setter="set_vertex_format" getter="get_vertex_format" enum="RenderingDevice.DataFormat" default="232">
+		</member>
+		<member name="vertex_offset" type="int" setter="set_vertex_offset" getter="get_vertex_offset" default="0">
+		</member>
+		<member name="vertex_stride" type="int" setter="set_vertex_stride" getter="get_vertex_stride" default="0">
+		</member>
+	</members>
+</class>

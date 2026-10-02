@@ -1,0 +1,952 @@
+From 7a065b30f81c30719dfd6dd95b982cd3f88b7479 Mon Sep 17 00:00:00 2001
+From: aiaimimi0920 <153103332+aiaimimi0920@users.noreply.github.com>
+Date: Thu, 7 Mar 2024 01:10:14 +0800
+Subject: [PATCH] #cache code
+
+---
+ scene/gui/button.cpp                  |  15 +++
+ scene/gui/button.h                    |  15 +++
+ scene/gui/control.cpp                 |   7 +-
+ scene/gui/label.cpp                   |   5 +
+ scene/gui/label.h                     |   4 +
+ scene/gui/line_edit.cpp               |   9 ++
+ scene/gui/line_edit.h                 |  10 ++
+ scene/gui/link_button.cpp             |   8 ++
+ scene/gui/link_button.h               |   8 ++
+ scene/gui/menu_bar.cpp                |   8 ++
+ scene/gui/menu_bar.h                  |   9 ++
+ scene/gui/option_button.cpp           |   9 ++
+ scene/gui/option_button.h             |   8 ++
+ scene/main/window.cpp                 |   7 +-
+ scene/resources/style_box_flat.cpp    |  56 ++++++++--
+ scene/resources/style_box_flat.h      |  13 +++
+ scene/resources/style_box_line.cpp    |  19 +++-
+ scene/resources/style_box_line.h      |   5 +-
+ scene/resources/style_box_texture.cpp |  19 +++-
+ scene/resources/style_box_texture.h   |   6 ++
+ scene/theme/default_theme.cpp         | 145 +++++++++++++++++++++-----
+ 21 files changed, 344 insertions(+), 41 deletions(-)
+
+diff --git a/scene/gui/button.cpp b/scene/gui/button.cpp
+index fc4c3065ba7361a9d7cbfdc8b85ff7791c598213..f429986a4dc452a9ba443d2b75b18656c4ad5942 100644
+--- a/scene/gui/button.cpp
++++ b/scene/gui/button.cpp
+@@ -701,6 +701,21 @@ void Button::_bind_methods() {
+ 
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_CONSTANT, Button, h_separation);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_CONSTANT, Button, icon_max_width);
++
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, Button, font_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, Button, font_focus_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, Button, font_pressed_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, Button, font_hover_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, Button, font_hover_pressed_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, Button, font_disabled_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, Button, font_outline_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, Button, icon_normal_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, Button, icon_focus_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, Button, icon_pressed_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, Button, icon_hover_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, Button, icon_hover_pressed_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, Button, icon_disabled_color_scale);
++
+ }
+ 
+ Button::Button(const String &p_text) {
+diff --git a/scene/gui/button.h b/scene/gui/button.h
+index e1068e14fae528514a7c76ced683b78d23fad435..82a84588d81a95dfbcb74aa71313e84169566aea 100644
+--- a/scene/gui/button.h
++++ b/scene/gui/button.h
+@@ -91,12 +91,20 @@ private:
+ 		Ref<ColorScheme> font_hover_pressed_color_scheme;
+ 		Ref<ColorScheme> font_disabled_color_scheme;
+ 
++		Color font_color_scale;
++		Color font_focus_color_scale;
++		Color font_pressed_color_scale;
++		Color font_hover_color_scale;
++		Color font_hover_pressed_color_scale;
++		Color font_disabled_color_scale;
++
+ 		Ref<Font> font;
+ 		int font_size = 0;
+ 		int outline_size = 0;
+ 		Color font_outline_color;
+ 		ColorRole font_outline_color_role;
+ 		Ref<ColorScheme> font_outline_color_scheme;
++		Color font_outline_color_scale;
+ 
+ 		Color icon_normal_color;
+ 		Color icon_focus_color;
+@@ -119,6 +127,13 @@ private:
+ 		Ref<ColorScheme> icon_hover_pressed_color_scheme;
+ 		Ref<ColorScheme> icon_disabled_color_scheme;
+ 
++		Color icon_normal_color_scale;
++		Color icon_focus_color_scale;
++		Color icon_pressed_color_scale;
++		Color icon_hover_color_scale;
++		Color icon_hover_pressed_color_scale;
++		Color icon_disabled_color_scale;
++
+ 		Ref<Texture2D> icon;
+ 
+ 		int h_separation = 0;
+diff --git a/scene/gui/control.cpp b/scene/gui/control.cpp
+index 821246bb55ad25ebaa2f34be9a7ffa91db298d64..0d80f5f5a908cd7213fb856f6d33f35fe448f6d3 100644
+--- a/scene/gui/control.cpp
++++ b/scene/gui/control.cpp
+@@ -2719,7 +2719,9 @@ Color Control::get_theme_color(const StringName &p_name, const StringName &p_the
+ 			const StringName targe_color_role_scheme = String(p_name) + String("_scheme");
+             const Ref<ColorScheme> color_scheme = get_theme_color_scheme(targe_color_role_scheme, p_theme_type);
+             Color color = color_scheme->get_color(*color_role);
+-            return color;
++			const StringName targe_color_scale_name = String(p_name) + String("_scale");
++			Color color_scale = get_theme_color(targe_color_scale_name);
++            return color*color_scale;
+         }
+     }
+ 
+@@ -2745,6 +2747,9 @@ Color Control::get_theme_color(const StringName &p_name, const StringName &p_the
+ 		const StringName targe_color_role_scheme = String(p_name) + String("_scheme");
+ 		const Ref<ColorScheme> color_scheme = get_theme_color_scheme(targe_color_role_scheme, p_theme_type);
+ 		target_color = color_scheme->get_color(color_role);
++		const StringName targe_color_scale_name = String(p_name) + String("_scale");
++		Color color_scale = get_theme_color(targe_color_scale_name);
++		target_color = target_color * color_scale;
+ 	} else{
+ 		target_color = Color(color);
+ 	}
+diff --git a/scene/gui/label.cpp b/scene/gui/label.cpp
+index 8bd50de1b788c8becbec315ae079038392a3012a..de62864eff865bd3d5e43c25e87633685e0a672f 100644
+--- a/scene/gui/label.cpp
++++ b/scene/gui/label.cpp
+@@ -1062,6 +1062,10 @@ void Label::_bind_methods() {
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_FONT, Label, font);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_FONT_SIZE, Label, font_size);
+ 
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, Label, font_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, Label, font_shadow_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, Label, font_outline_color_scale);
++
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_SCHEME, Label, font_color_scheme);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_ROLE, Label, font_color_role);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, Label, font_color);
+@@ -1069,6 +1073,7 @@ void Label::_bind_methods() {
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_SCHEME, Label, font_shadow_color_scheme);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_ROLE, Label, font_shadow_color_role);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, Label, font_shadow_color);
++
+ 	
+ 	BIND_THEME_ITEM_CUSTOM(Theme::DATA_TYPE_CONSTANT, Label, font_shadow_offset.x, "shadow_offset_x");
+ 	BIND_THEME_ITEM_CUSTOM(Theme::DATA_TYPE_CONSTANT, Label, font_shadow_offset.y, "shadow_offset_y");
+diff --git a/scene/gui/label.h b/scene/gui/label.h
+index 07337ac35878e829a0af2ed4189ef76c8737a410..f119686180253f2d984703daab1b0b59522f4eda 100644
+--- a/scene/gui/label.h
++++ b/scene/gui/label.h
+@@ -75,6 +75,10 @@ private:
+ 
+ 		Ref<ColorScheme> default_color_scheme;
+ 
++		Color font_color_scale;
++		Color font_shadow_color_scale;
++		Color font_outline_color_scale;
++
+ 		int font_size = 0;
+ 		int line_spacing = 0;
+ 		Color font_color;
+diff --git a/scene/gui/line_edit.cpp b/scene/gui/line_edit.cpp
+index 8aa1f93309f509e063f10428b22050d314a870d0..b1fc2857a7ad6694b8942f1a985c228de2216dbc 100644
+--- a/scene/gui/line_edit.cpp
++++ b/scene/gui/line_edit.cpp
+@@ -2671,6 +2671,15 @@ void LineEdit::_bind_methods() {
+ 
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_SCHEME, LineEdit, default_color_scheme);
+ 
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, LineEdit, font_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, LineEdit, font_uneditable_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, LineEdit, font_selected_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, LineEdit, font_outline_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, LineEdit, font_placeholder_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, LineEdit, caret_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, LineEdit, selection_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, LineEdit, clear_button_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, LineEdit, clear_button_color_pressed_scale);
+ 
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_SCHEME, LineEdit, font_color_scheme);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_SCHEME, LineEdit, font_uneditable_color_scheme);
+diff --git a/scene/gui/line_edit.h b/scene/gui/line_edit.h
+index 180b34f054117b193fbd2413ea9f237f8c107e99..ee3a0036e8bc54ae161b5e1f29893b5ee177ad3a 100644
+--- a/scene/gui/line_edit.h
++++ b/scene/gui/line_edit.h
+@@ -187,6 +187,16 @@ private:
+ 
+ 		Ref<ColorScheme> default_color_scheme;
+ 
++		Color font_color_scale;
++		Color font_uneditable_color_scale;
++		Color font_selected_color_scale;
++		Color font_outline_color_scale;
++		Color font_placeholder_color_scale;
++		Color caret_color_scale;
++		Color selection_color_scale;
++		Color clear_button_color_scale;
++		Color clear_button_color_pressed_scale;
++
+ 		Ref<Font> font;
+ 		int font_size = 0;
+ 		Color font_color;
+diff --git a/scene/gui/link_button.cpp b/scene/gui/link_button.cpp
+index ffcb7d37958ae45463d164fbe1d96c6f2c0d9641..e42819c9f0dfa11a38b2ae3585449179c562d54a 100644
+--- a/scene/gui/link_button.cpp
++++ b/scene/gui/link_button.cpp
+@@ -304,6 +304,14 @@ void LinkButton::_bind_methods() {
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_CONSTANT, LinkButton, outline_size);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, LinkButton, font_outline_color);
+ 
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, LinkButton, font_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, LinkButton, font_pressed_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, LinkButton, font_hover_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, LinkButton, font_focus_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, LinkButton, font_hover_pressed_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, LinkButton, font_disabled_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, LinkButton, font_outline_color_scale);
++
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_CONSTANT, LinkButton, underline_spacing);
+ }
+ 
+diff --git a/scene/gui/link_button.h b/scene/gui/link_button.h
+index b4316a694c9c9d75d832f679bf16b77afafb522f..d948af1b5e29e2e9c3e8fb19c961cf4b419d60d7 100644
+--- a/scene/gui/link_button.h
++++ b/scene/gui/link_button.h
+@@ -89,6 +89,14 @@ private:
+ 		Ref<ColorScheme> font_disabled_color_scheme;
+ 		Ref<ColorScheme> font_outline_color_scheme;
+ 
++		Color font_color_scale;
++		Color font_pressed_color_scale;
++		Color font_hover_color_scale;
++		Color font_focus_color_scale;
++		Color font_hover_pressed_color_scale;
++		Color font_disabled_color_scale;
++		Color font_outline_color_scale;
++
+ 		int underline_spacing = 0;
+ 	} theme_cache;
+ 
+diff --git a/scene/gui/menu_bar.cpp b/scene/gui/menu_bar.cpp
+index c16520a15857c9e09ea172b5c68787f394e2f5dd..161944e5ded58da22d8a418a9fc1ca34776543f6 100644
+--- a/scene/gui/menu_bar.cpp
++++ b/scene/gui/menu_bar.cpp
+@@ -710,6 +710,14 @@ void MenuBar::_bind_methods() {
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, MenuBar, font_hover_pressed_color);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, MenuBar, font_focus_color);
+ 
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, MenuBar, font_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, MenuBar, font_pressed_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, MenuBar, font_hover_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, MenuBar, font_focus_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, MenuBar, font_hover_pressed_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, MenuBar, font_disabled_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, MenuBar, font_outline_color_scale);
++
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_CONSTANT, MenuBar, h_separation);
+ }
+ 
+diff --git a/scene/gui/menu_bar.h b/scene/gui/menu_bar.h
+index ddada73943aca6e617c89989dd80ed1d2f867681..e73b02ca794d3ce56bc48c4eb00a9e549ee5b2ed 100644
+--- a/scene/gui/menu_bar.h
++++ b/scene/gui/menu_bar.h
+@@ -92,6 +92,15 @@ class MenuBar : public Control {
+ 		Ref<Font> font;
+ 		int font_size = 0;
+ 		int outline_size = 0;
++
++		Color font_color_scale;
++		Color font_pressed_color_scale;
++		Color font_hover_color_scale;
++		Color font_focus_color_scale;
++		Color font_hover_pressed_color_scale;
++		Color font_disabled_color_scale;
++		Color font_outline_color_scale;
++
+ 		Color font_outline_color;
+ 		ColorRole font_outline_color_role;
+ 		Ref<ColorScheme> font_outline_color_scheme;
+diff --git a/scene/gui/option_button.cpp b/scene/gui/option_button.cpp
+index 1b410bdcf9b8338ea38b6b4f634df59bba1abb64..9bb1e2b68138dee80db1043f6a154b5e9afa4844 100644
+--- a/scene/gui/option_button.cpp
++++ b/scene/gui/option_button.cpp
+@@ -608,6 +608,15 @@ void OptionButton::_bind_methods() {
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, OptionButton, font_hover_pressed_color);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, OptionButton, font_disabled_color);
+ 
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, OptionButton, font_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, OptionButton, font_pressed_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, OptionButton, font_hover_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, OptionButton, font_focus_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, OptionButton, font_hover_pressed_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, OptionButton, font_disabled_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, OptionButton, font_outline_color_scale);
++
++
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_CONSTANT, OptionButton, h_separation);
+ 
+ 	BIND_THEME_ITEM_CUSTOM(Theme::DATA_TYPE_ICON, OptionButton, arrow_icon, "arrow");
+diff --git a/scene/gui/option_button.h b/scene/gui/option_button.h
+index 63adb7a273aef255b43b190bf7bda39a738ae28f..1d5743f09546c1b7c7d8ecc09197dc3ce5cf2ffd 100644
+--- a/scene/gui/option_button.h
++++ b/scene/gui/option_button.h
+@@ -71,6 +71,14 @@ class OptionButton : public Button {
+ 		Ref<ColorScheme> font_hover_pressed_color_scheme;
+ 		Ref<ColorScheme> font_disabled_color_scheme;
+ 
++		Color font_color_scale;
++		Color font_pressed_color_scale;
++		Color font_hover_color_scale;
++		Color font_focus_color_scale;
++		Color font_hover_pressed_color_scale;
++		Color font_disabled_color_scale;
++		Color font_outline_color_scale;
++
+ 		int h_separation = 0;
+ 
+ 		Ref<Texture2D> arrow_icon;
+diff --git a/scene/main/window.cpp b/scene/main/window.cpp
+index 733ca559f00a72b9109c3c975e07d24b85bba2c8..1ad3e8ea8d08de7b6695c0710e324a33556e2978 100644
+--- a/scene/main/window.cpp
++++ b/scene/main/window.cpp
+@@ -2187,7 +2187,9 @@ Color Window::get_theme_color(const StringName &p_name, const StringName &p_them
+ 			const StringName targe_color_role_scheme = String(p_name) + String("_scheme");
+             const Ref<ColorScheme> color_scheme = get_theme_color_scheme(targe_color_role_scheme, p_theme_type);
+             Color color = color_scheme->get_color(*color_role);
+-            return color;
++			const StringName targe_color_scale_name = String(p_name) + String("_scale");
++			Color color_scale = get_theme_color(targe_color_scale_name);
++            return color*color_scale;
+         }
+     }
+ 
+@@ -2213,6 +2215,9 @@ Color Window::get_theme_color(const StringName &p_name, const StringName &p_them
+ 		const StringName targe_color_role_scheme = String(p_name) + String("_scheme");
+ 		const Ref<ColorScheme> color_scheme = get_theme_color_scheme(targe_color_role_scheme, p_theme_type);
+ 		target_color = color_scheme->get_color(color_role);
++		const StringName targe_color_scale_name = String(p_name) + String("_scale");
++		Color color_scale = get_theme_color(targe_color_scale_name);
++		target_color = target_color * color_scale;
+ 	} else{
+ 		target_color = Color(color);
+ 	}
+diff --git a/scene/resources/style_box_flat.cpp b/scene/resources/style_box_flat.cpp
+index 0d61c6c85180e71734d638defaa8a0470a0cab89..934a42360cf46446b80625db7b088e85ad47f700 100644
+--- a/scene/resources/style_box_flat.cpp
++++ b/scene/resources/style_box_flat.cpp
+@@ -52,6 +52,34 @@ Color StyleBoxFlat::get_bg_color() const {
+ 	return bg_color;
+ }
+ 
++void StyleBoxFlat::set_bg_color_scale(const Color &p_color) {
++	bg_color_scale = p_color;
++	custom_emit_changed();
++}
++
++Color StyleBoxFlat::get_bg_color_scale() const {
++	return bg_color_scale;
++}
++
++void StyleBoxFlat::set_shadow_color_scale(const Color &p_color) {
++	shadow_color_scale = p_color;
++	custom_emit_changed();
++}
++
++Color StyleBoxFlat::get_shadow_color_scale() const {
++	return shadow_color_scale;
++}
++
++void StyleBoxFlat::set_border_color_scale(const Color &p_color) {
++	border_color_scale = p_color;
++	custom_emit_changed();
++}
++
++Color StyleBoxFlat::get_border_color_scale() const {
++	return border_color_scale;
++}
++
++
+ void StyleBoxFlat::set_border_color(const Color &p_color) {
+ 	border_color = p_color;
+ 	custom_emit_changed();
+@@ -93,28 +121,28 @@ ColorRole StyleBoxFlat::get_shadow_color_role() const {
+ 
+ void StyleBoxFlat::_update_color() {
+ 	if (color_scheme.is_valid()) {
+-		const Color target_bg_color = color_scheme->get_color(bg_color_role);
++		const Color target_bg_color = color_scheme->get_color(bg_color_role)*bg_color_scale;
+ 		if (target_bg_color != bg_color) {
+ 			set_bg_color(target_bg_color);
+ 		}
+-		const Color target_shadow_color = color_scheme->get_color(shadow_color_role);
++		const Color target_shadow_color = color_scheme->get_color(shadow_color_role)*shadow_color_scale;
+ 		if (target_shadow_color != shadow_color) {
+ 			set_shadow_color(target_shadow_color);
+ 		}
+-		const Color target_border_color = color_scheme->get_color(border_color_role);
++		const Color target_border_color = color_scheme->get_color(border_color_role)*border_color_scale;
+ 		if (target_border_color != border_color) {
+ 			set_border_color(target_border_color);
+ 		}
+ 	} else if (default_color_scheme.is_valid()) {
+-		const Color target_bg_color = default_color_scheme->get_color(bg_color_role);
++		const Color target_bg_color = default_color_scheme->get_color(bg_color_role)*bg_color_scale;
+ 		if (target_bg_color != bg_color) {
+ 			set_bg_color(target_bg_color);
+ 		}
+-		const Color target_shadow_color = default_color_scheme->get_color(shadow_color_role);
++		const Color target_shadow_color = default_color_scheme->get_color(shadow_color_role)*shadow_color_scale;
+ 		if (target_shadow_color != shadow_color) {
+ 			set_shadow_color(target_shadow_color);
+ 		}
+-		const Color target_border_color = default_color_scheme->get_color(border_color_role);
++		const Color target_border_color = default_color_scheme->get_color(border_color_role)*border_color_scale;
+ 		if (target_border_color != border_color) {
+ 			set_border_color(target_border_color);
+ 		}
+@@ -624,6 +652,16 @@ void StyleBoxFlat::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("set_border_color", "color"), &StyleBoxFlat::set_border_color);
+ 	ClassDB::bind_method(D_METHOD("get_border_color"), &StyleBoxFlat::get_border_color);
+ 
++	ClassDB::bind_method(D_METHOD("set_bg_color_scale", "color"), &StyleBoxFlat::set_bg_color_scale);
++	ClassDB::bind_method(D_METHOD("get_bg_color_scale"), &StyleBoxFlat::get_bg_color_scale);
++
++	ClassDB::bind_method(D_METHOD("set_shadow_color_scale", "color"), &StyleBoxFlat::set_shadow_color_scale);
++	ClassDB::bind_method(D_METHOD("get_shadow_color_scale"), &StyleBoxFlat::get_shadow_color_scale);
++
++	ClassDB::bind_method(D_METHOD("set_border_color_scale", "color"), &StyleBoxFlat::set_border_color_scale);
++	ClassDB::bind_method(D_METHOD("get_border_color_scale"), &StyleBoxFlat::get_border_color_scale);
++
++
+ 	ClassDB::bind_method(D_METHOD("set_border_width_all", "width"), &StyleBoxFlat::set_border_width_all);
+ 	ClassDB::bind_method(D_METHOD("get_border_width_min"), &StyleBoxFlat::get_border_width_min);
+ 
+@@ -668,6 +706,7 @@ void StyleBoxFlat::_bind_methods() {
+ 
+ 	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "bg_color"), "set_bg_color", "get_bg_color");
+ 	ADD_PROPERTY(PropertyInfo(Variant::INT, "bg_color_role", PROPERTY_HINT_ENUM, color_role_hint), "set_bg_color_role", "get_bg_color_role");
++	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "bg_color_scale"), "set_bg_color_scale", "get_bg_color_scale");
+ 
+ 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "draw_center"), "set_draw_center", "is_draw_center_enabled");
+ 	ADD_PROPERTY(PropertyInfo(Variant::VECTOR2, "skew"), "set_skew", "get_skew");
+@@ -681,9 +720,11 @@ void StyleBoxFlat::_bind_methods() {
+ 	ADD_GROUP("Border", "border_");
+ 	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "border_color"), "set_border_color", "get_border_color");
+ 	ADD_PROPERTY(PropertyInfo(Variant::INT, "border_color_role", PROPERTY_HINT_ENUM, color_role_hint), "set_border_color_role", "get_border_color_role");
+-
++	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "border_color_scale"), "set_border_color_scale", "get_border_color_scale");
+ 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "border_blend"), "set_border_blend", "get_border_blend");
+ 
++
++
+ 	ADD_GROUP("Corner Radius", "corner_radius_");
+ 	ADD_PROPERTYI(PropertyInfo(Variant::INT, "corner_radius_top_left", PROPERTY_HINT_RANGE, "0,1024,1,suffix:px"), "set_corner_radius", "get_corner_radius", CORNER_TOP_LEFT);
+ 	ADD_PROPERTYI(PropertyInfo(Variant::INT, "corner_radius_top_right", PROPERTY_HINT_RANGE, "0,1024,1,suffix:px"), "set_corner_radius", "get_corner_radius", CORNER_TOP_RIGHT);
+@@ -701,6 +742,7 @@ void StyleBoxFlat::_bind_methods() {
+ 	ADD_GROUP("Shadow", "shadow_");
+ 	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "shadow_color"), "set_shadow_color", "get_shadow_color");
+ 	ADD_PROPERTY(PropertyInfo(Variant::INT, "shadow_color_role", PROPERTY_HINT_ENUM, color_role_hint), "set_shadow_color_role", "get_shadow_color_role");
++	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "shadow_color_scale"), "set_shadow_color_scale", "get_shadow_color_scale");
+ 
+ 	ADD_PROPERTY(PropertyInfo(Variant::INT, "shadow_size", PROPERTY_HINT_RANGE, "0,100,1,or_greater,suffix:px"), "set_shadow_size", "get_shadow_size");
+ 	ADD_PROPERTY(PropertyInfo(Variant::VECTOR2, "shadow_offset", PROPERTY_HINT_NONE, "suffix:px"), "set_shadow_offset", "get_shadow_offset");
+diff --git a/scene/resources/style_box_flat.h b/scene/resources/style_box_flat.h
+index 316cd7123ff55fc2fd58465b7f9edccb2425c26c..f2441b1d774400afde2761c84c168a5f79f76deb 100644
+--- a/scene/resources/style_box_flat.h
++++ b/scene/resources/style_box_flat.h
+@@ -40,6 +40,10 @@ class StyleBoxFlat : public StyleBox {
+ 	Color shadow_color = Color(0, 0, 0, 0.6);
+ 	Color border_color = Color(0.8, 0.8, 0.8);
+ 
++	Color bg_color_scale = Color(0.6, 0.6, 0.6, 1);
++	Color shadow_color_scale = Color(1, 1, 1, 0.6);
++	Color border_color_scale = Color(0.8, 0.8, 0.8, 1);
++
+ 	ColorRole bg_color_role;
+ 	ColorRole shadow_color_role;
+ 	ColorRole border_color_role;
+@@ -126,6 +130,15 @@ public:
+ 
+ 	virtual void _update_color() override;
+ 
++	void set_bg_color_scale(const Color &p_color);
++	Color get_bg_color_scale() const;
++
++	void set_shadow_color_scale(const Color &p_color);
++	Color get_shadow_color_scale() const;
++
++	void set_border_color_scale(const Color &p_color);
++	Color get_border_color_scale() const;
++
+ 	StyleBoxFlat();
+ 	~StyleBoxFlat();
+ };
+diff --git a/scene/resources/style_box_line.cpp b/scene/resources/style_box_line.cpp
+index a2ee5635dcd4d0c25046046038f09e9a096d20c9..f74bedd99ec2b6655b4ef975a29236971e672b2f 100644
+--- a/scene/resources/style_box_line.cpp
++++ b/scene/resources/style_box_line.cpp
+@@ -67,12 +67,12 @@ ColorRole StyleBoxLine::get_color_role() const {
+ 
+ void StyleBoxLine::_update_color() {
+ 	if (color_scheme.is_valid()) {
+-		const Color target_color = color_scheme->get_color(color_role);
++		const Color target_color = color_scheme->get_color(color_role)*color_scale;
+ 		if (target_color != color) {
+ 			set_color(target_color);
+ 		}
+ 	}else if (default_color_scheme.is_valid()) {
+-		const Color target_color = default_color_scheme->get_color(color_role);
++		const Color target_color = default_color_scheme->get_color(color_role)*color_scale;
+ 		if (target_color != color) {
+ 			set_color(target_color);
+ 		}
+@@ -133,6 +133,16 @@ void StyleBoxLine::draw(RID p_canvas_item, const Rect2 &p_rect) const {
+ 	vs->canvas_item_add_rect(p_canvas_item, r, color);
+ }
+ 
++void StyleBoxLine::set_color_scale(const Color &p_color) {
++	color_scale = p_color;
++	custom_emit_changed();
++}
++
++Color StyleBoxLine::get_color_scale() const {
++	return color_scale;
++}
++
++
+ void StyleBoxLine::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("set_color", "color"), &StyleBoxLine::set_color);
+ 	ClassDB::bind_method(D_METHOD("get_color"), &StyleBoxLine::get_color);
+@@ -147,8 +157,11 @@ void StyleBoxLine::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("set_vertical", "vertical"), &StyleBoxLine::set_vertical);
+ 	ClassDB::bind_method(D_METHOD("is_vertical"), &StyleBoxLine::is_vertical);
+ 
+-	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "color"), "set_color", "get_color");
++	ClassDB::bind_method(D_METHOD("set_color_scale", "color"), &StyleBoxLine::set_color_scale);
++	ClassDB::bind_method(D_METHOD("get_color_scale"), &StyleBoxLine::get_color_scale);
+ 
++	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "color"), "set_color", "get_color");
++	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "color_scale"), "set_color_scale", "get_color_scale");
+ 	ADD_PROPERTY(PropertyInfo(Variant::INT, "color_role", PROPERTY_HINT_ENUM, color_role_hint), "set_color_role", "get_color_role");
+ 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "grow_begin", PROPERTY_HINT_RANGE, "-300,300,1,suffix:px"), "set_grow_begin", "get_grow_begin");
+ 	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "grow_end", PROPERTY_HINT_RANGE, "-300,300,1,suffix:px"), "set_grow_end", "get_grow_end");
+diff --git a/scene/resources/style_box_line.h b/scene/resources/style_box_line.h
+index a4c8a7a8e3b9451a1450597c1e697fcfb91ee568..c81ad49170764f5248377077b9da0f538ba131e5 100644
+--- a/scene/resources/style_box_line.h
++++ b/scene/resources/style_box_line.h
+@@ -36,7 +36,7 @@
+ class StyleBoxLine : public StyleBox {
+ 	GDCLASS(StyleBoxLine, StyleBox);
+ 	Color color;
+-
++	Color color_scale = Color(1, 1, 1, 1);
+ 	ColorRole color_role;
+ 	int thickness = 1;
+ 	bool vertical = false;
+@@ -71,6 +71,9 @@ public:
+ 	
+ 	virtual void draw(RID p_canvas_item, const Rect2 &p_rect) const override;
+ 
++	void set_color_scale(const Color &p_color);
++	Color get_color_scale() const;
++
+ 	StyleBoxLine();
+ 	~StyleBoxLine();
+ };
+diff --git a/scene/resources/style_box_texture.cpp b/scene/resources/style_box_texture.cpp
+index 8fcd062d27b553e1877eb76a88cd41b530236bb4..7f62865bf06c8595a414058d401c91f27f7dfc6d 100644
+--- a/scene/resources/style_box_texture.cpp
++++ b/scene/resources/style_box_texture.cpp
+@@ -169,12 +169,12 @@ ColorRole StyleBoxTexture::get_color_role() const {
+ 
+ void StyleBoxTexture::_update_color() {
+ 	if (color_scheme.is_valid()) {
+-		const Color target_color = color_scheme->get_color(color_role);
++		const Color target_color = color_scheme->get_color(color_role)*color_scale;
+ 		if (target_color != modulate) {
+ 			set_modulate(target_color);
+ 		}
+ 	}else if (default_color_scheme.is_valid()) {
+-		const Color target_color = default_color_scheme->get_color(color_role);
++		const Color target_color = default_color_scheme->get_color(color_role)*color_scale;
+ 		if (target_color != modulate) {
+ 			set_modulate(target_color);
+ 		}
+@@ -207,6 +207,15 @@ void StyleBoxTexture::draw(RID p_canvas_item, const Rect2 &p_rect) const {
+ 	RenderingServer::get_singleton()->canvas_item_add_nine_patch(p_canvas_item, rect, src_rect, texture->get_rid(), start_offset, end_offset, RS::NinePatchAxisMode(axis_h), RS::NinePatchAxisMode(axis_v), draw_center, modulate);
+ }
+ 
++void StyleBoxTexture::set_color_scale(const Color &p_color) {
++	color_scale = p_color;
++	custom_emit_changed();
++}
++
++Color StyleBoxTexture::get_color_scale() const {
++	return color_scale;
++}
++
+ void StyleBoxTexture::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("set_texture", "texture"), &StyleBoxTexture::set_texture);
+ 	ClassDB::bind_method(D_METHOD("get_texture"), &StyleBoxTexture::get_texture);
+@@ -231,6 +240,10 @@ void StyleBoxTexture::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("set_color_role", "color_role"), &StyleBoxTexture::set_color_role);
+ 	ClassDB::bind_method(D_METHOD("get_color_role"), &StyleBoxTexture::get_color_role);
+ 
++	ClassDB::bind_method(D_METHOD("set_color_scale", "color"), &StyleBoxTexture::set_color_scale);
++	ClassDB::bind_method(D_METHOD("get_color_scale"), &StyleBoxTexture::get_color_scale);
++
++
+ 	ClassDB::bind_method(D_METHOD("set_h_axis_stretch_mode", "mode"), &StyleBoxTexture::set_h_axis_stretch_mode);
+ 	ClassDB::bind_method(D_METHOD("get_h_axis_stretch_mode"), &StyleBoxTexture::get_h_axis_stretch_mode);
+ 
+@@ -261,6 +274,8 @@ void StyleBoxTexture::_bind_methods() {
+ 	ADD_GROUP("Modulate", "modulate_");
+ 	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "modulate_color"), "set_modulate", "get_modulate");
+ 	ADD_PROPERTY(PropertyInfo(Variant::INT, "color_role", PROPERTY_HINT_ENUM, color_role_hint), "set_color_role", "get_color_role");
++	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "color_scale"), "set_color_scale", "get_color_scale");
++
+ 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "draw_center"), "set_draw_center", "is_draw_center_enabled");
+ 
+ 	BIND_ENUM_CONSTANT(AXIS_STRETCH_MODE_STRETCH);
+diff --git a/scene/resources/style_box_texture.h b/scene/resources/style_box_texture.h
+index 5a217daeadd13def62c88637936507630fb9e50a..3c21eb2a730df3cb95a1d9b1c4f02e91bb765d49 100644
+--- a/scene/resources/style_box_texture.h
++++ b/scene/resources/style_box_texture.h
+@@ -51,6 +51,7 @@ private:
+ 	Ref<Texture2D> texture;
+ 	bool draw_center = true;
+ 	Color modulate = Color(1, 1, 1, 1);
++	Color color_scale = Color(1, 1, 1, 1);
+ 
+ 	ColorRole color_role;
+ 
+@@ -93,6 +94,11 @@ public:
+ 	void set_color_role(const ColorRole p_color_role);
+ 	ColorRole get_color_role() const;
+ 
++
++	void set_color_scale(const Color &p_color);
++	Color get_color_scale() const;
++
++
+ 	virtual void _update_color() override;
+ 
+ 	virtual Rect2 get_draw_rect(const Rect2 &p_rect) const override;
+diff --git a/scene/theme/default_theme.cpp b/scene/theme/default_theme.cpp
+index 4a31f390dd3e145ceedf0baaa15e7e534a0741bb..df9c49c3e468f1482235cb51e3867c95d1d9a095 100644
+--- a/scene/theme/default_theme.cpp
++++ b/scene/theme/default_theme.cpp
+@@ -70,10 +70,11 @@ static Ref<StyleBoxFlat> make_flat_stylebox(Color p_color, float p_margin_left =
+ 	return style;
+ }
+ 
+-static Ref<StyleBoxFlat> make_color_role_flat_stylebox(ColorRole p_color_role, Ref<ColorScheme> color_scheme, float p_margin_left = default_margin, float p_margin_top = default_margin, float p_margin_right = default_margin, float p_margin_bottom = default_margin, int p_corner_radius = default_corner_radius, bool p_draw_center = true, int p_border_width = 0) {
++static Ref<StyleBoxFlat> make_color_role_flat_stylebox(ColorRole p_color_role, Color p_color_scale, float p_margin_left = default_margin, float p_margin_top = default_margin, float p_margin_right = default_margin, float p_margin_bottom = default_margin, int p_corner_radius = default_corner_radius, bool p_draw_center = true, int p_border_width = 0) {
+ 	Ref<StyleBoxFlat> style(memnew(StyleBoxFlat));
+-	style->set_color_scheme(color_scheme);
++	// style->set_color_scheme(color_scheme);
+ 	style->set_bg_color_role(p_color_role);
++	style->set_bg_color_scale(p_color_scale);
+ 	style->set_content_margin_individual(Math::round(p_margin_left * scale), Math::round(p_margin_top * scale), Math::round(p_margin_right * scale), Math::round(p_margin_bottom * scale));
+ 
+ 	style->set_corner_radius_all(Math::round(p_corner_radius * scale));
+@@ -171,11 +172,19 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 	
+ 	// Button
+ 
+-	const Ref<StyleBoxFlat> button_normal = make_flat_stylebox(style_normal_color);
+-	const Ref<StyleBoxFlat> button_hover = make_flat_stylebox(style_hover_color);
+-	const Ref<StyleBoxFlat> button_pressed = make_flat_stylebox(style_pressed_color);
+-	const Ref<StyleBoxFlat> button_disabled = make_flat_stylebox(style_disabled_color);
+-	Ref<StyleBoxFlat> focus = make_flat_stylebox(style_focus_color, default_margin, default_margin, default_margin, default_margin, default_corner_radius, false, 2);
++	// const Ref<StyleBoxFlat> button_normal = make_flat_stylebox(style_normal_color);
++	// const Ref<StyleBoxFlat> button_hover = make_flat_stylebox(style_hover_color);
++	// const Ref<StyleBoxFlat> button_pressed = make_flat_stylebox(style_pressed_color);
++	// const Ref<StyleBoxFlat> button_disabled = make_flat_stylebox(style_disabled_color);
++
++
++	const Ref<StyleBoxFlat> button_normal = make_color_role_flat_stylebox(ColorRole::PRIMARY, style_normal_color);
++	const Ref<StyleBoxFlat> button_hover = make_color_role_flat_stylebox(ColorRole::PRIMARY, style_hover_color);
++	const Ref<StyleBoxFlat> button_pressed = make_color_role_flat_stylebox(ColorRole::PRIMARY, style_pressed_color);
++	const Ref<StyleBoxFlat> button_disabled = make_color_role_flat_stylebox(ColorRole::PRIMARY, style_disabled_color);
++
++	// Ref<StyleBoxFlat> focus = make_flat_stylebox(style_focus_color, default_margin, default_margin, default_margin, default_margin, default_corner_radius, false, 2);
++	Ref<StyleBoxFlat> focus = make_color_role_flat_stylebox(ColorRole::PRIMARY, style_focus_color, default_margin, default_margin, default_margin, default_margin, default_corner_radius, false, 2);
+ 	// Make the focus outline appear to be flush with the buttons it's focusing.
+ 	focus->set_expand_margin_all(Math::round(2 * scale));
+ 
+@@ -191,6 +200,20 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 
+ 	theme->set_color_scheme("default_color_scheme", "Button", default_color_scheme);
+ 
++	theme->set_color("font_color_scale", "Button", control_font_color);
++	theme->set_color("font_focus_color_scale", "Button", control_font_focus_color);
++	theme->set_color("font_pressed_color_scale", "Button", control_font_pressed_color);
++	theme->set_color("font_hover_color_scale", "Button", control_font_hover_color);
++	theme->set_color("font_hover_pressed_color_scale", "Button", control_font_pressed_color);
++	theme->set_color("font_disabled_color_scale", "Button", control_font_disabled_color);
++	theme->set_color("font_outline_color_scale", "Button", Color(1, 1, 1));
++	theme->set_color("icon_normal_color_scale", "Button", Color(1, 1, 1, 1));
++	theme->set_color("icon_focus_color_scale", "Button", Color(1, 1, 1, 1));
++	theme->set_color("icon_pressed_color_scale", "Button", Color(1, 1, 1, 1));
++	theme->set_color("icon_hover_color_scale", "Button", Color(1, 1, 1, 1));
++	theme->set_color("icon_hover_pressed_color_scale", "Button", Color(1, 1, 1, 1));
++	theme->set_color("icon_disabled_color_scale", "Button", Color(1, 1, 1, 0.4));
++
+ 	theme->set_color("font_color", "Button", control_font_color);
+ 	theme->set_color("font_pressed_color", "Button", control_font_pressed_color);
+ 	theme->set_color("font_hover_color", "Button", control_font_hover_color);
+@@ -226,7 +249,7 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 	theme->set_color_role("font_hover_color_role", "Button", ColorRole::PRIMARY);
+ 	theme->set_color_role("font_focus_color_role", "Button", ColorRole::PRIMARY);
+ 	theme->set_color_role("font_hover_pressed_color_role", "Button", ColorRole::PRIMARY);
+-	theme->set_color_role("font_disabled_color_role", "Button", ColorRole::ON_SURFACE);
++	theme->set_color_role("font_disabled_color_role", "Button", ColorRole::PRIMARY);
+ 	theme->set_color_role("font_outline_color_role", "Button", ColorRole::OUTLINE);
+ 
+ 	theme->set_color_role("icon_normal_color_role", "Button", ColorRole::PRIMARY);
+@@ -234,8 +257,7 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 	theme->set_color_role("icon_hover_color_role", "Button", ColorRole::PRIMARY);
+ 	theme->set_color_role("icon_hover_pressed_color_role", "Button", ColorRole::PRIMARY);
+ 	theme->set_color_role("icon_focus_color_role", "Button", ColorRole::PRIMARY);
+-	theme->set_color_role("icon_disabled_color_role", "Button", ColorRole::ON_SURFACE);
+-
++	theme->set_color_role("icon_disabled_color_role", "Button", ColorRole::PRIMARY);
+ 
+ 
+ 	theme->set_constant("h_separation", "Button", Math::round(4 * scale));
+@@ -253,6 +275,14 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 
+ 	theme->set_color_scheme("default_color_scheme", "MenuBar", default_color_scheme);
+ 
++	theme->set_color("font_color_scale", "MenuBar", control_font_color);
++	theme->set_color("font_pressed_color_scale", "MenuBar", control_font_pressed_color);
++	theme->set_color("font_hover_color_scale", "MenuBar", control_font_hover_color);
++	theme->set_color("font_focus_color_scale", "MenuBar", control_font_focus_color);
++	theme->set_color("font_hover_pressed_color_scale", "MenuBar", control_font_pressed_color);
++	theme->set_color("font_disabled_color_scale", "MenuBar", control_font_disabled_color);
++	theme->set_color("font_outline_color_scale", "MenuBar", Color(1, 1, 1));
++
+ 	theme->set_color("font_color", "MenuBar", control_font_color);
+ 	theme->set_color("font_pressed_color", "MenuBar", control_font_pressed_color);
+ 	theme->set_color("font_hover_color", "MenuBar", control_font_hover_color);
+@@ -274,7 +304,7 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 	theme->set_color_role("font_hover_color_role", "MenuBar", ColorRole::PRIMARY);
+ 	theme->set_color_role("font_focus_color_role", "MenuBar", ColorRole::PRIMARY);
+ 	theme->set_color_role("font_hover_pressed_color_role", "MenuBar", ColorRole::PRIMARY);
+-	theme->set_color_role("font_disabled_color_role", "MenuBar", ColorRole::ON_SURFACE);
++	theme->set_color_role("font_disabled_color_role", "MenuBar", ColorRole::PRIMARY);
+ 	theme->set_color_role("font_outline_color_role", "MenuBar", ColorRole::OUTLINE);
+ 
+ 	theme->set_constant("h_separation", "MenuBar", Math::round(4 * scale));
+@@ -288,6 +318,14 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 
+ 	theme->set_color_scheme("default_color_scheme", "LinkButton", default_color_scheme);
+ 
++	theme->set_color("font_color_scale", "LinkButton", control_font_color);
++	theme->set_color("font_pressed_color_scale", "LinkButton", control_font_pressed_color);
++	theme->set_color("font_hover_color_scale", "LinkButton", control_font_hover_color);
++	theme->set_color("font_focus_color_scale", "LinkButton", control_font_focus_color);
++	theme->set_color("font_hover_pressed_color_scale", "LinkButton", control_font_pressed_color);
++	theme->set_color("font_disabled_color_scale", "LinkButton", control_font_disabled_color);
++	theme->set_color("font_outline_color_scale", "LinkButton", Color(1, 1, 1));
++
+ 	theme->set_color("font_color", "LinkButton", control_font_color);
+ 	theme->set_color("font_pressed_color", "LinkButton", control_font_pressed_color);
+ 	theme->set_color("font_hover_color", "LinkButton", control_font_hover_color);
+@@ -309,7 +347,7 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 	theme->set_color_role("font_hover_color_role", "LinkButton", ColorRole::PRIMARY);
+ 	theme->set_color_role("font_focus_color_role", "LinkButton", ColorRole::PRIMARY);
+ 	theme->set_color_role("font_hover_pressed_color_role", "LinkButton", ColorRole::PRIMARY);
+-	theme->set_color_role("font_disabled_color_role", "LinkButton", ColorRole::ON_SURFACE);
++	theme->set_color_role("font_disabled_color_role", "LinkButton", ColorRole::PRIMARY);
+ 	theme->set_color_role("font_outline_color_role", "LinkButton", ColorRole::OUTLINE);
+ 
+ 	theme->set_constant("outline_size", "LinkButton", 0);
+@@ -317,21 +355,30 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 
+ 	// OptionButton
+ 	theme->set_stylebox("focus", "OptionButton", focus);
++	// Ref<StyleBox> sb_optbutton_normal = make_flat_stylebox(style_normal_color, 2 * default_margin, default_margin, 21, default_margin);
++	// Ref<StyleBox> sb_optbutton_hover = make_flat_stylebox(style_hover_color, 2 * default_margin, default_margin, 21, default_margin);
++	// Ref<StyleBox> sb_optbutton_pressed = make_flat_stylebox(style_pressed_color, 2 * default_margin, default_margin, 21, default_margin);
++	// Ref<StyleBox> sb_optbutton_disabled = make_flat_stylebox(style_disabled_color, 2 * default_margin, default_margin, 21, default_margin);
+ 
+-	Ref<StyleBox> sb_optbutton_normal = make_flat_stylebox(style_normal_color, 2 * default_margin, default_margin, 21, default_margin);
+-	Ref<StyleBox> sb_optbutton_hover = make_flat_stylebox(style_hover_color, 2 * default_margin, default_margin, 21, default_margin);
+-	Ref<StyleBox> sb_optbutton_pressed = make_flat_stylebox(style_pressed_color, 2 * default_margin, default_margin, 21, default_margin);
+-	Ref<StyleBox> sb_optbutton_disabled = make_flat_stylebox(style_disabled_color, 2 * default_margin, default_margin, 21, default_margin);
++	Ref<StyleBox> sb_optbutton_normal = make_color_role_flat_stylebox(ColorRole::PRIMARY,style_normal_color, 2 * default_margin, default_margin, 21, default_margin);
++	Ref<StyleBox> sb_optbutton_hover = make_color_role_flat_stylebox(ColorRole::PRIMARY,style_hover_color, 2 * default_margin, default_margin, 21, default_margin);
++	Ref<StyleBox> sb_optbutton_pressed = make_color_role_flat_stylebox(ColorRole::PRIMARY,style_pressed_color, 2 * default_margin, default_margin, 21, default_margin);
++	Ref<StyleBox> sb_optbutton_disabled = make_color_role_flat_stylebox(ColorRole::PRIMARY,style_disabled_color, 2 * default_margin, default_margin, 21, default_margin);
+ 
+ 	theme->set_stylebox("normal", "OptionButton", sb_optbutton_normal);
+ 	theme->set_stylebox("hover", "OptionButton", sb_optbutton_hover);
+ 	theme->set_stylebox("pressed", "OptionButton", sb_optbutton_pressed);
+ 	theme->set_stylebox("disabled", "OptionButton", sb_optbutton_disabled);
+ 
+-	Ref<StyleBox> sb_optbutton_normal_mirrored = make_flat_stylebox(style_normal_color, 21, default_margin, 2 * default_margin, default_margin);
+-	Ref<StyleBox> sb_optbutton_hover_mirrored = make_flat_stylebox(style_hover_color, 21, default_margin, 2 * default_margin, default_margin);
+-	Ref<StyleBox> sb_optbutton_pressed_mirrored = make_flat_stylebox(style_pressed_color, 21, default_margin, 2 * default_margin, default_margin);
+-	Ref<StyleBox> sb_optbutton_disabled_mirrored = make_flat_stylebox(style_disabled_color, 21, default_margin, 2 * default_margin, default_margin);
++	// Ref<StyleBox> sb_optbutton_normal_mirrored = make_flat_stylebox(style_normal_color, 21, default_margin, 2 * default_margin, default_margin);
++	// Ref<StyleBox> sb_optbutton_hover_mirrored = make_flat_stylebox(style_hover_color, 21, default_margin, 2 * default_margin, default_margin);
++	// Ref<StyleBox> sb_optbutton_pressed_mirrored = make_flat_stylebox(style_pressed_color, 21, default_margin, 2 * default_margin, default_margin);
++	// Ref<StyleBox> sb_optbutton_disabled_mirrored = make_flat_stylebox(style_disabled_color, 21, default_margin, 2 * default_margin, default_margin);
++
++	Ref<StyleBox> sb_optbutton_normal_mirrored = make_color_role_flat_stylebox(ColorRole::PRIMARY,style_normal_color, 21, default_margin, 2 * default_margin, default_margin);
++	Ref<StyleBox> sb_optbutton_hover_mirrored = make_color_role_flat_stylebox(ColorRole::PRIMARY,style_hover_color, 21, default_margin, 2 * default_margin, default_margin);
++	Ref<StyleBox> sb_optbutton_pressed_mirrored = make_color_role_flat_stylebox(ColorRole::PRIMARY,style_pressed_color, 21, default_margin, 2 * default_margin, default_margin);
++	Ref<StyleBox> sb_optbutton_disabled_mirrored = make_color_role_flat_stylebox(ColorRole::PRIMARY,style_disabled_color, 21, default_margin, 2 * default_margin, default_margin);
+ 
+ 	theme->set_stylebox("normal_mirrored", "OptionButton", sb_optbutton_normal_mirrored);
+ 	theme->set_stylebox("hover_mirrored", "OptionButton", sb_optbutton_hover_mirrored);
+@@ -345,6 +392,15 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 
+ 	theme->set_color_scheme("default_color_scheme", "OptionButton", default_color_scheme);
+ 
++
++	theme->set_color("font_color_scale", "OptionButton", control_font_color);
++	theme->set_color("font_pressed_color_scale", "OptionButton", control_font_pressed_color);
++	theme->set_color("font_hover_color_scale", "OptionButton", control_font_hover_color);
++	theme->set_color("font_focus_color_scale", "OptionButton", control_font_focus_color);
++	theme->set_color("font_hover_pressed_color_scale", "OptionButton", control_font_pressed_color);
++	theme->set_color("font_disabled_color_scale", "OptionButton", control_font_disabled_color);
++	theme->set_color("font_outline_color_scale", "OptionButton", Color(1, 1, 1));
++
+ 	theme->set_color("font_color", "OptionButton", control_font_color);
+ 	theme->set_color("font_pressed_color", "OptionButton", control_font_pressed_color);
+ 	theme->set_color("font_hover_color", "OptionButton", control_font_hover_color);
+@@ -387,6 +443,14 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 
+ 	theme->set_color_scheme("default_color_scheme", "MenuButton", default_color_scheme);
+ 
++	theme->set_color("font_color_scale", "OptionButton", control_font_color);
++	theme->set_color("font_pressed_color_scale", "OptionButton", control_font_pressed_color);
++	theme->set_color("font_hover_color_scale", "OptionButton", control_font_hover_color);
++	theme->set_color("font_focus_color_scale", "OptionButton", control_font_focus_color);
++	theme->set_color("font_hover_pressed_color_scale", "OptionButton", control_font_pressed_color);
++	theme->set_color("font_disabled_color_scale", "OptionButton", Color(1, 1, 1, 0.3));
++	theme->set_color("font_outline_color_scale", "OptionButton", Color(1, 1, 1));
++
+ 	theme->set_color("font_color", "MenuButton", control_font_color);
+ 	theme->set_color("font_pressed_color", "MenuButton", control_font_pressed_color);
+ 	theme->set_color("font_hover_color", "MenuButton", control_font_hover_color);
+@@ -408,7 +472,7 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 	theme->set_color_role("font_hover_color_role", "MenuButton", ColorRole::PRIMARY);
+ 	theme->set_color_role("font_focus_color_role", "MenuButton", ColorRole::PRIMARY);
+ 	theme->set_color_role("font_hover_pressed_color_role", "MenuButton", ColorRole::PRIMARY);
+-	theme->set_color_role("font_disabled_color_role", "MenuButton", ColorRole::ON_SURFACE);
++	theme->set_color_role("font_disabled_color_role", "MenuButton", ColorRole::PRIMARY);
+ 	theme->set_color_role("font_outline_color_role", "MenuButton", ColorRole::OUTLINE);
+ 
+ 	theme->set_constant("h_separation", "MenuButton", Math::round(4 * scale));
+@@ -442,6 +506,14 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 
+ 	theme->set_color_scheme("default_color_scheme", "CheckBox", default_color_scheme);
+ 
++	theme->set_color("font_color_scale", "CheckBox", control_font_color);
++	theme->set_color("font_pressed_color_scale", "CheckBox", control_font_pressed_color);
++	theme->set_color("font_hover_color_scale", "CheckBox", control_font_hover_color);
++	theme->set_color("font_focus_color_scale", "CheckBox", control_font_focus_color);
++	theme->set_color("font_hover_pressed_color_scale", "CheckBox", control_font_pressed_color);
++	theme->set_color("font_disabled_color_scale", "CheckBox", control_font_disabled_color);
++	theme->set_color("font_outline_color_scale", "CheckBox", Color(1, 1, 1));
++
+ 	theme->set_color("font_color", "CheckBox", control_font_color);
+ 	theme->set_color("font_pressed_color", "CheckBox", control_font_pressed_color);
+ 	theme->set_color("font_hover_color", "CheckBox", control_font_hover_color);
+@@ -463,7 +535,7 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 	theme->set_color_role("font_hover_color_role", "CheckBox", ColorRole::PRIMARY);
+ 	theme->set_color_role("font_focus_color_role", "CheckBox", ColorRole::PRIMARY);
+ 	theme->set_color_role("font_hover_pressed_color_role", "CheckBox", ColorRole::PRIMARY);
+-	theme->set_color_role("font_disabled_color_role", "CheckBox", ColorRole::ON_SURFACE);
++	theme->set_color_role("font_disabled_color_role", "CheckBox", ColorRole::PRIMARY);
+ 	theme->set_color_role("font_outline_color_role", "CheckBox", ColorRole::OUTLINE);
+ 
+ 	theme->set_constant("h_separation", "CheckBox", Math::round(4 * scale));
+@@ -497,6 +569,14 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 
+ 	theme->set_color_scheme("default_color_scheme", "CheckBox", default_color_scheme);
+ 
++	theme->set_color("font_color_scale", "CheckBox", control_font_color);
++	theme->set_color("font_pressed_color_scale", "CheckBox", control_font_pressed_color);
++	theme->set_color("font_hover_color_scale", "CheckBox", control_font_hover_color);
++	theme->set_color("font_focus_color_scale", "CheckBox", control_font_focus_color);
++	theme->set_color("font_hover_pressed_color_scale", "CheckBox", control_font_pressed_color);
++	theme->set_color("font_disabled_color_scale", "CheckBox", control_font_disabled_color);
++	theme->set_color("font_outline_color_scale", "CheckBox", Color(1, 1, 1));
++
+ 	theme->set_color("font_color", "CheckButton", control_font_color);
+ 	theme->set_color("font_pressed_color", "CheckButton", control_font_pressed_color);
+ 	theme->set_color("font_hover_color", "CheckButton", control_font_hover_color);
+@@ -505,7 +585,6 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 	theme->set_color("font_disabled_color", "CheckButton", control_font_disabled_color);
+ 	theme->set_color("font_outline_color", "CheckButton", Color(1, 1, 1));
+ 
+-
+ 	theme->set_color_scheme("font_color_scheme", "CheckButton", Ref<ColorScheme>());
+ 	theme->set_color_scheme("font_pressed_color_scheme", "CheckButton", Ref<ColorScheme>());
+ 	theme->set_color_scheme("font_hover_color_scheme", "CheckButton", Ref<ColorScheme>());
+@@ -519,7 +598,7 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 	theme->set_color_role("font_hover_color_role", "CheckButton", ColorRole::PRIMARY);
+ 	theme->set_color_role("font_focus_color_role", "CheckButton", ColorRole::PRIMARY);
+ 	theme->set_color_role("font_hover_pressed_color_role", "CheckButton", ColorRole::PRIMARY);
+-	theme->set_color_role("font_disabled_color_role", "CheckButton", ColorRole::ON_SURFACE);
++	theme->set_color_role("font_disabled_color_role", "CheckButton", ColorRole::PRIMARY);
+ 	theme->set_color_role("font_outline_color_role", "CheckButton", ColorRole::OUTLINE);
+ 
+ 
+@@ -537,7 +616,7 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 		flat_button_normal->set_content_margin((Side)i, button_normal->get_margin((Side)i) + button_normal->get_border_width((Side)i));
+ 	}
+ 	Ref<StyleBoxFlat> flat_button_pressed = button_pressed->duplicate();
+-	flat_button_pressed->set_bg_color(style_pressed_color * Color(1, 1, 1, 0.85));
++	flat_button_pressed->set_bg_color_scale(Color(1, 1, 1, 0.6) * Color(1, 1, 1, 0.85));
+ 
+ 	theme->set_stylebox("normal", "FlatButton", flat_button_normal);
+ 	theme->set_stylebox("hover", "FlatButton", flat_button_normal);
+@@ -557,13 +636,17 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 
+ 	theme->set_color_scheme("default_color_scheme", "Label", default_color_scheme);
+ 
++	theme->set_color("font_color_scale", "Label", Color(1, 1, 1));
++	theme->set_color("font_shadow_color_scale", "Label", Color(0, 0, 0, 0));
++	theme->set_color("font_outline_color_scale", "Label", Color(1, 1, 1));
++
+ 	theme->set_color_scheme("font_color_scheme", "Label", Ref<ColorScheme>());
+ 	theme->set_color_scheme("font_shadow_color_scheme", "Label", Ref<ColorScheme>());
+ 	theme->set_color_scheme("font_outline_color_scheme", "Label", Ref<ColorScheme>());
+ 
+ 	theme->set_color_role("font_color_role", "Label", ColorRole::PRIMARY);
+ 	theme->set_color_role("font_shadow_color_role", "Label", ColorRole::SHADOW);
+-	theme->set_color_role("font_outline_color_role", "Label", ColorRole::PRIMARY);
++	theme->set_color_role("font_outline_color_role", "Label", ColorRole::OUTLINE);
+ 
+ 	theme->set_color("font_color", "Label", Color(1, 1, 1));
+ 	theme->set_color("font_shadow_color", "Label", Color(0, 0, 0, 0));
+@@ -605,6 +688,16 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 
+ 	theme->set_color_scheme("default_color_scheme", "LineEdit", default_color_scheme);
+ 
++	theme->set_color("font_color_scale", "LineEdit", control_font_color);
++	theme->set_color("font_selected_color_scale", "LineEdit", control_font_pressed_color);
++	theme->set_color("font_uneditable_color_scale", "LineEdit", control_font_disabled_color);
++	theme->set_color("font_placeholder_color_scale", "LineEdit", control_font_placeholder_color);
++	theme->set_color("font_outline_color_scale", "LineEdit", Color(1, 1, 1));
++	theme->set_color("caret_color_scale", "LineEdit", control_font_hover_color);
++	theme->set_color("selection_color_scale", "LineEdit", control_selection_color);
++	theme->set_color("clear_button_color_scale", "LineEdit", control_font_color);
++	theme->set_color("clear_button_color_pressed_scale", "LineEdit", control_font_pressed_color);
++
+ 	theme->set_color_scheme("font_color_scheme", "LineEdit", Ref<ColorScheme>());
+ 	theme->set_color_scheme("font_selected_color_scheme", "LineEdit", Ref<ColorScheme>());
+ 	theme->set_color_scheme("font_uneditable_color_scheme", "LineEdit", Ref<ColorScheme>());

@@ -1,0 +1,22 @@
+From 7f987aa5760a5f63dcd16b3ad7ea093515e11d03 Mon Sep 17 00:00:00 2001
+From: vmjcv <vmjcv666@gmail.com>
+Date: Thu, 2 Nov 2023 22:44:38 +0800
+Subject: [PATCH] fix bug
+
+---
+ editor/editor_node.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/editor/editor_node.h b/editor/editor_node.h
+index e01bfe941fb21c906ff84686f99bef800688431f..fe99cf1f010f4d66f7d579d8701caa4a0ef99ce1 100644
+--- a/editor/editor_node.h
++++ b/editor/editor_node.h
+@@ -791,7 +791,7 @@ public:
+ 
+ 	void select_editor_by_name(const String &p_name);
+ 
+-	void open_request(const String &p_path, bool p_ignore_broken_deps = false, bool p_set_inherited = false, bool p_clear_errors = true, bool p_force_open_imported = false, bool p_silent_change_tab = false);
++	void open_request(const String &p_path);
+ 	void edit_foreign_resource(Ref<Resource> p_resource);
+ 
+ 	bool is_resource_read_only(Ref<Resource> p_resource, bool p_foreign_resources_are_writable = false);

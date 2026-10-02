@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="XRVRS" inherits="Object" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="make_vrs_texture">
+			<return type="RID" />
+			<param index="0" name="target_size" type="Vector2" />
+			<param index="1" name="eye_foci" type="PackedVector2Array" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="vrs_min_radius" type="float" setter="set_vrs_min_radius" getter="get_vrs_min_radius" default="20.0">
+		</member>
+		<member name="vrs_render_region" type="Rect2i" setter="set_vrs_render_region" getter="get_vrs_render_region" default="Rect2i(0, 0, 0, 0)">
+		</member>
+		<member name="vrs_strength" type="float" setter="set_vrs_strength" getter="get_vrs_strength" default="1.0">
+		</member>
+	</members>
+</class>

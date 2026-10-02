@@ -1,0 +1,11 @@
+[gd_resource type="Theme" format=3 uid="uid://fo2lwwuaef8p"]
+
+[sub_resource type="ColorScheme" id="ColorScheme_rmp5n"]
+source_color = Color(0.7019608, 0.14901961, 0.11764706, 1)
+
+[sub_resource type="ColorScheme" id="ColorScheme_h0hta"]
+
+[resource]
+default_color_scheme = SubResource("ColorScheme_h0hta")
+Button/color_schemes/import_null = null
+Button/color_schemes/import_valid = SubResource("ColorScheme_rmp5n")

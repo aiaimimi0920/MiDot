@@ -1,0 +1,5 @@
+[application]
+config/name="GIF smoke"
+
+[rendering]
+renderer/rendering_method="gl_compatibility"

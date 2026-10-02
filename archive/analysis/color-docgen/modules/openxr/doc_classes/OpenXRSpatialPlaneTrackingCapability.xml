@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="OpenXRSpatialPlaneTrackingCapability" inherits="OpenXRExtensionWrapper" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_built_in_tracking_state">
+			<return type="int" enum="OpenXRSpatialEntityExtension.TrackingState" />
+			<description>
+			</description>
+		</method>
+		<method name="is_supported">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="start_built_in_tracking">
+			<return type="bool" />
+			<description>
+			</description>
+		</method>
+		<method name="start_entity_discovery">
+			<return type="OpenXRFutureResult" />
+			<param index="0" name="spatial_context" type="RID" />
+			<param index="1" name="component_data" type="OpenXRSpatialComponentData[]" />
+			<param index="2" name="next_snapshot_create" type="OpenXRStructureBase" default="null" />
+			<param index="3" name="next_snapshot_query" type="OpenXRStructureBase" default="null" />
+			<param index="4" name="user_callback" type="Callable" default="Callable()" />
+			<description>
+			</description>
+		</method>
+		<method name="stop_built_in_tracking">
+			<return type="void" />
+			<param index="0" name="clear_trackers" type="bool" default="true" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>

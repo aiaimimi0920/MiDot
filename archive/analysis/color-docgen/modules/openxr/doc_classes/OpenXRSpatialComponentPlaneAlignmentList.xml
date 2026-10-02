@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="OpenXRSpatialComponentPlaneAlignmentList" inherits="OpenXRSpatialComponentData" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_plane_alignment" qualifiers="const">
+			<return type="int" enum="OpenXRSpatialComponentPlaneAlignmentList.PlaneAlignment" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<constants>
+		<constant name="PLANE_ALIGNMENT_HORIZONTAL_UPWARD" value="0" enum="PlaneAlignment">
+		</constant>
+		<constant name="PLANE_ALIGNMENT_HORIZONTAL_DOWNWARD" value="1" enum="PlaneAlignment">
+		</constant>
+		<constant name="PLANE_ALIGNMENT_VERTICAL" value="2" enum="PlaneAlignment">
+		</constant>
+		<constant name="PLANE_ALIGNMENT_ARBITRARY" value="3" enum="PlaneAlignment">
+		</constant>
+	</constants>
+</class>

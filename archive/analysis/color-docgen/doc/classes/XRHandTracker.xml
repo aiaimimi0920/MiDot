@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="XRHandTracker" inherits="XRPositionalTracker" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_hand_joint_angular_velocity" qualifiers="const">
+			<return type="Vector3" />
+			<param index="0" name="joint" type="int" enum="XRHandTracker.HandJoint" />
+			<description>
+			</description>
+		</method>
+		<method name="get_hand_joint_flags" qualifiers="const">
+			<return type="int" enum="XRHandTracker.HandJointFlags" is_bitfield="true" />
+			<param index="0" name="joint" type="int" enum="XRHandTracker.HandJoint" />
+			<description>
+			</description>
+		</method>
+		<method name="get_hand_joint_linear_velocity" qualifiers="const">
+			<return type="Vector3" />
+			<param index="0" name="joint" type="int" enum="XRHandTracker.HandJoint" />
+			<description>
+			</description>
+		</method>
+		<method name="get_hand_joint_radius" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="joint" type="int" enum="XRHandTracker.HandJoint" />
+			<description>
+			</description>
+		</method>
+		<method name="get_hand_joint_transform" qualifiers="const">
+			<return type="Transform3D" />
+			<param index="0" name="joint" type="int" enum="XRHandTracker.HandJoint" />
+			<description>
+			</description>
+		</method>
+		<method name="set_hand_joint_angular_velocity">
+			<return type="void" />
+			<param index="0" name="joint" type="int" enum="XRHandTracker.HandJoint" />
+			<param index="1" name="angular_velocity" type="Vector3" />
+			<description>
+			</description>
+		</method>
+		<method name="set_hand_joint_flags">
+			<return type="void" />
+			<param index="0" name="joint" type="int" enum="XRHandTracker.HandJoint" />
+			<param index="1" name="flags" type="int" enum="XRHandTracker.HandJointFlags" is_bitfield="true" />
+			<description>
+			</description>
+		</method>
+		<method name="set_hand_joint_linear_velocity">
+			<return type="void" />
+			<param index="0" name="joint" type="int" enum="XRHandTracker.HandJoint" />
+			<param index="1" name="linear_velocity" type="Vector3" />
+			<description>
+			</description>
+		</method>
+		<method name="set_hand_joint_radius">
+			<return type="void" />
+			<param index="0" name="joint" type="int" enum="XRHandTracker.HandJoint" />
+			<param index="1" name="radius" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="set_hand_joint_transform">
+			<return type="void" />
+			<param index="0" name="joint" type="int" enum="XRHandTracker.HandJoint" />
+			<param index="1" name="transform" type="Transform3D" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="hand" type="int" setter="set_tracker_hand" getter="get_tracker_hand" overrides="XRPositionalTracker" enum="XRPositionalTracker.TrackerHand" default="1" />
+		<member name="hand_tracking_source" type="int" setter="set_hand_tracking_source" getter="get_hand_tracking_source" enum="XRHandTracker.HandTrackingSource" default="0">
+		</member>
+		<member name="has_tracking_data" type="bool" setter="set_has_tracking_data" getter="get_has_tracking_data" default="false">
+		</member>
+		<member name="type" type="int" setter="set_tracker_type" getter="get_tracker_type" overrides="XRTracker" enum="XRServer.TrackerType" default="16" />
+	</members>
+	<constants>
+		<constant name="HAND_TRACKING_SOURCE_UNKNOWN" value="0" enum="HandTrackingSource">
+		</constant>
+		<constant name="HAND_TRACKING_SOURCE_UNOBSTRUCTED" value="1" enum="HandTrackingSource">
+		</constant>
+		<constant name="HAND_TRACKING_SOURCE_CONTROLLER" value="2" enum="HandTrackingSource">
+		</constant>
+		<constant name="HAND_TRACKING_SOURCE_NOT_TRACKED" value="3" enum="HandTrackingSource">
+		</constant>
+		<constant name="HAND_TRACKING_SOURCE_MAX" value="4" enum="HandTrackingSource">
+		</constant>
+		<constant name="HAND_JOINT_PALM" value="0" enum="HandJoint">
+		</constant>
+		<constant name="HAND_JOINT_WRIST" value="1" enum="HandJoint">
+		</constant>
+		<constant name="HAND_JOINT_THUMB_METACARPAL" value="2" enum="HandJoint">
+		</constant>
+		<constant name="HAND_JOINT_THUMB_PHALANX_PROXIMAL" value="3" enum="HandJoint">
+		</constant>
+		<constant name="HAND_JOINT_THUMB_PHALANX_DISTAL" value="4" enum="HandJoint">
+		</constant>
+		<constant name="HAND_JOINT_THUMB_TIP" value="5" enum="HandJoint">
+		</constant>
+		<constant name="HAND_JOINT_INDEX_FINGER_METACARPAL" value="6" enum="HandJoint">
+		</constant>
+		<constant name="HAND_JOINT_INDEX_FINGER_PHALANX_PROXIMAL" value="7" enum="HandJoint">
+		</constant>
+		<constant name="HAND_JOINT_INDEX_FINGER_PHALANX_INTERMEDIATE" value="8" enum="HandJoint">
+		</constant>
+		<constant name="HAND_JOINT_INDEX_FINGER_PHALANX_DISTAL" value="9" enum="HandJoint">
+		</constant>
+		<constant name="HAND_JOINT_INDEX_FINGER_TIP" value="10" enum="HandJoint">
+		</constant>
+		<constant name="HAND_JOINT_MIDDLE_FINGER_METACARPAL" value="11" enum="HandJoint">
+		</constant>
+		<constant name="HAND_JOINT_MIDDLE_FINGER_PHALANX_PROXIMAL" value="12" enum="HandJoint">
+		</constant>
+		<constant name="HAND_JOINT_MIDDLE_FINGER_PHALANX_INTERMEDIATE" value="13" enum="HandJoint">
+		</constant>
+		<constant name="HAND_JOINT_MIDDLE_FINGER_PHALANX_DISTAL" value="14" enum="HandJoint">
+		</constant>
+		<constant name="HAND_JOINT_MIDDLE_FINGER_TIP" value="15" enum="HandJoint">
+		</constant>
+		<constant name="HAND_JOINT_RING_FINGER_METACARPAL" value="16" enum="HandJoint">
+		</constant>
+		<constant name="HAND_JOINT_RING_FINGER_PHALANX_PROXIMAL" value="17" enum="HandJoint">
+		</constant>
+		<constant name="HAND_JOINT_RING_FINGER_PHALANX_INTERMEDIATE" value="18" enum="HandJoint">
+		</constant>
+		<constant name="HAND_JOINT_RING_FINGER_PHALANX_DISTAL" value="19" enum="HandJoint">
+		</constant>
+		<constant name="HAND_JOINT_RING_FINGER_TIP" value="20" enum="HandJoint">
+		</constant>
+		<constant name="HAND_JOINT_PINKY_FINGER_METACARPAL" value="21" enum="HandJoint">
+		</constant>
+		<constant name="HAND_JOINT_PINKY_FINGER_PHALANX_PROXIMAL" value="22" enum="HandJoint">
+		</constant>
+		<constant name="HAND_JOINT_PINKY_FINGER_PHALANX_INTERMEDIATE" value="23" enum="HandJoint">
+		</constant>
+		<constant name="HAND_JOINT_PINKY_FINGER_PHALANX_DISTAL" value="24" enum="HandJoint">
+		</constant>
+		<constant name="HAND_JOINT_PINKY_FINGER_TIP" value="25" enum="HandJoint">
+		</constant>
+		<constant name="HAND_JOINT_MAX" value="26" enum="HandJoint">
+		</constant>
+		<constant name="HAND_JOINT_FLAG_ORIENTATION_VALID" value="1" enum="HandJointFlags" is_bitfield="true">
+		</constant>
+		<constant name="HAND_JOINT_FLAG_ORIENTATION_TRACKED" value="2" enum="HandJointFlags" is_bitfield="true">
+		</constant>
+		<constant name="HAND_JOINT_FLAG_POSITION_VALID" value="4" enum="HandJointFlags" is_bitfield="true">
+		</constant>
+		<constant name="HAND_JOINT_FLAG_POSITION_TRACKED" value="8" enum="HandJointFlags" is_bitfield="true">
+		</constant>
+		<constant name="HAND_JOINT_FLAG_LINEAR_VELOCITY_VALID" value="16" enum="HandJointFlags" is_bitfield="true">
+		</constant>
+		<constant name="HAND_JOINT_FLAG_ANGULAR_VELOCITY_VALID" value="32" enum="HandJointFlags" is_bitfield="true">
+		</constant>
+	</constants>
+</class>

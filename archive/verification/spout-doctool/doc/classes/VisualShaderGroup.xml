@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="VisualShaderGroup" inherits="Resource" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add_node">
+			<return type="void" />
+			<param index="0" name="node" type="VisualShaderNode" />
+			<param index="1" name="position" type="Vector2" />
+			<param index="2" name="id" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="attach_node_to_frame">
+			<return type="void" />
+			<param index="0" name="id" type="int" />
+			<param index="1" name="frame" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="can_connect_nodes" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="from_node" type="int" />
+			<param index="1" name="from_port" type="int" />
+			<param index="2" name="to_node" type="int" />
+			<param index="3" name="to_port" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="connect_nodes">
+			<return type="int" enum="Error" />
+			<param index="0" name="from_node" type="int" />
+			<param index="1" name="from_port" type="int" />
+			<param index="2" name="to_node" type="int" />
+			<param index="3" name="to_port" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="connect_nodes_forced">
+			<return type="void" />
+			<param index="0" name="from_node" type="int" />
+			<param index="1" name="from_port" type="int" />
+			<param index="2" name="to_node" type="int" />
+			<param index="3" name="to_port" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="detach_node_from_frame">
+			<return type="void" />
+			<param index="0" name="id" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="disconnect_nodes">
+			<return type="void" />
+			<param index="0" name="from_node" type="int" />
+			<param index="1" name="from_port" type="int" />
+			<param index="2" name="to_node" type="int" />
+			<param index="3" name="to_port" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_input_port_name" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="id" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_input_port_type" qualifiers="const">
+			<return type="int" enum="VisualShaderNode.PortType" />
+			<param index="0" name="id" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_node" qualifiers="const">
+			<return type="VisualShaderNode" />
+			<param index="0" name="id" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_node_connections" qualifiers="const">
+			<return type="Dictionary[]" />
+			<description>
+			</description>
+		</method>
+		<method name="get_node_list" qualifiers="const">
+			<return type="PackedInt32Array" />
+			<description>
+			</description>
+		</method>
+		<method name="get_node_position" qualifiers="const">
+			<return type="Vector2" />
+			<param index="0" name="id" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_output_port_name" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="id" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_output_port_type" qualifiers="const">
+			<return type="int" enum="VisualShaderNode.PortType" />
+			<param index="0" name="id" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_valid_node_id" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="insert_input_port">
+			<return type="String" />
+			<param index="0" name="id" type="int" />
+			<param index="1" name="type" type="int" enum="VisualShaderNode.PortType" />
+			<param index="2" name="name" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="insert_output_port">
+			<return type="String" />
+			<param index="0" name="id" type="int" />
+			<param index="1" name="type" type="int" enum="VisualShaderNode.PortType" />
+			<param index="2" name="name" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="is_node_connection" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="from_node" type="int" />
+			<param index="1" name="from_port" type="int" />
+			<param index="2" name="to_node" type="int" />
+			<param index="3" name="to_port" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="move_input_port">
+			<return type="void" />
+			<param index="0" name="from" type="int" />
+			<param index="1" name="to" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="move_output_port">
+			<return type="void" />
+			<param index="0" name="from" type="int" />
+			<param index="1" name="to" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="remove_input_port">
+			<return type="void" />
+			<param index="0" name="id" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="remove_node">
+			<return type="void" />
+			<param index="0" name="id" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="remove_output_port">
+			<return type="void" />
+			<param index="0" name="id" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="replace_node">
+			<return type="void" />
+			<param index="0" name="id" type="int" />
+			<param index="1" name="new_class" type="StringName" />
+			<description>
+			</description>
+		</method>
+		<method name="set_input_port_name">
+			<return type="void" />
+			<param index="0" name="id" type="int" />
+			<param index="1" name="name" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="set_input_port_type">
+			<return type="void" />
+			<param index="0" name="id" type="int" />
+			<param index="1" name="type" type="int" enum="VisualShaderNode.PortType" />
+			<description>
+			</description>
+		</method>
+		<method name="set_node_position">
+			<return type="void" />
+			<param index="0" name="id" type="int" />
+			<param index="1" name="position" type="Vector2" />
+			<description>
+			</description>
+		</method>
+		<method name="set_output_port_name">
+			<return type="void" />
+			<param index="0" name="id" type="int" />
+			<param index="1" name="name" type="String" />
+			<description>
+			</description>
+		</method>
+		<method name="set_output_port_type">
+			<return type="void" />
+			<param index="0" name="id" type="int" />
+			<param index="1" name="type" type="int" enum="VisualShaderNode.PortType" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="group_name" type="String" setter="set_group_name" getter="get_group_name" default="&quot;NodeGroup&quot;">
+		</member>
+		<member name="input_port_count" type="int" setter="set_input_port_count" getter="get_input_port_count" default="0">
+		</member>
+		<member name="input_port_{index}/name" type="String" setter="" getter="" default="&quot;&quot;">
+		</member>
+		<member name="input_port_{index}/type" type="int" setter="" getter="" default="0">
+		</member>
+		<member name="output_port_count" type="int" setter="set_output_port_count" getter="get_output_port_count" default="0">
+		</member>
+		<member name="output_port_{index}/name" type="String" setter="" getter="" default="&quot;&quot;">
+		</member>
+		<member name="output_port_{index}/type" type="int" setter="" getter="" default="0">
+		</member>
+	</members>
+</class>

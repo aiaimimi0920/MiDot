@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="AnimationNodeAnimation" inherits="AnimationRootNode" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="advance_on_start" type="bool" setter="set_advance_on_start" getter="is_advance_on_start" default="false">
+		</member>
+		<member name="animation" type="StringName" setter="set_animation" getter="get_animation" default="&amp;&quot;&quot;">
+		</member>
+		<member name="loop_mode" type="int" setter="set_loop_mode" getter="get_loop_mode" enum="Animation.LoopMode">
+		</member>
+		<member name="play_mode" type="int" setter="set_play_mode" getter="get_play_mode" enum="AnimationNodeAnimation.PlayMode" default="0">
+		</member>
+		<member name="start_offset" type="float" setter="set_start_offset" getter="get_start_offset">
+		</member>
+		<member name="stretch_time_scale" type="bool" setter="set_stretch_time_scale" getter="is_stretching_time_scale">
+		</member>
+		<member name="timeline_length" type="float" setter="set_timeline_length" getter="get_timeline_length">
+		</member>
+		<member name="use_custom_timeline" type="bool" setter="set_use_custom_timeline" getter="is_using_custom_timeline" default="false">
+		</member>
+	</members>
+	<constants>
+		<constant name="PLAY_MODE_FORWARD" value="0" enum="PlayMode">
+		</constant>
+		<constant name="PLAY_MODE_BACKWARD" value="1" enum="PlayMode">
+		</constant>
+	</constants>
+</class>

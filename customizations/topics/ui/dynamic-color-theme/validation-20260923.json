@@ -1,0 +1,1301 @@
+{
+  "schema_version": 1,
+  "topic": "ui.dynamic-color-theme",
+  "validated_at_utc": "2026-09-23T12:24:38.385Z",
+  "evidence_root": ".validation/dynamic-theme-final/closeout-20260923",
+  "engine": {
+    "branch": "personal/main",
+    "commit": "3a6537d06bca0cbcacfa8f70952ad9451deba199",
+    "tree": "5d1a5095206990a8f11c95bd38d14a8770db6e76",
+    "plan_baseline": "db1af1e99a5025bfbf8b05ef27dd4a5e739ec371",
+    "master": "5ec4857b340b6284a18b49b2eda462bd250f219a",
+    "origin_master": "5ec4857b340b6284a18b49b2eda462bd250f219a",
+    "worktree_clean": true
+  },
+  "build_environment": {
+    "scons": "4.8.1",
+    "scons_path": ".validation/dynamic-theme-final/toolchain/scons-4.8.1/bin/scons.exe",
+    "pythonpath": ".validation/dynamic-theme-final/toolchain/scons-4.8.1",
+    "compiler": "Visual Studio 14.3",
+    "windows_sdk": "10.0.22621.0"
+  },
+  "builds": [
+    {
+      "name": "editor_dev",
+      "exit_code": 0,
+      "args": [
+        "platform=windows",
+        "target=editor",
+        "dev_build=yes",
+        "tests=yes",
+        "accesskit=no",
+        "d3d12=no",
+        "module_color_scheme_enabled=yes"
+      ],
+      "version": "4.8.dev.custom_build.3a6537d06",
+      "executable": {
+        "path": "engine/bin/godot.windows.editor.dev.x86_64.exe",
+        "sha256": "5a458b468484ce241bb8b724c572e0eafdbd932cdf85ebcd04d3e558dfbb7db1",
+        "bytes": 244711936
+      },
+      "console": {
+        "path": "engine/bin/godot.windows.editor.dev.x86_64.console.exe",
+        "sha256": "8c4deaa4a93e41003852395ed8fa24aca6728f542ec90afeba033283be32d51c",
+        "bytes": 655872
+      },
+      "stdout": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/build-editor-current.log",
+        "sha256": "3fa8f3d870a7fc55b8c750deec7511abb582cbb80c773ba2a9b861f44adc1e6e",
+        "bytes": 567
+      },
+      "stderr": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/build-editor-current.stderr.log",
+        "sha256": "5a67c181c3cd5561c46bb08a6d0e3e440b1251e93be91f36c2656f9cc69b5eba",
+        "bytes": 405
+      }
+    },
+    {
+      "name": "template_debug_dev",
+      "exit_code": 0,
+      "args": [
+        "platform=windows",
+        "target=template_debug",
+        "dev_build=yes",
+        "tests=no",
+        "accesskit=no",
+        "d3d12=no",
+        "module_color_scheme_enabled=yes"
+      ],
+      "version": "4.8.dev.custom_build.3a6537d06",
+      "executable": {
+        "path": "engine/bin/godot.windows.template_debug.dev.x86_64.exe",
+        "sha256": "e9b6b9c9feee6724f8c651eae2529629dba0008bcac5f1b14fe649123a3a17da",
+        "bytes": 134516736
+      },
+      "console": {
+        "path": "engine/bin/godot.windows.template_debug.dev.x86_64.console.exe",
+        "sha256": "1e2ae64fd86b2deef799afc9779286c5a4ba455e09f649f8cadb0b08ddd73e02",
+        "bytes": 655360
+      },
+      "stdout": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/build-template-debug-current.log",
+        "sha256": "ddc0ae80b1827d47987bff6c74d4afd5dcf2644cdbd8490eba21367a18ae007b",
+        "bytes": 648
+      },
+      "stderr": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/build-template-debug-current.stderr.log",
+        "sha256": "5a67c181c3cd5561c46bb08a6d0e3e440b1251e93be91f36c2656f9cc69b5eba",
+        "bytes": 405
+      }
+    },
+    {
+      "name": "template_debug",
+      "exit_code": 0,
+      "args": [
+        "platform=windows",
+        "target=template_debug",
+        "dev_build=no",
+        "tests=no",
+        "accesskit=no",
+        "d3d12=no",
+        "module_color_scheme_enabled=yes"
+      ],
+      "version": "4.8.dev.custom_build.3a6537d06",
+      "executable": {
+        "path": "engine/bin/godot.windows.template_debug.x86_64.exe",
+        "sha256": "540d0dce35544bed2d467f2edab2df033ea1793be6fe7455b9801bd5942303ae",
+        "bytes": 87770112
+      },
+      "console": {
+        "path": "engine/bin/godot.windows.template_debug.x86_64.console.exe",
+        "sha256": "3d956990ba1010b0a02f133b0ec27908b17bfc7f199adda7b53549f83a9aebbb",
+        "bytes": 334848
+      },
+      "stdout": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/build-template-debug-standard.log",
+        "sha256": "d47bb6390cec6161fbd277e16f34ea865215112800d1ed175a3cec8a1e154328",
+        "bytes": 886
+      },
+      "stderr": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/build-template-debug-standard.stderr.log",
+        "sha256": "747c282188b1ea64093b9b8e5470a86e913a40e0ac56975ae24fc5a139363b83",
+        "bytes": 522
+      }
+    },
+    {
+      "name": "template_release",
+      "exit_code": 0,
+      "args": [
+        "platform=windows",
+        "target=template_release",
+        "dev_build=no",
+        "tests=no",
+        "accesskit=no",
+        "d3d12=no",
+        "module_color_scheme_enabled=yes"
+      ],
+      "version": "4.8.dev.custom_build.3a6537d06",
+      "executable": {
+        "path": "engine/bin/godot.windows.template_release.x86_64.exe",
+        "sha256": "899784fee2cc6881ebf6cdef0c8025ab3b121ee5d5466de1db250d8ad0bbc248",
+        "bytes": 72574464
+      },
+      "console": {
+        "path": "engine/bin/godot.windows.template_release.x86_64.console.exe",
+        "sha256": "f899d0c5bce80814979f76b039cc28979fe65e46e521e9cf23fc6a60a4e0647b",
+        "bytes": 326656
+      },
+      "stdout": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/build-template-release-current.log",
+        "sha256": "64a6a351dfb5410cd8e85aa17e730887d3fdf52fe2c45900e2a03db7bcb829b4",
+        "bytes": 896
+      },
+      "stderr": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/build-template-release-current.stderr.log",
+        "sha256": "6e966f7dfe55918824bfeddea754d23353db3c1f8b320296ef8a1b65d4f5cf89",
+        "bytes": 526
+      }
+    }
+  ],
+  "configuration_checks": [
+    {
+      "name": "config-module-disabled",
+      "exit_code": 255,
+      "dry_run": true,
+      "args": [
+        "module_color_scheme_enabled=no"
+      ],
+      "stdout": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/config-module-disabled.log",
+        "sha256": "21a84f3f77c02584e60afac5828f24acf54b03990f112e4334e5560ed17034c8",
+        "bytes": 37
+      },
+      "stderr": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/config-module-disabled.stderr.log",
+        "sha256": "f5452cbce5cb778222b2dd5bd834fd95ce76290e653cb588c019378af372d4c2",
+        "bytes": 153
+      }
+    },
+    {
+      "name": "config-default-off",
+      "exit_code": 255,
+      "dry_run": true,
+      "args": [
+        "modules_enabled_by_default=no"
+      ],
+      "stdout": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/config-default-off.log",
+        "sha256": "21a84f3f77c02584e60afac5828f24acf54b03990f112e4334e5560ed17034c8",
+        "bytes": 37
+      },
+      "stderr": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/config-default-off.stderr.log",
+        "sha256": "f5452cbce5cb778222b2dd5bd834fd95ce76290e653cb588c019378af372d4c2",
+        "bytes": 153
+      }
+    },
+    {
+      "name": "config-minimal-explicit",
+      "exit_code": 0,
+      "dry_run": true,
+      "args": [
+        "modules_enabled_by_default=no",
+        "module_color_scheme_enabled=yes"
+      ],
+      "stdout": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/config-minimal-explicit.log",
+        "sha256": "20a3b05a5b3ed4504cddd57fbadd8c09c697fd50ca20d90a5dcd1d20170a0c89",
+        "bytes": 4996
+      },
+      "stderr": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/config-minimal-explicit.stderr.log",
+        "sha256": "5a67c181c3cd5561c46bb08a6d0e3e440b1251e93be91f36c2656f9cc69b5eba",
+        "bytes": 405
+      }
+    }
+  ],
+  "checks": {
+    "cpp": {
+      "exit_code": 0,
+      "cases": 52,
+      "assertions": 2281,
+      "filter": "*[ColorScheme]*,*[Theme]*,*Dynamic theme*,*Static built-in*,*StyleBox*",
+      "log": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/cpp-current/cpp.log",
+        "sha256": "dc4e927aa9a6c98652081c4bc57c3a93caeeb766e7d319b5f09e83b462c8ea1f",
+        "bytes": 312
+      },
+      "stderr": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/cpp-current/cpp.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      }
+    },
+    "runtime": {
+      "exit_code": 0,
+      "result": {
+        "checks": 311,
+        "display": "Windows",
+        "failures": [],
+        "hash": "3a6537d06bca0cbcacfa8f70952ad9451deba199",
+        "version": "4.8-dev (custom_build)"
+      },
+      "log": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/runtime-final/runtime.log",
+        "sha256": "34406d322b785fa1bf71d9df67808199a2764381a9e951a3ea62e3b76fe8101d",
+        "bytes": 357
+      },
+      "stderr": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/runtime-final/runtime.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      }
+    },
+    "editor": {
+      "exit_code": 0,
+      "result": {
+        "checks": 201,
+        "display": "Windows",
+        "failures": [],
+        "hash": "3a6537d06bca0cbcacfa8f70952ad9451deba199",
+        "version": "4.8-dev (custom_build)"
+      },
+      "log": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/editor-raw-states/editor.log",
+        "sha256": "88af60dd742ee6ba1fd821b187164b0c76c0d77232fbc1cdde62fb69fd0f1918",
+        "bytes": 356
+      },
+      "stderr": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/editor-raw-states/editor.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      }
+    },
+    "template_debug_dev": {
+      "exit_code": 0,
+      "result": {
+        "checks": 311,
+        "display": "Windows",
+        "failures": [],
+        "hash": "3a6537d06bca0cbcacfa8f70952ad9451deba199",
+        "version": "4.8-dev (custom_build)"
+      },
+      "log": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/template-debug-packed/template.log",
+        "sha256": "34406d322b785fa1bf71d9df67808199a2764381a9e951a3ea62e3b76fe8101d",
+        "bytes": 357
+      },
+      "stderr": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/template-debug-packed/template.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      }
+    },
+    "template_debug": {
+      "exit_code": 0,
+      "result": {
+        "checks": 311,
+        "display": "Windows",
+        "failures": [],
+        "hash": "3a6537d06bca0cbcacfa8f70952ad9451deba199",
+        "version": "4.8-dev (custom_build)"
+      },
+      "log": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/template-debug-standard/template.log",
+        "sha256": "34406d322b785fa1bf71d9df67808199a2764381a9e951a3ea62e3b76fe8101d",
+        "bytes": 357
+      },
+      "stderr": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/template-debug-standard/template.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      }
+    },
+    "template_release": {
+      "exit_code": 0,
+      "result": {
+        "checks": 311,
+        "display": "Windows",
+        "failures": [],
+        "hash": "3a6537d06bca0cbcacfa8f70952ad9451deba199",
+        "version": "4.8-dev (custom_build)"
+      },
+      "log": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/template-release-packed/template.log",
+        "sha256": "34406d322b785fa1bf71d9df67808199a2764381a9e951a3ea62e3b76fe8101d",
+        "bytes": 357
+      },
+      "stderr": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/template-release-packed/template.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      }
+    }
+  },
+  "benchmarks": {
+    "baseline": {
+      "exit_code": 0,
+      "version": "BENCH_VERSION 4.8-dev (custom_build) hash=db1af1e99a5025bfbf8b05ef27dd4a5e739ec371",
+      "records": [
+        {
+          "type": "BENCH_COLORS",
+          "values": {
+            "class": "Control",
+            "inherited_median_us": 21229,
+            "inherited_samples_us": [
+              20395,
+              20748,
+              21036,
+              21229,
+              21931,
+              22669,
+              26216
+            ],
+            "overridden_median_us": 353196,
+            "overridden_samples_us": [
+              330908,
+              331637,
+              336689,
+              353196,
+              363267,
+              404530,
+              461994
+            ],
+            "reads": 20000,
+            "samples": 7
+          }
+        },
+        {
+          "type": "BENCH_COLORS",
+          "values": {
+            "class": "Window",
+            "inherited_median_us": 26416,
+            "inherited_samples_us": [
+              22999,
+              24563,
+              24874,
+              26416,
+              26435,
+              27342,
+              33328
+            ],
+            "overridden_median_us": 350076,
+            "overridden_samples_us": [
+              333752,
+              339088,
+              349616,
+              350076,
+              375824,
+              403005,
+              416698
+            ],
+            "reads": 20000,
+            "samples": 7
+          }
+        },
+        {
+          "type": "BENCH_STYLES",
+          "values": {
+            "godot_static_bytes_delta": 639972,
+            "godot_static_bytes_peak": 48919289,
+            "nodes": 256,
+            "resolve_us": 22710,
+            "source_reused": false,
+            "unique_styles": 256
+          }
+        },
+        {
+          "type": "BENCH_TEXTURE",
+          "values": {
+            "dimension": 256,
+            "extraction_us": 137774,
+            "godot_static_bytes_peak": 48940458,
+            "image_kind": "opaque",
+            "input_compressed": false,
+            "input_format": 5,
+            "pixels": 65536,
+            "reads_after_parameters": 1,
+            "reads_after_source_change": 2,
+            "seed_unchanged": true,
+            "twelve_parameter_updates_us": 1252773
+          }
+        },
+        {
+          "type": "BENCH_TEXTURE",
+          "values": {
+            "dimension": 256,
+            "extraction_us": 127825,
+            "godot_static_bytes_peak": 48940458,
+            "image_kind": "mixed_alpha",
+            "input_compressed": false,
+            "input_format": 5,
+            "pixels": 65536,
+            "reads_after_parameters": 1,
+            "reads_after_source_change": 2,
+            "seed_unchanged": true,
+            "twelve_parameter_updates_us": 1342237
+          }
+        },
+        {
+          "type": "BENCH_TEXTURE",
+          "values": {
+            "dimension": 256,
+            "extraction_us": 145944,
+            "godot_static_bytes_peak": 48940458,
+            "image_kind": "s3tc",
+            "input_compressed": true,
+            "input_format": 17,
+            "pixels": 65536,
+            "reads_after_parameters": 1,
+            "reads_after_source_change": 2,
+            "seed_unchanged": true,
+            "twelve_parameter_updates_us": 1416891
+          }
+        },
+        {
+          "type": "BENCH_TEXTURE",
+          "values": {
+            "dimension": 1024,
+            "extraction_us": 328508,
+            "godot_static_bytes_peak": 51617365,
+            "image_kind": "opaque",
+            "input_compressed": false,
+            "input_format": 5,
+            "pixels": 1048576,
+            "reads_after_parameters": 1,
+            "reads_after_source_change": 2,
+            "seed_unchanged": true,
+            "twelve_parameter_updates_us": 1447828
+          }
+        },
+        {
+          "type": "BENCH_TEXTURE",
+          "values": {
+            "dimension": 1024,
+            "extraction_us": 258000,
+            "godot_static_bytes_peak": 51643798,
+            "image_kind": "mixed_alpha",
+            "input_compressed": false,
+            "input_format": 5,
+            "pixels": 1048576,
+            "reads_after_parameters": 1,
+            "reads_after_source_change": 2,
+            "seed_unchanged": true,
+            "twelve_parameter_updates_us": 1330829
+          }
+        },
+        {
+          "type": "BENCH_TEXTURE",
+          "values": {
+            "dimension": 1024,
+            "extraction_us": 392069,
+            "godot_static_bytes_peak": 52141677,
+            "image_kind": "s3tc",
+            "input_compressed": true,
+            "input_format": 17,
+            "pixels": 1048576,
+            "reads_after_parameters": 1,
+            "reads_after_source_change": 2,
+            "seed_unchanged": true,
+            "twelve_parameter_updates_us": 1265484
+          }
+        },
+        {
+          "type": "BENCH_TEXTURE",
+          "values": {
+            "dimension": 4096,
+            "extraction_us": 3454617,
+            "godot_static_bytes_peak": 114531925,
+            "image_kind": "opaque",
+            "input_compressed": false,
+            "input_format": 5,
+            "pixels": 16777216,
+            "reads_after_parameters": 1,
+            "reads_after_source_change": 2,
+            "seed_unchanged": true,
+            "twelve_parameter_updates_us": 1224001
+          }
+        },
+        {
+          "type": "BENCH_TEXTURE",
+          "values": {
+            "dimension": 4096,
+            "extraction_us": 2632917,
+            "godot_static_bytes_peak": 114558397,
+            "image_kind": "mixed_alpha",
+            "input_compressed": false,
+            "input_format": 5,
+            "pixels": 16777216,
+            "reads_after_parameters": 1,
+            "reads_after_source_change": 2,
+            "seed_unchanged": true,
+            "twelve_parameter_updates_us": 1186824
+          }
+        },
+        {
+          "type": "BENCH_TEXTURE",
+          "values": {
+            "dimension": 4096,
+            "extraction_us": 3835164,
+            "godot_static_bytes_peak": 122920557,
+            "image_kind": "s3tc",
+            "input_compressed": true,
+            "input_format": 17,
+            "pixels": 16777216,
+            "reads_after_parameters": 1,
+            "reads_after_source_change": 2,
+            "seed_unchanged": true,
+            "twelve_parameter_updates_us": 1283251
+          }
+        }
+      ],
+      "log": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/benchmark-baseline/benchmark.log",
+        "sha256": "aa67687dba2855389c73617239ebd2e099e8002521e3c0e15e7b867d5ad94b92",
+        "bytes": 3480
+      },
+      "stderr": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/benchmark-baseline/benchmark.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      },
+      "executable": {
+        "path": "engine/bin/godot.dynamic-theme-baseline.exe",
+        "sha256": "b023a093d0666b7539fd905ed4d6870c6cdfd06cf4ca839c6aff2d7087f2b6ba",
+        "bytes": 244594688
+      },
+      "source_commit": null,
+      "provenance": "Saved working-tree binary from prior session 01a0cc01-cced-7e03-8d9f-e6450b50381d. Its embedded db1af1e version is not a separately committed source snapshot. Texture seed caching is already present in this comparator."
+    },
+    "current": {
+      "exit_code": 0,
+      "version": "BENCH_VERSION 4.8-dev (custom_build) hash=3a6537d06bca0cbcacfa8f70952ad9451deba199",
+      "records": [
+        {
+          "type": "BENCH_COLORS",
+          "values": {
+            "class": "Control",
+            "inherited_median_us": 22796,
+            "inherited_samples_us": [
+              21103,
+              21165,
+              21843,
+              22796,
+              23235,
+              23426,
+              25912
+            ],
+            "overridden_median_us": 21536,
+            "overridden_samples_us": [
+              19682,
+              20588,
+              20763,
+              21536,
+              21543,
+              23351,
+              24348
+            ],
+            "reads": 20000,
+            "samples": 7
+          }
+        },
+        {
+          "type": "BENCH_COLORS",
+          "values": {
+            "class": "Window",
+            "inherited_median_us": 28081,
+            "inherited_samples_us": [
+              26612,
+              26686,
+              27940,
+              28081,
+              31020,
+              32949,
+              43184
+            ],
+            "overridden_median_us": 26066,
+            "overridden_samples_us": [
+              22070,
+              24572,
+              25626,
+              26066,
+              28141,
+              30427,
+              42041
+            ],
+            "reads": 20000,
+            "samples": 7
+          }
+        },
+        {
+          "type": "BENCH_STYLES",
+          "values": {
+            "godot_static_bytes_delta": 166356,
+            "godot_static_bytes_peak": 48442309,
+            "nodes": 256,
+            "resolve_us": 2745,
+            "source_reused": true,
+            "unique_styles": 1
+          }
+        },
+        {
+          "type": "BENCH_TEXTURE",
+          "values": {
+            "dimension": 256,
+            "extraction_us": 120244,
+            "godot_static_bytes_peak": 48466538,
+            "image_kind": "opaque",
+            "input_compressed": false,
+            "input_format": 5,
+            "pixels": 65536,
+            "reads_after_parameters": 1,
+            "reads_after_source_change": 2,
+            "seed_unchanged": true,
+            "twelve_parameter_updates_us": 1690080
+          }
+        },
+        {
+          "type": "BENCH_TEXTURE",
+          "values": {
+            "dimension": 256,
+            "extraction_us": 168706,
+            "godot_static_bytes_peak": 48466538,
+            "image_kind": "mixed_alpha",
+            "input_compressed": false,
+            "input_format": 5,
+            "pixels": 65536,
+            "reads_after_parameters": 1,
+            "reads_after_source_change": 2,
+            "seed_unchanged": true,
+            "twelve_parameter_updates_us": 1884846
+          }
+        },
+        {
+          "type": "BENCH_TEXTURE",
+          "values": {
+            "dimension": 256,
+            "extraction_us": 213406,
+            "godot_static_bytes_peak": 48466538,
+            "image_kind": "s3tc",
+            "input_compressed": true,
+            "input_format": 17,
+            "pixels": 65536,
+            "reads_after_parameters": 1,
+            "reads_after_source_change": 2,
+            "seed_unchanged": true,
+            "twelve_parameter_updates_us": 1788269
+          }
+        },
+        {
+          "type": "BENCH_TEXTURE",
+          "values": {
+            "dimension": 1024,
+            "extraction_us": 415288,
+            "godot_static_bytes_peak": 51617393,
+            "image_kind": "opaque",
+            "input_compressed": false,
+            "input_format": 5,
+            "pixels": 1048576,
+            "reads_after_parameters": 1,
+            "reads_after_source_change": 2,
+            "seed_unchanged": true,
+            "twelve_parameter_updates_us": 1771996
+          }
+        },
+        {
+          "type": "BENCH_TEXTURE",
+          "values": {
+            "dimension": 1024,
+            "extraction_us": 366245,
+            "godot_static_bytes_peak": 51643826,
+            "image_kind": "mixed_alpha",
+            "input_compressed": false,
+            "input_format": 5,
+            "pixels": 1048576,
+            "reads_after_parameters": 1,
+            "reads_after_source_change": 2,
+            "seed_unchanged": true,
+            "twelve_parameter_updates_us": 1470588
+          }
+        },
+        {
+          "type": "BENCH_TEXTURE",
+          "values": {
+            "dimension": 1024,
+            "extraction_us": 346481,
+            "godot_static_bytes_peak": 52141705,
+            "image_kind": "s3tc",
+            "input_compressed": true,
+            "input_format": 17,
+            "pixels": 1048576,
+            "reads_after_parameters": 1,
+            "reads_after_source_change": 2,
+            "seed_unchanged": true,
+            "twelve_parameter_updates_us": 1475673
+          }
+        },
+        {
+          "type": "BENCH_TEXTURE",
+          "values": {
+            "dimension": 4096,
+            "extraction_us": 3403831,
+            "godot_static_bytes_peak": 114531953,
+            "image_kind": "opaque",
+            "input_compressed": false,
+            "input_format": 5,
+            "pixels": 16777216,
+            "reads_after_parameters": 1,
+            "reads_after_source_change": 2,
+            "seed_unchanged": true,
+            "twelve_parameter_updates_us": 1311177
+          }
+        },
+        {
+          "type": "BENCH_TEXTURE",
+          "values": {
+            "dimension": 4096,
+            "extraction_us": 2792212,
+            "godot_static_bytes_peak": 114558425,
+            "image_kind": "mixed_alpha",
+            "input_compressed": false,
+            "input_format": 5,
+            "pixels": 16777216,
+            "reads_after_parameters": 1,
+            "reads_after_source_change": 2,
+            "seed_unchanged": true,
+            "twelve_parameter_updates_us": 1396928
+          }
+        },
+        {
+          "type": "BENCH_TEXTURE",
+          "values": {
+            "dimension": 4096,
+            "extraction_us": 3885383,
+            "godot_static_bytes_peak": 122920585,
+            "image_kind": "s3tc",
+            "input_compressed": true,
+            "input_format": 17,
+            "pixels": 16777216,
+            "reads_after_parameters": 1,
+            "reads_after_source_change": 2,
+            "seed_unchanged": true,
+            "twelve_parameter_updates_us": 1628546
+          }
+        }
+      ],
+      "log": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/benchmark-current/benchmark.log",
+        "sha256": "dadb06cad3bbfe6803559b75ab58bdbd860d52e063712b4f50b5a386c9f85e16",
+        "bytes": 3460
+      },
+      "stderr": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/benchmark-current/benchmark.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      }
+    }
+  },
+  "quality_checks": {
+    "gdscript_post_check": {
+      "command": "gdscript-post-check --format <changed GDScript files>",
+      "passed": true,
+      "files": [
+        "customizations/tests/dynamic_color_theme/addons/theme_verification/plugin.gd",
+        "customizations/tests/dynamic_color_theme/benchmark.gd",
+        "customizations/tests/dynamic_color_theme/runtime_smoke.gd"
+      ]
+    },
+    "powershell_5_1_parser": {
+      "passed": true,
+      "file": "customizations/tests/verify-dynamic-color-theme.ps1"
+    }
+  },
+  "fixture_files": [
+    {
+      "path": "customizations/tests/dynamic_color_theme/.gitignore",
+      "sha256": "a49852994233804dd1a46723bd8876dda53c619afd82db012a2a541c14b9bf6e",
+      "bytes": 16
+    },
+    {
+      "path": "customizations/tests/dynamic_color_theme/addons/theme_verification/plugin.cfg",
+      "sha256": "7eafdbe17c5b40e5982bea80df462af255d07e96ff3b341f74aec5ba45325c4e",
+      "bytes": 188
+    },
+    {
+      "path": "customizations/tests/dynamic_color_theme/addons/theme_verification/plugin.gd",
+      "sha256": "98e2fd4410fc878c00c9701fabd19057d213152e6fa404e55f01c574745a1fca",
+      "bytes": 15836,
+      "git_blob_sha256": "203f2451cc3948dced45cfa11d959c3124c712560ebf0c042f7bb7022a167f44",
+      "git_blob_bytes": 15427
+    },
+    {
+      "path": "customizations/tests/dynamic_color_theme/addons/theme_verification/plugin.gd.uid",
+      "sha256": "b5d707321b1b5cfb519c541bac165d8e56b583aa5a2eeae04132d38b772bda43",
+      "bytes": 20
+    },
+    {
+      "path": "customizations/tests/dynamic_color_theme/benchmark.gd",
+      "sha256": "b1a98f2751a156a8d976da621ce31c0b51d1bc22eb4097f1ac487f17ba02c607",
+      "bytes": 4580,
+      "git_blob_sha256": "875a504d78098d3bcb1ed545d85675213985a4ccc6a7015d7afff452bf73eee8",
+      "git_blob_bytes": 4434
+    },
+    {
+      "path": "customizations/tests/dynamic_color_theme/benchmark.gd.uid",
+      "sha256": "84648fdb4da9387388915fb5ed2fb736cc0b9b3056e73e64bbcde7591ffcb96a",
+      "bytes": 20
+    },
+    {
+      "path": "customizations/tests/dynamic_color_theme/export_presets.cfg",
+      "sha256": "34615595f71cdf84e4bb4b0e9a8caa2fbaf24839a370d992f4a5f9005b823bd4",
+      "bytes": 500
+    },
+    {
+      "path": "customizations/tests/dynamic_color_theme/main.tscn",
+      "sha256": "5f95057347a1f065cbf2bf65e267d024ed7a40a570834da5bc1cf7d9e3fa41c8",
+      "bytes": 58
+    },
+    {
+      "path": "customizations/tests/dynamic_color_theme/project.godot",
+      "sha256": "025837a495c4fcbab34eb24040d2aeaf2e75b5faa8b5ee9c0ed0654aa1ae6946",
+      "bytes": 713
+    },
+    {
+      "path": "customizations/tests/dynamic_color_theme/runtime_smoke.gd",
+      "sha256": "ec7b184e79a86ddf177b507d7fd38428dbba43a6a26138fc7039adff062e55d8",
+      "bytes": 15819,
+      "git_blob_sha256": "135f5fb02a99c3569c0271fe894085df09d4c9d0ed5ee0eb19d5feda5f7f8b96",
+      "git_blob_bytes": 15409
+    },
+    {
+      "path": "customizations/tests/dynamic_color_theme/runtime_smoke.gd.uid",
+      "sha256": "9f3716452ed73d19cadc275ef1a93f528bd7e06965cca47c5dde5e2fd2544d12",
+      "bytes": 20
+    },
+    {
+      "path": "customizations/tests/verify-dynamic-color-theme.ps1",
+      "sha256": "8ebf0658396ce0e8d7657d45f6f2e5baf58a8aa6414bd5d99b50c62a22a7b059",
+      "bytes": 6043
+    }
+  ],
+  "visuals": [
+    {
+      "path": ".validation/dynamic-theme-final/closeout-20260923/final-output/dark_-1.png",
+      "sha256": "c48c4347e795dbc07e82202a4a9a13bed2f9b01116da11a5afea7452d7bd392b",
+      "bytes": 128253,
+      "width": 1100,
+      "height": 850
+    },
+    {
+      "path": ".validation/dynamic-theme-final/closeout-20260923/final-output/dark_0.png",
+      "sha256": "8760ec8cc8af5e957f8fdfb8f5023fb7aab3689711c30d7f2ec8b193eee696f3",
+      "bytes": 131847,
+      "width": 1100,
+      "height": 850
+    },
+    {
+      "path": ".validation/dynamic-theme-final/closeout-20260923/final-output/dark_1.png",
+      "sha256": "e8cbe6fed61567e4e4c788133ab48760c36fa3a8bc2aef9a698c804439d53d23",
+      "bytes": 114329,
+      "width": 1100,
+      "height": 850
+    },
+    {
+      "path": ".validation/dynamic-theme-final/closeout-20260923/final-output/editor-inspector.png",
+      "sha256": "3b2aef439a8a43ec540b4867dc82a94d63730571a4be708362e29430caeceeb8",
+      "bytes": 366823,
+      "width": 3840,
+      "height": 2054
+    },
+    {
+      "path": ".validation/dynamic-theme-final/closeout-20260923/final-output/editor-schemes.png",
+      "sha256": "5c6807043314c24d8420465eeff59940c4d04e84112e03bbd67a13005298b464",
+      "bytes": 283165,
+      "width": 3840,
+      "height": 2054
+    },
+    {
+      "path": ".validation/dynamic-theme-final/closeout-20260923/final-output/foldable-bottom-collapsed.png",
+      "sha256": "6a597d31ac98b50321c6fa7cd6d5ad1e0ca809c73f955f8fa41565989df1866f",
+      "bytes": 112415,
+      "width": 1100,
+      "height": 850
+    },
+    {
+      "path": ".validation/dynamic-theme-final/closeout-20260923/final-output/foldable-collapsed-hover.png",
+      "sha256": "69801945e7ca114d482b2683790ed26fd94aad40bb3b8837f92c97dcefebd54c",
+      "bytes": 112433,
+      "width": 1100,
+      "height": 850
+    },
+    {
+      "path": ".validation/dynamic-theme-final/closeout-20260923/final-output/foldable-hover-focus.png",
+      "sha256": "7e6e5a502edd5eb98db2145e59fb4fa970d31deae340af82fb71e1c560e99a0f",
+      "bytes": 123105,
+      "width": 1100,
+      "height": 850
+    },
+    {
+      "path": ".validation/dynamic-theme-final/closeout-20260923/final-output/light_-1.png",
+      "sha256": "ee75a14c983260e593776a7d26cc5b87d4ffbb84ad10a96ab00947fc928b323a",
+      "bytes": 132773,
+      "width": 1100,
+      "height": 850
+    },
+    {
+      "path": ".validation/dynamic-theme-final/closeout-20260923/final-output/light_0.png",
+      "sha256": "4d44af453e3cca81cab09b5837f5bbcead86651232670cc9659803df4de335ed",
+      "bytes": 130768,
+      "width": 1100,
+      "height": 850
+    },
+    {
+      "path": ".validation/dynamic-theme-final/closeout-20260923/final-output/light_1.png",
+      "sha256": "e664c73ed5dbf1c67bac2f7de057745672cac0a9aa7d47241bd13027b735db32",
+      "bytes": 120609,
+      "width": 1100,
+      "height": 850
+    },
+    {
+      "path": ".validation/dynamic-theme-final/closeout-20260923/final-output/scroll-hints.png",
+      "sha256": "5d8c36eaf36140b245cccc01fa9a98ef7fa28467b569bdd75d49221c4be8cc98",
+      "bytes": 122757,
+      "width": 1100,
+      "height": 850
+    },
+    {
+      "path": ".validation/dynamic-theme-final/closeout-20260923/final-output/spinbox-disabled.png",
+      "sha256": "dc8c639af8035984125c27d3b5de365f51150bb3a48f9734bf3c2e76b95cc8a6",
+      "bytes": 123063,
+      "width": 1100,
+      "height": 850
+    },
+    {
+      "path": ".validation/dynamic-theme-final/closeout-20260923/final-output/spinbox-pressed.png",
+      "sha256": "6433d4e6866fb3b53fa7d7ff00e872c694beb2daf827fbc711aa979c139e1fa7",
+      "bytes": 123250,
+      "width": 1100,
+      "height": 850
+    },
+    {
+      "path": ".validation/dynamic-theme-final/closeout-20260923/final-output/tabs-disabled-hover.png",
+      "sha256": "e66ea596baed3b2d85ad0ce2d176d78f358573a87670f1663168bc6843314d53",
+      "bytes": 122936,
+      "width": 1100,
+      "height": 850
+    }
+  ],
+  "resource_roundtrips": [
+    {
+      "path": ".validation/dynamic-theme-final/closeout-20260923/final-output/consumers.scn",
+      "sha256": "517d4d90998fdb764e799aaed75a76747497a033c90a4a9785f287f6bfb0a781",
+      "bytes": 9787
+    },
+    {
+      "path": ".validation/dynamic-theme-final/closeout-20260923/final-output/consumers.tscn",
+      "sha256": "0f5765da72cb13707213f0819a0a790087f1520edec8c97e8dc86d339a4593e9",
+      "bytes": 16735
+    },
+    {
+      "path": ".validation/dynamic-theme-final/closeout-20260923/final-output/editor_roundtrip.res",
+      "sha256": "6685fb990a50941cd56f35c8aae10e31ca7c947f5db433388ffef8651d57fb04",
+      "bytes": 894
+    },
+    {
+      "path": ".validation/dynamic-theme-final/closeout-20260923/final-output/editor_roundtrip.tres",
+      "sha256": "f7662ea7c2a80e284b6be81e38ed431015b83ee4361fa9874bdf56be7bfe6057",
+      "bytes": 672
+    },
+    {
+      "path": ".validation/dynamic-theme-final/closeout-20260923/final-output/editor_theme.tres",
+      "sha256": "87f18cce30248f345487797595ea957161303a4470523a4e647a1c12dd7b6738",
+      "bytes": 406
+    },
+    {
+      "path": ".validation/dynamic-theme-final/closeout-20260923/final-output/import_theme.tres",
+      "sha256": "2c5275526e88e4fa91277e561f3c92c5b5a1f7a51f9b15b928911eb92c8fbf4c",
+      "bytes": 413
+    },
+    {
+      "path": ".validation/dynamic-theme-final/closeout-20260923/final-output/inspector.tscn",
+      "sha256": "1f03ea8fc30a3733b6def7af401e360c2bf79722a3a4f927586aef1d3a82fd2d",
+      "bytes": 1057
+    }
+  ],
+  "template_packs": [
+    {
+      "folder": ".validation/dynamic-theme-final/closeout-20260923/template-debug-packed",
+      "executable": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/template-debug-packed/godot.dynamic-theme-template.exe",
+        "sha256": "e9b6b9c9feee6724f8c651eae2529629dba0008bcac5f1b14fe649123a3a17da",
+        "bytes": 134516736
+      },
+      "pack": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/template-debug-packed/godot.dynamic-theme-template.pck",
+        "sha256": "e77824e045840e0a080e28daece2042c08bde638060e516eff71cc88bf4575fd",
+        "bytes": 48236
+      },
+      "export_log": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/template-debug-packed/export.log",
+        "sha256": "a5ca5ac5c60ea2d8fd698782317d1e03e376e702f0248ee45336edbcc0c8a763",
+        "bytes": 2954
+      },
+      "export_stderr": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/template-debug-packed/export.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      }
+    },
+    {
+      "folder": ".validation/dynamic-theme-final/closeout-20260923/template-debug-standard",
+      "executable": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/template-debug-standard/godot.dynamic-theme-template.exe",
+        "sha256": "540d0dce35544bed2d467f2edab2df033ea1793be6fe7455b9801bd5942303ae",
+        "bytes": 87770112
+      },
+      "pack": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/template-debug-standard/godot.dynamic-theme-template.pck",
+        "sha256": "e77824e045840e0a080e28daece2042c08bde638060e516eff71cc88bf4575fd",
+        "bytes": 48236
+      },
+      "export_log": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/template-debug-standard/export.log",
+        "sha256": "39ff56d456e40f7f6fbfe917b608d2478b91ad75de374a828de5c98497ec82ce",
+        "bytes": 1524
+      },
+      "export_stderr": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/template-debug-standard/export.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      }
+    },
+    {
+      "folder": ".validation/dynamic-theme-final/closeout-20260923/template-release-packed",
+      "executable": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/template-release-packed/godot.dynamic-theme-template.exe",
+        "sha256": "899784fee2cc6881ebf6cdef0c8025ab3b121ee5d5466de1db250d8ad0bbc248",
+        "bytes": 72574464
+      },
+      "pack": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/template-release-packed/godot.dynamic-theme-template.pck",
+        "sha256": "e77824e045840e0a080e28daece2042c08bde638060e516eff71cc88bf4575fd",
+        "bytes": 48236
+      },
+      "export_log": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/template-release-packed/export.log",
+        "sha256": "39ff56d456e40f7f6fbfe917b608d2478b91ad75de374a828de5c98497ec82ce",
+        "bytes": 1524
+      },
+      "export_stderr": {
+        "path": ".validation/dynamic-theme-final/closeout-20260923/template-release-packed/export.stderr.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "bytes": 0
+      }
+    }
+  ],
+  "catalog": {
+    "patch_count": 51,
+    "topic_patch_count": 14,
+    "topic_count": 31,
+    "lock": {
+      "path": "customizations/stack.lock.json",
+      "sha256": "abebe0ea63664937ab54bac7f8a4cd0ddaa5bdc6f057275a7f9ec06740e8f157",
+      "bytes": 28575,
+      "git_blob_sha256": "588f3ac1f7e7f1ab2eb74a94d018b478716a418c43b69d0d3e980038b2314567",
+      "git_blob_bytes": 28149
+    },
+    "series": {
+      "path": "customizations/series.txt",
+      "sha256": "086bef7127cd45fb064011626d0cab017e479bd7ec4ae21c52057847c5fd7a80",
+      "bytes": 4354
+    },
+    "config": {
+      "path": "customizations/stack.json",
+      "sha256": "8a9975205ebe21a4a680f85fac99f84f4bc5f3ad0355ca7af1c0fee2a43c133d",
+      "bytes": 15689
+    },
+    "checks": [
+      {
+        "name": "export-patches",
+        "exit_code": 0,
+        "stdout": {
+          "path": ".validation/dynamic-theme-final/closeout-20260923/export-patches.log",
+          "sha256": "37d4a7895f78b79538db021cbed4cf711d2cc031ae0cae12a28205f51f19c995",
+          "bytes": 152
+        },
+        "stderr": {
+          "path": ".validation/dynamic-theme-final/closeout-20260923/export-patches.stderr.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      },
+      {
+        "name": "verify-stack",
+        "exit_code": 0,
+        "stdout": {
+          "path": ".validation/dynamic-theme-final/closeout-20260923/verify-stack.log",
+          "sha256": "dab735f390058b3b1f6106264b953f5b06191bc01f23ef4d8f4d893f2fdf4299",
+          "bytes": 182
+        },
+        "stderr": {
+          "path": ".validation/dynamic-theme-final/closeout-20260923/verify-stack.stderr.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      },
+      {
+        "name": "verify-topic",
+        "exit_code": 0,
+        "stdout": {
+          "path": ".validation/dynamic-theme-final/closeout-20260923/verify-topic.log",
+          "sha256": "0bc5abc8e90a95d0599c66dd5aabb4f70ab6d1c504c239b9779b00681887f5b3",
+          "bytes": 51
+        },
+        "stderr": {
+          "path": ".validation/dynamic-theme-final/closeout-20260923/verify-topic.stderr.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      },
+      {
+        "name": "verify-color-role-transform",
+        "exit_code": 0,
+        "stdout": {
+          "path": ".validation/dynamic-theme-final/closeout-20260923/verify-color-role-transform.log",
+          "sha256": "12eaf5f8f5d0ba16be6da6bb05c375a42e9d5d88a49cd28785b46750694629b6",
+          "bytes": 52
+        },
+        "stderr": {
+          "path": ".validation/dynamic-theme-final/closeout-20260923/verify-color-role-transform.stderr.log",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        }
+      }
+    ],
+    "preserved_patch_count": 38,
+    "added_patch_count": 13,
+    "optimization_commits": [
+      {
+        "commit": "c6963d88bc0db22f904213548a886711494d6579",
+        "subject": "fix(scene): serialize dynamic theme overrides",
+        "file": "patches/ui/dynamic-color-theme/0039-fix-scene-serialize-dynamic-theme-overrides.patch",
+        "sha256": "c8cf828a35bff17bb03916133e832182e69ed9b2f81548457b088ce60d4b13e6"
+      },
+      {
+        "commit": "21db102ff575702033915825c0bd4b2a95e9b187",
+        "subject": "fix(scene): align dynamic color presence",
+        "file": "patches/ui/dynamic-color-theme/0040-fix-scene-align-dynamic-color-presence.patch",
+        "sha256": "8de3743d8753602663f75822ee76fe1feedbb3fe0ccb2a65ab220f8622ab84f6"
+      },
+      {
+        "commit": "4424576f0c0de3133c57bf89f20e25e381d2b4eb",
+        "subject": "fix(editor): preserve raw color schemes",
+        "file": "patches/ui/dynamic-color-theme/0041-fix-editor-preserve-raw-color-schemes.patch",
+        "sha256": "7da776853830373032dd95d1a0e36345072c4adb4c089601c155152652ef62a2"
+      },
+      {
+        "commit": "95aeb355357f335f948ed3d49cac350109c7e329",
+        "subject": "fix(color-scheme): refresh on texture change",
+        "file": "patches/ui/dynamic-color-theme/0042-fix-color-scheme-refresh-on-texture-change.patch",
+        "sha256": "4b9a3a192846e8189c31e8814353a93aea0a81fcbf3370acf29b98b5e95e6a7b"
+      },
+      {
+        "commit": "425e16c87866766bb7cf4920f8c75cfca7073ebe",
+        "subject": "fix(theme): align dynamic color consumer keys",
+        "file": "patches/ui/dynamic-color-theme/0043-fix-theme-align-dynamic-color-consumer-keys.patch",
+        "sha256": "b5a27827f85ebf408f6c3eef67694d74b033cfe813345a7a28892d491a5dbea9"
+      },
+      {
+        "commit": "5727c04681b28cea521da04864aa31e8a0ee875f",
+        "subject": "fix(color-rect): honor node color schemes",
+        "file": "patches/ui/dynamic-color-theme/0044-fix-color-rect-honor-node-color-schemes.patch",
+        "sha256": "bf5b46a45a51a9a25c149a67522c9f02f4d57baafe37ffbcb9ca67a5af283a32"
+      },
+      {
+        "commit": "b6c3ace02d9d2545c458372c438e7757e01e6e91",
+        "subject": "feat(theme): add dynamic metadata for controls",
+        "file": "patches/ui/dynamic-color-theme/0045-feat-theme-add-dynamic-metadata-for-controls.patch",
+        "sha256": "608ef8d22db61c62e24360378b9ea2aa49292c35fe5d30c177c7c6c4bd58a63e"
+      },
+      {
+        "commit": "ce4acab49e9522feefdce3dd120373b8297fcecf",
+        "subject": "perf(color-scheme): cache extracted texture colors",
+        "file": "patches/ui/dynamic-color-theme/0046-perf-color-scheme-cache-extracted-texture-colors.patch",
+        "sha256": "0752eeaa59f642f77141e951393a743c8fc020ced7f73bbdedcdb7800ef231dc"
+      },
+      {
+        "commit": "b90efd1092359fa49cdebfe05ff2f760e7699229",
+        "subject": "perf(scene): cache dynamic theme color reads",
+        "file": "patches/ui/dynamic-color-theme/0047-perf-scene-cache-dynamic-theme-color-reads.patch",
+        "sha256": "60272b4afd69b001f2eaead8fe27793141a2dd74908cd3872af03ed7a9abe6ff"
+      },
+      {
+        "commit": "3b91748c52bae58681cb35109a8e19f4c2543e1d",
+        "subject": "perf(scene): avoid static stylebox copies",
+        "file": "patches/ui/dynamic-color-theme/0048-perf-scene-avoid-static-stylebox-copies.patch",
+        "sha256": "a360120d9f5e7e253e4f7f949ea46209b5372bfadc07e4603d0caf100d3ff252"
+      },
+      {
+        "commit": "94fc911957625be388c244779ca442853b81da93",
+        "subject": "fix(color-scheme): validate inputs and fallback",
+        "file": "patches/ui/dynamic-color-theme/0049-fix-color-scheme-validate-inputs-and-fallback.patch",
+        "sha256": "c28d6a231f2fd8dd491dc01c01b7849ebf9d8c52fe56b0b281746df2db52d7ee"
+      },
+      {
+        "commit": "6db67e72eecc13f93e9f02dc6567b9fbf1b9e509",
+        "subject": "fix(theme): publish type helper changes",
+        "file": "patches/ui/dynamic-color-theme/0050-fix-theme-publish-type-helper-changes.patch",
+        "sha256": "4cb98f1d39cb7a3daca384b58b4296d351839bec943e6a2c6cf7707182ec37ed"
+      },
+      {
+        "commit": "3a6537d06bca0cbcacfa8f70952ad9451deba199",
+        "subject": "build: require color scheme for theme system",
+        "file": "patches/ui/dynamic-color-theme/0051-build-require-color-scheme-for-theme-system.patch",
+        "sha256": "a48356054a88e78d7c9cb694bdeb120017836abc56afbb5ada006f19350e083b"
+      }
+    ]
+  },
+  "process_audit": {
+    "checked_at_utc": "2026-09-23T12:24:40.725Z",
+    "matching_test_processes": 0,
+    "other_godot_processes": 0
+  },
+  "preserved_failed_attempts": [
+    {
+      "path": ".validation/dynamic-theme-final/closeout-20260923/build-editor.log",
+      "kind": "PowerShell stderr handling stopped the first wrapper on the optional ANGLE warning; a native redirected-process rerun passed."
+    },
+    {
+      "path": ".validation/dynamic-theme-final/closeout-20260923/runtime-template-debug/runtime.stderr.log",
+      "kind": "Unpacked template launch rejected --path by design; packaged Template mode passed without changing template path-override settings."
+    }
+  ],
+  "limitations": [
+    "The minimal modules configuration was checked with SCons --dry-run; the full builds use the normal module set.",
+    "Benchmarks use 7 samples of 20000 reads and deterministic CPU textures. OS.get_static_memory_* reports Godot allocator statistics, not total process RSS or all MCU allocations.",
+    "Large-image first extraction remains synchronous, without sampling or asynchronous scheduling.",
+    "The deployed export/ engine was not replaced by this source and patch-catalog task."
+  ],
+  "runtime_dependencies": [
+    {
+      "path": "engine/bin/SpoutLibrary.dll",
+      "bytes": 233472,
+      "sha256": "31f12268169397bacd9048903d9ad711fae58b788e90a860598b21b1daae62eb"
+    },
+    {
+      "path": ".validation/dynamic-theme-final/closeout-20260923/template-debug-packed/SpoutLibrary.dll",
+      "bytes": 233472,
+      "sha256": "31f12268169397bacd9048903d9ad711fae58b788e90a860598b21b1daae62eb"
+    },
+    {
+      "path": ".validation/dynamic-theme-final/closeout-20260923/template-debug-standard/SpoutLibrary.dll",
+      "bytes": 233472,
+      "sha256": "31f12268169397bacd9048903d9ad711fae58b788e90a860598b21b1daae62eb"
+    },
+    {
+      "path": ".validation/dynamic-theme-final/closeout-20260923/template-release-packed/SpoutLibrary.dll",
+      "bytes": 233472,
+      "sha256": "31f12268169397bacd9048903d9ad711fae58b788e90a860598b21b1daae62eb"
+    }
+  ]
+}

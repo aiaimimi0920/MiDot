@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ScenePaint2DEditor" inherits="Control" api_type="editor" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="get_painted_scene" qualifiers="const">
+			<return type="Node2D" />
+			<description>
+			</description>
+		</method>
+		<method name="register_scene_provider">
+			<return type="void" />
+			<param index="0" name="control" type="Control" />
+			<param index="1" name="callback" type="Callable" />
+			<description>
+			</description>
+		</method>
+		<method name="set_painted_scene">
+			<return type="void" />
+			<param index="0" name="scene" type="Node2D" />
+			<description>
+			</description>
+		</method>
+		<method name="unregister_scene_provider">
+			<return type="void" />
+			<param index="0" name="control" type="Control" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>

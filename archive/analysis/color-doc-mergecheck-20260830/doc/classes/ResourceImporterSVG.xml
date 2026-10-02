@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ResourceImporterSVG" inherits="ResourceImporter" api_type="editor" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="base_scale" type="float" setter="" getter="" default="1.0">
+		</member>
+		<member name="color_map" type="Dictionary" setter="" getter="" default="{}">
+		</member>
+		<member name="compress" type="bool" setter="" getter="" default="true">
+		</member>
+		<member name="fix_alpha_border" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="premult_alpha" type="bool" setter="" getter="" default="false">
+		</member>
+		<member name="saturation" type="float" setter="" getter="" default="1.0">
+		</member>
+	</members>
+</class>

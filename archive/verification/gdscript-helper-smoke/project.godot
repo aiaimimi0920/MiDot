@@ -1,0 +1,6 @@
+[application]
+config/name="GDScript Helper Smoke"
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+

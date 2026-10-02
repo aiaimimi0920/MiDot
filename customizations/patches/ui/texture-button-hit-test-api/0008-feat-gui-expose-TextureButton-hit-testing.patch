@@ -1,0 +1,77 @@
+From 5dd62618b83d4733ed52354b8bba8d75cf7e4b89 Mon Sep 17 00:00:00 2001
+From: aiaimimi0920 <153103332+aiaimimi0920@users.noreply.github.com>
+Date: Sun, 30 Aug 2026 12:12:57 +0800
+Subject: [PATCH] feat(gui): expose TextureButton hit testing
+
+Allow scripts to query the same click-mask-aware hit test used by input dispatch.
+
+Godot-Patch-Topic: ui.texture-button-hit-test-api
+---
+ doc/classes/TextureButton.xml       |  9 +++++++++
+ scene/gui/texture_button.cpp        |  1 +
+ tests/scene/test_texture_button.cpp | 11 +++++++++++
+ 3 files changed, 21 insertions(+)
+
+diff --git a/doc/classes/TextureButton.xml b/doc/classes/TextureButton.xml
+index 46734eef0b5c087fa0e8a7431f25bf0f334f9390..39cbacb98a7bfac7c66fc1f4c9943fb6d18e3921 100644
+--- a/doc/classes/TextureButton.xml
++++ b/doc/classes/TextureButton.xml
+@@ -11,6 +11,15 @@
+ 	<tutorials>
+ 		<link title="3D Voxel Demo">https://godotengine.org/asset-library/asset/2755</link>
+ 	</tutorials>
++	<methods>
++		<method name="has_point" qualifiers="const">
++			<return type="bool" />
++			<param index="0" name="point" type="Vector2" />
++			<description>
++				Returns whether the given [param point] is inside this button. Unlike a rectangular bounds check, this method also respects [member texture_click_mask], texture stretching, and tiling. The [param point] is relative to the button's origin.
++			</description>
++		</method>
++	</methods>
+ 	<members>
+ 		<member name="flip_h" type="bool" setter="set_flip_h" getter="is_flipped_h" default="false">
+ 			If [code]true[/code], texture is flipped horizontally.
+diff --git a/scene/gui/texture_button.cpp b/scene/gui/texture_button.cpp
+index 548fbbf7059e35f10770b41a45da20b713c05044..09bfabf1c926acfd41fb5248ef9922c607fc5148 100644
+--- a/scene/gui/texture_button.cpp
++++ b/scene/gui/texture_button.cpp
+@@ -267,6 +267,7 @@ void TextureButton::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("get_click_mask"), &TextureButton::get_click_mask);
+ 	ClassDB::bind_method(D_METHOD("get_ignore_texture_size"), &TextureButton::get_ignore_texture_size);
+ 	ClassDB::bind_method(D_METHOD("get_stretch_mode"), &TextureButton::get_stretch_mode);
++	ClassDB::bind_method(D_METHOD("has_point", "point"), &TextureButton::has_point);
+ 
+ 	ADD_GROUP("Textures", "texture_");
+ 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "texture_normal", PROPERTY_HINT_RESOURCE_TYPE, Texture2D::get_class_static()), "set_texture_normal", "get_texture_normal");
+diff --git a/tests/scene/test_texture_button.cpp b/tests/scene/test_texture_button.cpp
+index d617f42cfc8f1b93ae437ca0aa4ef84b87f3a7db..8e7027cb47a3e37db6419c281bc53b53bb8c2686 100644
+--- a/tests/scene/test_texture_button.cpp
++++ b/tests/scene/test_texture_button.cpp
+@@ -257,6 +257,17 @@ TEST_CASE("[SceneTree][TextureButton] has_point without click mask") {
+ 	memdelete(texture_button);
+ }
+ 
++TEST_CASE("[SceneTree][TextureButton] has_point is exposed to scripts") {
++	TextureButton *texture_button = memnew(TextureButton);
++	texture_button->set_size(Size2(20, 15));
++
++	CHECK(texture_button->has_method(SNAME("has_point")));
++	CHECK_EQ(texture_button->call(SNAME("has_point"), Point2(10, 7)), Variant(true));
++	CHECK_EQ(texture_button->call(SNAME("has_point"), Point2(25, 7)), Variant(false));
++
++	memdelete(texture_button);
++}
++
+ TEST_CASE("[SceneTree][TextureButton] has_point with click mask (keep stretch)") {
+ 	TextureButton *texture_button = memnew(TextureButton);
+ 
+
+base-commit: 5ec4857b340b6284a18b49b2eda462bd250f219a
+prerequisite-patch-id: b38459b409a3326aed65d2433e1341638171f884
+prerequisite-patch-id: bdb0fe8d6ba7fff1b900ae33d9bec552ea61724c
+prerequisite-patch-id: 4dcdddc73066f768cb97c56444abacb21bda061c
+prerequisite-patch-id: 1f2fbc55f35da3e943dcbaeeb3c9a6d798621bf3
+prerequisite-patch-id: 4dd1cec6888d5160c85be2072b9e5dd05411d007
+prerequisite-patch-id: 60110ae09a2d09796ad65e339ee0b5abc2ce541a
+prerequisite-patch-id: bdb0025d4207a7cf0e1466ca96b2824d238b3caf

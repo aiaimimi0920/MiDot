@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="AreaLight3D" inherits="Light3D" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="area_attenuation" type="float" setter="set_param" getter="get_param" default="1.0">
+		</member>
+		<member name="area_normalize_energy" type="bool" setter="set_area_normalize_energy" getter="is_area_normalizing_energy" default="true">
+		</member>
+		<member name="area_range" type="float" setter="set_param" getter="get_param" default="5.0">
+		</member>
+		<member name="area_size" type="Vector2" setter="set_area_size" getter="get_area_size" default="Vector2(1, 1)">
+		</member>
+		<member name="area_texture" type="Texture2D" setter="set_area_texture" getter="get_area_texture">
+		</member>
+		<member name="light_size" type="float" setter="set_param" getter="get_param" overrides="Light3D" default="0.5" />
+		<member name="shadow_normal_bias" type="float" setter="set_param" getter="get_param" overrides="Light3D" default="1.0" />
+	</members>
+</class>

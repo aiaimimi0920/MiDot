@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="OpenXRSpatialEntityExtension" inherits="OpenXRExtensionWrapper" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add_spatial_entity">
+			<return type="RID" />
+			<param index="0" name="spatial_context" type="RID" />
+			<param index="1" name="entity_id" type="int" />
+			<param index="2" name="entity" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="create_spatial_context">
+			<return type="OpenXRFutureResult" />
+			<param index="0" name="capability_configurations" type="OpenXRSpatialCapabilityConfigurationBaseHeader[]" />
+			<param index="1" name="next" type="OpenXRStructureBase" default="null" />
+			<param index="2" name="user_callback" type="Callable" default="Callable()" />
+			<param index="3" name="failed_callback" type="Callable" default="Callable()" />
+			<description>
+			</description>
+		</method>
+		<method name="discover_spatial_entities">
+			<return type="OpenXRFutureResult" />
+			<param index="0" name="spatial_context" type="RID" />
+			<param index="1" name="component_types" type="PackedInt64Array" />
+			<param index="2" name="next" type="OpenXRStructureBase" default="null" />
+			<param index="3" name="user_callback" type="Callable" default="Callable()" />
+			<description>
+			</description>
+		</method>
+		<method name="discover_spatial_entities_with_component_data">
+			<return type="OpenXRFutureResult" />
+			<param index="0" name="spatial_context" type="RID" />
+			<param index="1" name="component_data" type="OpenXRSpatialComponentData[]" />
+			<param index="2" name="next" type="OpenXRStructureBase" default="null" />
+			<param index="3" name="user_callback" type="Callable" default="Callable()" />
+			<description>
+			</description>
+		</method>
+		<method name="find_spatial_entity">
+			<return type="RID" />
+			<param index="0" name="entity_id" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="free_spatial_context">
+			<return type="void" />
+			<param index="0" name="spatial_context" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="free_spatial_entity">
+			<return type="void" />
+			<param index="0" name="entity" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="free_spatial_snapshot">
+			<return type="void" />
+			<param index="0" name="spatial_snapshot" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="get_float_buffer" qualifiers="const">
+			<return type="PackedFloat32Array" />
+			<param index="0" name="spatial_snapshot" type="RID" />
+			<param index="1" name="buffer_id" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_spatial_context_handle" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="spatial_context" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="get_spatial_context_ready" qualifiers="const">
+			<return type="bool" />
+			<param index="0" name="spatial_context" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="get_spatial_entity_context" qualifiers="const">
+			<return type="RID" />
+			<param index="0" name="entity" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="get_spatial_entity_id" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="entity" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="get_spatial_snapshot_context" qualifiers="const">
+			<return type="RID" />
+			<param index="0" name="spatial_snapshot" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="get_spatial_snapshot_handle" qualifiers="const">
+			<return type="int" />
+			<param index="0" name="spatial_snapshot" type="RID" />
+			<description>
+			</description>
+		</method>
+		<method name="get_string" qualifiers="const">
+			<return type="String" />
+			<param index="0" name="spatial_snapshot" type="RID" />
+			<param index="1" name="buffer_id" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_uint8_buffer" qualifiers="const">
+			<return type="PackedByteArray" />
+			<param index="0" name="spatial_snapshot" type="RID" />
+			<param index="1" name="buffer_id" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_uint16_buffer" qualifiers="const">
+			<return type="PackedInt32Array" />
+			<param index="0" name="spatial_snapshot" type="RID" />
+			<param index="1" name="buffer_id" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_uint32_buffer" qualifiers="const">
+			<return type="PackedInt32Array" />
+			<param index="0" name="spatial_snapshot" type="RID" />
+			<param index="1" name="buffer_id" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_vector2_buffer" qualifiers="const">
+			<return type="PackedVector2Array" />
+			<param index="0" name="spatial_snapshot" type="RID" />
+			<param index="1" name="buffer_id" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_vector3_buffer" qualifiers="const">
+			<return type="PackedVector3Array" />
+			<param index="0" name="spatial_snapshot" type="RID" />
+			<param index="1" name="buffer_id" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="make_spatial_entity">
+			<return type="RID" />
+			<param index="0" name="spatial_context" type="RID" />
+			<param index="1" name="entity_id" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="query_snapshot">
+			<return type="bool" />
+			<param index="0" name="spatial_snapshot" type="RID" />
+			<param index="1" name="component_data" type="OpenXRSpatialComponentData[]" />
+			<param index="2" name="next" type="OpenXRStructureBase" default="null" />
+			<description>
+			</description>
+		</method>
+		<method name="supports_capability">
+			<return type="bool" />
+			<param index="0" name="capability" type="int" enum="OpenXRSpatialEntityExtension.Capability" />
+			<description>
+			</description>
+		</method>
+		<method name="supports_component_type">
+			<return type="bool" />
+			<param index="0" name="capability" type="int" enum="OpenXRSpatialEntityExtension.Capability" />
+			<param index="1" name="component_type" type="int" enum="OpenXRSpatialEntityExtension.ComponentType" />
+			<description>
+			</description>
+		</method>
+		<method name="update_spatial_entities">
+			<return type="RID" />
+			<param index="0" name="spatial_context" type="RID" />
+			<param index="1" name="entities" type="RID[]" />
+			<param index="2" name="component_types" type="PackedInt64Array" />
+			<param index="3" name="next" type="OpenXRStructureBase" default="null" />
+			<description>
+			</description>
+		</method>
+	</methods>
+	<signals>
+		<signal name="spatial_discovery_recommended">
+			<param index="0" name="spatial_context" type="RID" />
+			<description>
+			</description>
+		</signal>
+	</signals>
+	<constants>
+		<constant name="CAPABILITY_PLANE_TRACKING" value="1000741000" enum="Capability">
+		</constant>
+		<constant name="CAPABILITY_MARKER_TRACKING_QR_CODE" value="1000743000" enum="Capability">
+		</constant>
+		<constant name="CAPABILITY_MARKER_TRACKING_MICRO_QR_CODE" value="1000743001" enum="Capability">
+		</constant>
+		<constant name="CAPABILITY_MARKER_TRACKING_ARUCO_MARKER" value="1000743002" enum="Capability">
+		</constant>
+		<constant name="CAPABILITY_MARKER_TRACKING_APRIL_TAG" value="1000743003" enum="Capability">
+		</constant>
+		<constant name="CAPABILITY_ANCHOR" value="1000762000" enum="Capability">
+		</constant>
+		<constant name="COMPONENT_TYPE_BOUNDED_2D" value="1" enum="ComponentType">
+		</constant>
+		<constant name="COMPONENT_TYPE_BOUNDED_3D" value="2" enum="ComponentType">
+		</constant>
+		<constant name="COMPONENT_TYPE_PARENT" value="3" enum="ComponentType">
+		</constant>
+		<constant name="COMPONENT_TYPE_MESH_3D" value="4" enum="ComponentType">
+		</constant>
+		<constant name="COMPONENT_TYPE_PLANE_ALIGNMENT" value="1000741000" enum="ComponentType">
+		</constant>
+		<constant name="COMPONENT_TYPE_MESH_2D" value="1000741001" enum="ComponentType">
+		</constant>
+		<constant name="COMPONENT_TYPE_POLYGON_2D" value="1000741002" enum="ComponentType">
+		</constant>
+		<constant name="COMPONENT_TYPE_PLANE_SEMANTIC_LABEL" value="1000741003" enum="ComponentType">
+		</constant>
+		<constant name="COMPONENT_TYPE_MARKER" value="1000743000" enum="ComponentType">
+		</constant>
+		<constant name="COMPONENT_TYPE_ANCHOR" value="1000762000" enum="ComponentType">
+		</constant>
+		<constant name="COMPONENT_TYPE_PERSISTENCE" value="1000763000" enum="ComponentType">
+		</constant>
+		<constant name="TRACKING_UNSUPPORTED_CAPABILITY" value="-3" enum="TrackingState">
+		</constant>
+		<constant name="TRACKING_NO_PERMISSION" value="-2" enum="TrackingState">
+		</constant>
+		<constant name="TRACKING_SETUP_FAILED" value="-1" enum="TrackingState">
+		</constant>
+		<constant name="TRACKING_NOT_ACTIVE" value="0" enum="TrackingState">
+		</constant>
+		<constant name="TRACKING_SETTING_UP" value="1" enum="TrackingState">
+		</constant>
+		<constant name="TRACKING_ENABLED" value="2" enum="TrackingState">
+		</constant>
+	</constants>
+</class>

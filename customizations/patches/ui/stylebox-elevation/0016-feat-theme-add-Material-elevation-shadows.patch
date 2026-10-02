@@ -1,0 +1,319 @@
+From 6a22295cc77c619d44f8e248c4dbe5708b3773ab Mon Sep 17 00:00:00 2001
+From: aiaimimi0920 <153103332+aiaimimi0920@users.noreply.github.com>
+Date: Sun, 30 Aug 2026 23:14:33 +0800
+Subject: [PATCH] feat(theme): add Material elevation shadows
+
+Preserve the six-level, three-layer shadow model without restoring the legacy Material UI framework.
+
+Godot-Patch-Topic: ui.stylebox-elevation
+---
+ doc/classes/StyleBoxFlat.xml        | 12 +++-
+ scene/resources/style_box_flat.cpp  | 97 ++++++++++++++++++++++++++++-
+ scene/resources/style_box_flat.h    | 19 ++++++
+ tests/scene/test_style_box_flat.cpp | 59 ++++++++++++++++++
+ 4 files changed, 181 insertions(+), 6 deletions(-)
+ create mode 100644 tests/scene/test_style_box_flat.cpp
+
+diff --git a/doc/classes/StyleBoxFlat.xml b/doc/classes/StyleBoxFlat.xml
+index b5e3c0500c89396bfe6b48ddbf740e72b87fd640..36437a40ae6537697cf2bd31638427fdc651a614 100644
+--- a/doc/classes/StyleBoxFlat.xml
++++ b/doc/classes/StyleBoxFlat.xml
+@@ -152,9 +152,15 @@
+ 		<member name="corner_radius_top_right" type="int" setter="set_corner_radius" getter="get_corner_radius" default="0">
+ 			The top-right corner's radius. If [code]0[/code], the corner is not rounded.
+ 		</member>
+-		<member name="draw_center" type="bool" setter="set_draw_center" getter="is_draw_center_enabled" default="true">
+-			Toggles drawing of the inner part of the stylebox.
+-		</member>
++			<member name="draw_center" type="bool" setter="set_draw_center" getter="is_draw_center_enabled" default="true">
++				Toggles drawing of the inner part of the stylebox.
++			</member>
++			<member name="dynamic_shadow" type="bool" setter="set_dynamic_shadow" getter="is_dynamic_shadow_enabled" default="false">
++				If [code]true[/code], draws a three-layer Material-style shadow selected by [member elevation_level]. The regular [member shadow_size] and [member shadow_offset] are ignored while this is enabled.
++			</member>
++			<member name="elevation_level" type="int" setter="set_elevation_level" getter="get_elevation_level" enum="StyleBoxFlat.ElevationLevel" default="0">
++				The Material elevation preset used by [member dynamic_shadow]. Higher levels draw larger umbra, penumbra, and ambient shadow layers.
++			</member>
+ 		<member name="expand_margin_bottom" type="float" setter="set_expand_margin" getter="get_expand_margin" default="0.0">
+ 			Expands the stylebox outside of the control rect on the bottom edge. Useful in combination with [member border_width_bottom] to draw a border outside the control rect.
+ 			[b]Note:[/b] Unlike [member StyleBox.content_margin_bottom], [member expand_margin_bottom] does [i]not[/i] affect the size of the clickable area for [Control]s. This can negatively impact usability if used wrong, as the user may try to click an area of the StyleBox that cannot actually receive clicks.
+diff --git a/scene/resources/style_box_flat.cpp b/scene/resources/style_box_flat.cpp
+index 613977623a64dc1aa0b02f3a1bb5c425e1fc530f..6f9f127b6076b43f7c148c1abf06830705e6bb5f 100644
+--- a/scene/resources/style_box_flat.cpp
++++ b/scene/resources/style_box_flat.cpp
+@@ -37,6 +37,25 @@
+ 
+ #include <cfloat> // FLT_EPSILON
+ 
++namespace {
++
++struct ElevationShadowLayer {
++	Point2 offset;
++	int size;
++	float alpha;
++};
++
++constexpr ElevationShadowLayer ELEVATION_SHADOWS[6][3] = {
++	{ { Point2(0, 0), 0, 0.20f }, { Point2(0, 0), 0, 0.14f }, { Point2(0, 0), 0, 0.12f } },
++	{ { Point2(0, 2), 1, 0.20f }, { Point2(0, 1), 1, 0.14f }, { Point2(0, 1), 3, 0.12f } },
++	{ { Point2(0, 3), 3, 0.20f }, { Point2(0, 3), 4, 0.14f }, { Point2(0, 1), 8, 0.12f } },
++	{ { Point2(0, 3), 5, 0.20f }, { Point2(0, 6), 10, 0.14f }, { Point2(0, 1), 18, 0.12f } },
++	{ { Point2(0, 5), 5, 0.20f }, { Point2(0, 8), 10, 0.14f }, { Point2(0, 3), 14, 0.12f } },
++	{ { Point2(0, 7), 8, 0.20f }, { Point2(0, 12), 17, 0.14f }, { Point2(0, 5), 22, 0.12f } },
++};
++
++} // namespace
++
+ float StyleBoxFlat::get_style_margin(Side p_side) const {
+ 	ERR_FAIL_INDEX_V((int)p_side, 4, 0.0);
+ 	return border_width[p_side];
+@@ -300,6 +319,31 @@ Point2 StyleBoxFlat::get_shadow_offset() const {
+ 	return shadow_offset;
+ }
+ 
++void StyleBoxFlat::set_dynamic_shadow(bool p_enabled) {
++	if (dynamic_shadow == p_enabled) {
++		return;
++	}
++	dynamic_shadow = p_enabled;
++	custom_emit_changed();
++}
++
++bool StyleBoxFlat::is_dynamic_shadow_enabled() const {
++	return dynamic_shadow;
++}
++
++void StyleBoxFlat::set_elevation_level(ElevationLevel p_elevation_level) {
++	ERR_FAIL_INDEX(static_cast<int>(p_elevation_level), 6);
++	if (elevation_level == p_elevation_level) {
++		return;
++	}
++	elevation_level = p_elevation_level;
++	custom_emit_changed();
++}
++
++StyleBoxFlat::ElevationLevel StyleBoxFlat::get_elevation_level() const {
++	return elevation_level;
++}
++
+ void StyleBoxFlat::set_anti_aliased(const bool &p_anti_aliased) {
+ 	anti_aliased = p_anti_aliased;
+ 	custom_emit_changed();
+@@ -538,7 +582,17 @@ inline void adapt_values(int p_index_a, int p_index_b, real_t *adapted_values, c
+ Rect2 StyleBoxFlat::get_draw_rect(const Rect2 &p_rect) const {
+ 	Rect2 draw_rect = p_rect.grow_individual(expand_margin[SIDE_LEFT], expand_margin[SIDE_TOP], expand_margin[SIDE_RIGHT], expand_margin[SIDE_BOTTOM]);
+ 
+-	if (shadow_size > 0) {
++	if (dynamic_shadow) {
++		const Rect2 style_rect = draw_rect;
++		for (const ElevationShadowLayer &layer : ELEVATION_SHADOWS[elevation_level]) {
++			if (layer.size <= 0) {
++				continue;
++			}
++			Rect2 shadow_rect = style_rect.grow(layer.size);
++			shadow_rect.position += layer.offset;
++			draw_rect = draw_rect.merge(shadow_rect);
++		}
++	} else if (shadow_size > 0) {
+ 		Rect2 shadow_rect = draw_rect.grow(shadow_size);
+ 		shadow_rect.position += shadow_offset;
+ 		draw_rect = draw_rect.merge(shadow_rect);
+@@ -549,8 +603,9 @@ Rect2 StyleBoxFlat::get_draw_rect(const Rect2 &p_rect) const {
+ 
+ void StyleBoxFlat::draw(RID p_canvas_item, const Rect2 &p_rect) const {
+ 	bool draw_border = (border_width[0] > 0) || (border_width[1] > 0) || (border_width[2] > 0) || (border_width[3] > 0);
+-	bool draw_shadow = (shadow_size > 0);
+-	if (!draw_border && !draw_center && !draw_shadow) {
++	bool draw_shadow = !dynamic_shadow && shadow_size > 0;
++	bool draw_dynamic_shadow = dynamic_shadow && elevation_level != ELEVATION_LEVEL_0;
++	if (!draw_border && !draw_center && !draw_shadow && !draw_dynamic_shadow) {
+ 		return;
+ 	}
+ 
+@@ -635,6 +690,29 @@ void StyleBoxFlat::draw(RID p_canvas_item, const Rect2 &p_rect) const {
+ 		}
+ 	}
+ 
++	if (draw_dynamic_shadow) {
++		for (const ElevationShadowLayer &layer : ELEVATION_SHADOWS[elevation_level]) {
++			if (layer.size <= 0) {
++				continue;
++			}
++
++			Rect2 shadow_inner_rect = style_rect;
++			shadow_inner_rect.position += layer.offset;
++			Rect2 shadow_rect = style_rect.grow(layer.size);
++			shadow_rect.position += layer.offset;
++
++			const Color layer_color(resolved_shadow_color, layer.alpha);
++			const Color transparent_color(layer_color.r, layer_color.g, layer_color.b, 0);
++			draw_rounded_rectangle(verts, indices, colors, shadow_inner_rect, adapted_corner,
++					shadow_rect, shadow_inner_rect, layer_color, transparent_color, corner_detail, skew);
++
++			if (draw_center) {
++				draw_rounded_rectangle(verts, indices, colors, shadow_inner_rect, adapted_corner,
++						shadow_inner_rect, shadow_inner_rect, layer_color, layer_color, corner_detail, skew, true);
++			}
++		}
++	}
++
+ 	// Create border (no AA).
+ 	if (draw_border && !aa_on) {
+ 		draw_rounded_rectangle(verts, indices, colors, border_style_rect, adapted_corner,
+@@ -789,6 +867,10 @@ void StyleBoxFlat::_bind_methods() {
+ 
+ 	ClassDB::bind_method(D_METHOD("set_shadow_offset", "offset"), &StyleBoxFlat::set_shadow_offset);
+ 	ClassDB::bind_method(D_METHOD("get_shadow_offset"), &StyleBoxFlat::get_shadow_offset);
++	ClassDB::bind_method(D_METHOD("set_dynamic_shadow", "enabled"), &StyleBoxFlat::set_dynamic_shadow);
++	ClassDB::bind_method(D_METHOD("is_dynamic_shadow_enabled"), &StyleBoxFlat::is_dynamic_shadow_enabled);
++	ClassDB::bind_method(D_METHOD("set_elevation_level", "elevation_level"), &StyleBoxFlat::set_elevation_level);
++	ClassDB::bind_method(D_METHOD("get_elevation_level"), &StyleBoxFlat::get_elevation_level);
+ 
+ 	ClassDB::bind_method(D_METHOD("set_anti_aliased", "anti_aliased"), &StyleBoxFlat::set_anti_aliased);
+ 	ClassDB::bind_method(D_METHOD("is_anti_aliased"), &StyleBoxFlat::is_anti_aliased);
+@@ -839,6 +921,15 @@ void StyleBoxFlat::_bind_methods() {
+ 	ADD_PROPERTY(PropertyInfo(Variant::COLOR, "shadow_color_scale"), "set_shadow_color_scale", "get_shadow_color_scale");
+ 	ADD_PROPERTY(PropertyInfo(Variant::INT, "shadow_size", PROPERTY_HINT_RANGE, "0,100,1,or_greater,suffix:px"), "set_shadow_size", "get_shadow_size");
+ 	ADD_PROPERTY(PropertyInfo(Variant::VECTOR2, "shadow_offset", PROPERTY_HINT_NONE, "suffix:px"), "set_shadow_offset", "get_shadow_offset");
++	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "dynamic_shadow"), "set_dynamic_shadow", "is_dynamic_shadow_enabled");
++	ADD_PROPERTY(PropertyInfo(Variant::INT, "elevation_level", PROPERTY_HINT_ENUM, "Level 0,Level 1,Level 2,Level 3,Level 4,Level 5"), "set_elevation_level", "get_elevation_level");
++
++	BIND_ENUM_CONSTANT(ELEVATION_LEVEL_0);
++	BIND_ENUM_CONSTANT(ELEVATION_LEVEL_1);
++	BIND_ENUM_CONSTANT(ELEVATION_LEVEL_2);
++	BIND_ENUM_CONSTANT(ELEVATION_LEVEL_3);
++	BIND_ENUM_CONSTANT(ELEVATION_LEVEL_4);
++	BIND_ENUM_CONSTANT(ELEVATION_LEVEL_5);
+ 
+ 	ADD_GROUP("Anti Aliasing", "anti_aliasing_");
+ 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "anti_aliasing"), "set_anti_aliased", "is_anti_aliased");
+diff --git a/scene/resources/style_box_flat.h b/scene/resources/style_box_flat.h
+index c80657b87b7d873699a7a16ad5d1f23a2d8243eb..b41fa98d73054e6417440ad45c18580d3730711d 100644
+--- a/scene/resources/style_box_flat.h
++++ b/scene/resources/style_box_flat.h
+@@ -35,6 +35,17 @@
+ class StyleBoxFlat : public StyleBox {
+ 	GDCLASS(StyleBoxFlat, StyleBox);
+ 
++public:
++	enum ElevationLevel {
++		ELEVATION_LEVEL_0,
++		ELEVATION_LEVEL_1,
++		ELEVATION_LEVEL_2,
++		ELEVATION_LEVEL_3,
++		ELEVATION_LEVEL_4,
++		ELEVATION_LEVEL_5,
++	};
++
++private:
+ 	Color bg_color = Color(0.6, 0.6, 0.6);
+ 	Color shadow_color = Color(0, 0, 0, 0.6);
+ 	Color border_color = Color(0.8, 0.8, 0.8);
+@@ -60,6 +71,8 @@ class StyleBoxFlat : public StyleBox {
+ 	int corner_detail = 8;
+ 	int shadow_size = 0;
+ 	Point2 shadow_offset;
++	bool dynamic_shadow = false;
++	ElevationLevel elevation_level = ELEVATION_LEVEL_0;
+ 	real_t aa_size = 1;
+ 
+ protected:
+@@ -126,6 +139,10 @@ public:
+ 
+ 	void set_shadow_offset(const Point2 &p_offset);
+ 	Point2 get_shadow_offset() const;
++	void set_dynamic_shadow(bool p_enabled);
++	bool is_dynamic_shadow_enabled() const;
++	void set_elevation_level(ElevationLevel p_elevation_level);
++	ElevationLevel get_elevation_level() const;
+ 
+ 	void set_anti_aliased(const bool &p_anti_aliased);
+ 	bool is_anti_aliased() const;
+@@ -135,3 +152,5 @@ public:
+ 	virtual Rect2 get_draw_rect(const Rect2 &p_rect) const override;
+ 	virtual void draw(RID p_canvas_item, const Rect2 &p_rect) const override;
+ };
++
++VARIANT_ENUM_CAST(StyleBoxFlat::ElevationLevel);
+diff --git a/tests/scene/test_style_box_flat.cpp b/tests/scene/test_style_box_flat.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..4f48d928b3527ce2e452ec00c080578a1a734051
+--- /dev/null
++++ b/tests/scene/test_style_box_flat.cpp
+@@ -0,0 +1,59 @@
++/**************************************************************************/
++/*  test_style_box_flat.cpp                                               */
++/**************************************************************************/
++/*                         This file is part of:                          */
++/*                             GODOT ENGINE                               */
++/*                        https://godotengine.org                         */
++/**************************************************************************/
++/* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
++/* Copyright (c) 2007-2014 Juan Linietsky, Ariel Manzur.                  */
++/*                                                                        */
++/* Permission is hereby granted, free of charge, to any person obtaining  */
++/* a copy of this software and associated documentation files (the        */
++/* "Software"), to deal in the Software without restriction, including    */
++/* without limitation the rights to use, copy, modify, merge, publish,    */
++/* distribute, sublicense, and/or sell copies of the Software, and to     */
++/* permit persons to whom the Software is furnished to do so, subject to  */
++/* the following conditions:                                              */
++/*                                                                        */
++/* The above copyright notice and this permission notice shall be         */
++/* included in all copies or substantial portions of the Software.        */
++/*                                                                        */
++/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,        */
++/* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF     */
++/* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. */
++/* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY   */
++/* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,   */
++/* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE      */
++/* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
++/**************************************************************************/
++
++#include "tests/test_macros.h"
++
++TEST_FORCE_LINK(test_style_box_flat)
++
++#include "scene/resources/style_box_flat.h"
++
++namespace TestStyleBoxFlat {
++
++TEST_CASE("[StyleBoxFlat] Material elevation presets") {
++	Ref<StyleBoxFlat> style_box = memnew(StyleBoxFlat);
++	const Rect2 source_rect(10, 10, 100, 50);
++
++	CHECK_FALSE(style_box->is_dynamic_shadow_enabled());
++	CHECK(style_box->get_elevation_level() == StyleBoxFlat::ELEVATION_LEVEL_0);
++	CHECK(style_box->get_draw_rect(source_rect) == source_rect);
++
++	style_box->set_dynamic_shadow(true);
++	style_box->set_elevation_level(StyleBoxFlat::ELEVATION_LEVEL_5);
++	CHECK(style_box->is_dynamic_shadow_enabled());
++	CHECK(style_box->get_elevation_level() == StyleBoxFlat::ELEVATION_LEVEL_5);
++	CHECK(style_box->get_draw_rect(source_rect) == Rect2(-12, -7, 144, 96));
++
++	style_box->set_dynamic_shadow(false);
++	style_box->set_shadow_size(4);
++	style_box->set_shadow_offset(Point2(2, 3));
++	CHECK(style_box->get_draw_rect(source_rect) == Rect2(8, 9, 108, 58));
++}
++
++} // namespace TestStyleBoxFlat
+
+base-commit: 5ec4857b340b6284a18b49b2eda462bd250f219a
+prerequisite-patch-id: b38459b409a3326aed65d2433e1341638171f884
+prerequisite-patch-id: bdb0fe8d6ba7fff1b900ae33d9bec552ea61724c
+prerequisite-patch-id: 4dcdddc73066f768cb97c56444abacb21bda061c
+prerequisite-patch-id: 1f2fbc55f35da3e943dcbaeeb3c9a6d798621bf3
+prerequisite-patch-id: 4dd1cec6888d5160c85be2072b9e5dd05411d007
+prerequisite-patch-id: 60110ae09a2d09796ad65e339ee0b5abc2ce541a
+prerequisite-patch-id: bdb0025d4207a7cf0e1466ca96b2824d238b3caf
+prerequisite-patch-id: 8c55a8201fec417bc2629b903ea2d630aedab1d8
+prerequisite-patch-id: 9dfaaac9d4a47edf9d1eccce8fa66b69e674a911
+prerequisite-patch-id: 17fa223ec74d20c7792e45826a4f0d8ecd7f85d7
+prerequisite-patch-id: 0fb9ef780b3f10a7e82968e44defda508734fa91
+prerequisite-patch-id: 2af824bf187ff13746bd620b1032f57d166c0114
+prerequisite-patch-id: dc8aa901272b27086c9045fc0b9335986d3a8128
+prerequisite-patch-id: 0ce30d5045f596dbc6bf72cbcd9bb16472513013
+prerequisite-patch-id: 50d820c0fb3ac27ddef8f76b133637558f8bcc8e

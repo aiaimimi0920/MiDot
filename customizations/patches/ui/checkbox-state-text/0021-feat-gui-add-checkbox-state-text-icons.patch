@@ -1,0 +1,793 @@
+From 23998d8bb0ede7b7a38f70a65d42a5a50fe8bb37 Mon Sep 17 00:00:00 2001
+From: aiaimimi0920 <153103332+aiaimimi0920@users.noreply.github.com>
+Date: Mon, 31 Aug 2026 09:28:03 +0800
+Subject: [PATCH] feat(gui): add checkbox state text icons
+
+Godot-Patch-Topic: ui.checkbox-state-text
+---
+ doc/classes/CheckBox.xml      |  74 +++++++++++++++++++----
+ doc/classes/CheckButton.xml   |  74 +++++++++++++++++++----
+ scene/gui/check_box.cpp       |  99 +++++++++++++++++++++++++++++--
+ scene/gui/check_box.h         |  33 +++++++++++
+ scene/gui/check_button.cpp    |  94 ++++++++++++++++++++++++++++-
+ scene/gui/check_button.h      |  33 +++++++++++
+ scene/theme/default_theme.cpp |  36 ++++++++++++
+ tests/scene/test_button.cpp   | 108 ++++++++++++++++++++++++++++++++++
+ 8 files changed, 525 insertions(+), 26 deletions(-)
+
+diff --git a/doc/classes/CheckBox.xml b/doc/classes/CheckBox.xml
+index d1665f560da5afe10369259d1f358dd2247fa3fb..a6973d02ea675d6db42fd33b4fd2bac94cd9a3b0 100644
+--- a/doc/classes/CheckBox.xml
++++ b/doc/classes/CheckBox.xml
+@@ -18,12 +18,42 @@
+ 		<theme_item name="checkbox_checked_color" data_type="color" type="Color" default="Color(1, 1, 1, 1)">
+ 			The color of the checked icon when the checkbox is pressed.
+ 		</theme_item>
+-		<theme_item name="checkbox_unchecked_color" data_type="color" type="Color" default="Color(1, 1, 1, 1)">
+-			The color of the unchecked icon when the checkbox is not pressed.
+-		</theme_item>
+-		<theme_item name="check_v_offset" data_type="constant" type="int" default="0">
+-			The vertical offset used when rendering the check icons (in pixels).
+-		</theme_item>
++			<theme_item name="checkbox_unchecked_color" data_type="color" type="Color" default="Color(1, 1, 1, 1)">
++				The color of the unchecked icon when the checkbox is not pressed.
++			</theme_item>
++			<theme_item name="text_checked_color" data_type="color" type="Color">
++				The color of the checked state text glyph.
++			</theme_item>
++			<theme_item name="text_checked_disabled_color" data_type="color" type="Color">
++				The color of the checked state text glyph when the [CheckBox] is disabled.
++			</theme_item>
++			<theme_item name="text_radio_checked_color" data_type="color" type="Color">
++				The color of the checked radio state text glyph.
++			</theme_item>
++			<theme_item name="text_radio_checked_disabled_color" data_type="color" type="Color">
++				The color of the checked radio state text glyph when the [CheckBox] is disabled.
++			</theme_item>
++			<theme_item name="text_radio_unchecked_color" data_type="color" type="Color">
++				The color of the unchecked radio state text glyph.
++			</theme_item>
++			<theme_item name="text_radio_unchecked_disabled_color" data_type="color" type="Color">
++				The color of the unchecked radio state text glyph when the [CheckBox] is disabled.
++			</theme_item>
++			<theme_item name="text_unchecked_color" data_type="color" type="Color">
++				The color of the unchecked state text glyph.
++			</theme_item>
++			<theme_item name="text_unchecked_disabled_color" data_type="color" type="Color">
++				The color of the unchecked state text glyph when the [CheckBox] is disabled.
++			</theme_item>
++			<theme_item name="check_v_offset" data_type="constant" type="int" default="0">
++				The vertical offset used when rendering the check icons (in pixels).
++			</theme_item>
++			<theme_item name="text_icon_font" data_type="font" type="Font">
++				[Font] used to draw state text glyphs. When this font is unavailable, the corresponding texture icon is used instead.
++			</theme_item>
++			<theme_item name="text_icon_font_size" data_type="font_size" type="int">
++				Font size used to draw state text glyphs.
++			</theme_item>
+ 		<theme_item name="checked" data_type="icon" type="Texture2D">
+ 			The check icon to display when the [CheckBox] is checked.
+ 		</theme_item>
+@@ -45,8 +75,32 @@
+ 		<theme_item name="unchecked" data_type="icon" type="Texture2D">
+ 			The check icon to display when the [CheckBox] is unchecked.
+ 		</theme_item>
+-		<theme_item name="unchecked_disabled" data_type="icon" type="Texture2D">
+-			The check icon to display when the [CheckBox] is unchecked and is disabled.
+-		</theme_item>
+-	</theme_items>
++			<theme_item name="unchecked_disabled" data_type="icon" type="Texture2D">
++				The check icon to display when the [CheckBox] is unchecked and is disabled.
++			</theme_item>
++			<theme_item name="text_checked" data_type="string" type="String" default="&quot;&quot;">
++				Text glyph used for the checked state. When empty, the corresponding texture icon is used.
++			</theme_item>
++			<theme_item name="text_checked_disabled" data_type="string" type="String" default="&quot;&quot;">
++				Text glyph used for the checked state when the [CheckBox] is disabled.
++			</theme_item>
++			<theme_item name="text_radio_checked" data_type="string" type="String" default="&quot;&quot;">
++				Text glyph used for the checked radio state.
++			</theme_item>
++			<theme_item name="text_radio_checked_disabled" data_type="string" type="String" default="&quot;&quot;">
++				Text glyph used for the checked radio state when the [CheckBox] is disabled.
++			</theme_item>
++			<theme_item name="text_radio_unchecked" data_type="string" type="String" default="&quot;&quot;">
++				Text glyph used for the unchecked radio state.
++			</theme_item>
++			<theme_item name="text_radio_unchecked_disabled" data_type="string" type="String" default="&quot;&quot;">
++				Text glyph used for the unchecked radio state when the [CheckBox] is disabled.
++			</theme_item>
++			<theme_item name="text_unchecked" data_type="string" type="String" default="&quot;&quot;">
++				Text glyph used for the unchecked state. When empty, the corresponding texture icon is used.
++			</theme_item>
++			<theme_item name="text_unchecked_disabled" data_type="string" type="String" default="&quot;&quot;">
++				Text glyph used for the unchecked state when the [CheckBox] is disabled.
++			</theme_item>
++		</theme_items>
+ </class>
+diff --git a/doc/classes/CheckButton.xml b/doc/classes/CheckButton.xml
+index 667e8de0a05bcf40c0c26f21d1a4d60eefaaf069..335301af70078dd5a299b6dc0ceef93b15d5a7a4 100644
+--- a/doc/classes/CheckButton.xml
++++ b/doc/classes/CheckButton.xml
+@@ -17,12 +17,42 @@
+ 		<theme_item name="button_checked_color" data_type="color" type="Color" default="Color(1, 1, 1, 1)">
+ 			The color of the checked icon when the checkbox is pressed.
+ 		</theme_item>
+-		<theme_item name="button_unchecked_color" data_type="color" type="Color" default="Color(1, 1, 1, 1)">
+-			The color of the unchecked icon when the checkbox is not pressed.
+-		</theme_item>
+-		<theme_item name="check_v_offset" data_type="constant" type="int" default="0">
+-			The vertical offset used when rendering the toggle icons (in pixels).
+-		</theme_item>
++			<theme_item name="button_unchecked_color" data_type="color" type="Color" default="Color(1, 1, 1, 1)">
++				The color of the unchecked icon when the checkbox is not pressed.
++			</theme_item>
++			<theme_item name="text_checked_color" data_type="color" type="Color">
++				The color of the checked state text glyph in left-to-right layouts.
++			</theme_item>
++			<theme_item name="text_checked_disabled_color" data_type="color" type="Color">
++				The color of the checked state text glyph when the [CheckButton] is disabled in left-to-right layouts.
++			</theme_item>
++			<theme_item name="text_checked_disabled_mirrored_color" data_type="color" type="Color">
++				The color of the checked state text glyph when the [CheckButton] is disabled in right-to-left layouts.
++			</theme_item>
++			<theme_item name="text_checked_mirrored_color" data_type="color" type="Color">
++				The color of the checked state text glyph in right-to-left layouts.
++			</theme_item>
++			<theme_item name="text_unchecked_color" data_type="color" type="Color">
++				The color of the unchecked state text glyph in left-to-right layouts.
++			</theme_item>
++			<theme_item name="text_unchecked_disabled_color" data_type="color" type="Color">
++				The color of the unchecked state text glyph when the [CheckButton] is disabled in left-to-right layouts.
++			</theme_item>
++			<theme_item name="text_unchecked_disabled_mirrored_color" data_type="color" type="Color">
++				The color of the unchecked state text glyph when the [CheckButton] is disabled in right-to-left layouts.
++			</theme_item>
++			<theme_item name="text_unchecked_mirrored_color" data_type="color" type="Color">
++				The color of the unchecked state text glyph in right-to-left layouts.
++			</theme_item>
++			<theme_item name="check_v_offset" data_type="constant" type="int" default="0">
++				The vertical offset used when rendering the toggle icons (in pixels).
++			</theme_item>
++			<theme_item name="text_icon_font" data_type="font" type="Font">
++				[Font] used to draw state text glyphs. When this font is unavailable, the corresponding texture icon is used instead.
++			</theme_item>
++			<theme_item name="text_icon_font_size" data_type="font_size" type="int">
++				Font size used to draw state text glyphs.
++			</theme_item>
+ 		<theme_item name="checked" data_type="icon" type="Texture2D">
+ 			The icon to display when the [CheckButton] is checked (for left-to-right layouts).
+ 		</theme_item>
+@@ -44,8 +74,32 @@
+ 		<theme_item name="unchecked_disabled_mirrored" data_type="icon" type="Texture2D">
+ 			The icon to display when the [CheckButton] is unchecked and disabled (for right-to-left layouts).
+ 		</theme_item>
+-		<theme_item name="unchecked_mirrored" data_type="icon" type="Texture2D">
+-			The icon to display when the [CheckButton] is unchecked (for right-to-left layouts).
+-		</theme_item>
+-	</theme_items>
++			<theme_item name="unchecked_mirrored" data_type="icon" type="Texture2D">
++				The icon to display when the [CheckButton] is unchecked (for right-to-left layouts).
++			</theme_item>
++			<theme_item name="text_checked" data_type="string" type="String" default="&quot;&quot;">
++				Text glyph used for the checked state in left-to-right layouts. When empty, the corresponding texture icon is used.
++			</theme_item>
++			<theme_item name="text_checked_disabled" data_type="string" type="String" default="&quot;&quot;">
++				Text glyph used for the checked state when the [CheckButton] is disabled in left-to-right layouts.
++			</theme_item>
++			<theme_item name="text_checked_disabled_mirrored" data_type="string" type="String" default="&quot;&quot;">
++				Text glyph used for the checked state when the [CheckButton] is disabled in right-to-left layouts.
++			</theme_item>
++			<theme_item name="text_checked_mirrored" data_type="string" type="String" default="&quot;&quot;">
++				Text glyph used for the checked state in right-to-left layouts.
++			</theme_item>
++			<theme_item name="text_unchecked" data_type="string" type="String" default="&quot;&quot;">
++				Text glyph used for the unchecked state in left-to-right layouts. When empty, the corresponding texture icon is used.
++			</theme_item>
++			<theme_item name="text_unchecked_disabled" data_type="string" type="String" default="&quot;&quot;">
++				Text glyph used for the unchecked state when the [CheckButton] is disabled in left-to-right layouts.
++			</theme_item>
++			<theme_item name="text_unchecked_disabled_mirrored" data_type="string" type="String" default="&quot;&quot;">
++				Text glyph used for the unchecked state when the [CheckButton] is disabled in right-to-left layouts.
++			</theme_item>
++			<theme_item name="text_unchecked_mirrored" data_type="string" type="String" default="&quot;&quot;">
++				Text glyph used for the unchecked state in right-to-left layouts. When empty, the corresponding texture icon is used.
++			</theme_item>
++		</theme_items>
+ </class>
+diff --git a/scene/gui/check_box.cpp b/scene/gui/check_box.cpp
+index 3dd9e4817cc05f92d7d00375aaffd5dd4e18b9cc..32264bf0552eb7a95d17dd860e5a0184f789c346 100644
+--- a/scene/gui/check_box.cpp
++++ b/scene/gui/check_box.cpp
+@@ -33,6 +33,61 @@
+ #include "scene/theme/theme_db.h"
+ #include "servers/display/accessibility_server.h"
+ 
++int CheckBox::_get_text_icon_size() const {
++	int font_size = theme_cache.text_icon_font_size;
++	if (font_size <= 0) {
++		font_size = get_theme_default_font_size();
++	}
++	return MAX(0, font_size);
++}
++
++bool CheckBox::_has_state_text() const {
++	return !theme_cache.text_checked.is_empty() || !theme_cache.text_unchecked.is_empty() ||
++			!theme_cache.text_checked_disabled.is_empty() || !theme_cache.text_unchecked_disabled.is_empty() ||
++			!theme_cache.text_radio_checked.is_empty() || !theme_cache.text_radio_unchecked.is_empty() ||
++			!theme_cache.text_radio_checked_disabled.is_empty() || !theme_cache.text_radio_unchecked_disabled.is_empty();
++}
++
++String CheckBox::_get_state_text(bool p_pressed) const {
++	if (is_radio()) {
++		if (is_disabled()) {
++			return p_pressed ? theme_cache.text_radio_checked_disabled : theme_cache.text_radio_unchecked_disabled;
++		}
++		return p_pressed ? theme_cache.text_radio_checked : theme_cache.text_radio_unchecked;
++	}
++	if (is_disabled()) {
++		return p_pressed ? theme_cache.text_checked_disabled : theme_cache.text_unchecked_disabled;
++	}
++	return p_pressed ? theme_cache.text_checked : theme_cache.text_unchecked;
++}
++
++Color CheckBox::_get_state_text_color(bool p_pressed) const {
++	if (is_radio()) {
++		if (is_disabled()) {
++			return p_pressed ? theme_cache.text_radio_checked_disabled_color : theme_cache.text_radio_unchecked_disabled_color;
++		}
++		return p_pressed ? theme_cache.text_radio_checked_color : theme_cache.text_radio_unchecked_color;
++	}
++	if (is_disabled()) {
++		return p_pressed ? theme_cache.text_checked_disabled_color : theme_cache.text_unchecked_disabled_color;
++	}
++	return p_pressed ? theme_cache.text_checked_color : theme_cache.text_unchecked_color;
++}
++
++void CheckBox::_draw_state_text(const String &p_text, const Color &p_color, const Rect2 &p_rect) const {
++	if (p_text.is_empty() || theme_cache.text_icon_font.is_null() || !p_rect.has_area()) {
++		return;
++	}
++
++	const int font_size = MIN(_get_text_icon_size(), (int)Math::floor(MIN(p_rect.size.x, p_rect.size.y)));
++	if (font_size <= 0) {
++		return;
++	}
++	const float font_height = theme_cache.text_icon_font->get_height(font_size);
++	const Point2 baseline(p_rect.position.x, p_rect.position.y + (p_rect.size.y - font_height) / 2.0f + theme_cache.text_icon_font->get_ascent(font_size));
++	draw_string(theme_cache.text_icon_font, baseline, atr(p_text), HORIZONTAL_ALIGNMENT_CENTER, p_rect.size.x, font_size, p_color);
++}
++
+ Size2 CheckBox::get_icon_size() const {
+ 	Size2 tex_size = Size2(0, 0);
+ 	if (theme_cache.checked.is_valid()) {
+@@ -59,6 +114,10 @@ Size2 CheckBox::get_icon_size() const {
+ 	if (theme_cache.radio_unchecked_disabled.is_valid()) {
+ 		tex_size = tex_size.max(theme_cache.radio_unchecked_disabled->get_size());
+ 	}
++	if (theme_cache.text_icon_font.is_valid() && _has_state_text()) {
++		const float text_icon_size = _get_text_icon_size();
++		tex_size = tex_size.max(Size2(text_icon_size, text_icon_size));
++	}
+ 	return _fit_icon_size(tex_size);
+ }
+ 
+@@ -129,17 +188,22 @@ void CheckBox::_notification(int p_what) {
+ 				}
+ 			}
+ 
++			const Size2 icon_size = get_icon_size();
+ 			Vector2 ofs;
+ 			if (is_layout_rtl()) {
+-				ofs.x = get_size().x - theme_cache.normal_style->get_margin(SIDE_RIGHT) - get_icon_size().width;
++				ofs.x = get_size().x - theme_cache.normal_style->get_margin(SIDE_RIGHT) - icon_size.width;
+ 			} else {
+ 				ofs.x = theme_cache.normal_style->get_margin(SIDE_LEFT);
+ 			}
+-			ofs.y = int((get_size().height - get_icon_size().height) / 2) + theme_cache.check_v_offset;
++			ofs.y = int((get_size().height - icon_size.height) / 2) + theme_cache.check_v_offset;
+ 
+-			if (is_pressed()) {
++			const bool pressed = is_pressed();
++			const String state_text = _get_state_text(pressed);
++			if (!state_text.is_empty() && theme_cache.text_icon_font.is_valid()) {
++				_draw_state_text(state_text, _get_state_text_color(pressed), Rect2(ofs, icon_size));
++			} else if (pressed && on_tex.is_valid()) {
+ 				on_tex->draw_rect(ci, Rect2(ofs, _fit_icon_size(on_tex->get_size())), false, theme_cache.checkbox_checked_color);
+-			} else {
++			} else if (!pressed && off_tex.is_valid()) {
+ 				off_tex->draw_rect(ci, Rect2(ofs, _fit_icon_size(off_tex->get_size())), false, theme_cache.checkbox_unchecked_color);
+ 			}
+ 		} break;
+@@ -163,9 +227,36 @@ void CheckBox::_bind_methods() {
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_ICON, CheckBox, unchecked_disabled);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_ICON, CheckBox, radio_checked_disabled);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_ICON, CheckBox, radio_unchecked_disabled);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_FONT, CheckBox, text_icon_font);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_FONT_SIZE, CheckBox, text_icon_font_size);
++
++	BIND_THEME_ITEM(Theme::DATA_TYPE_STRING, CheckBox, text_checked);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_STRING, CheckBox, text_unchecked);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_STRING, CheckBox, text_checked_disabled);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_STRING, CheckBox, text_unchecked_disabled);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_STRING, CheckBox, text_radio_checked);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_STRING, CheckBox, text_radio_unchecked);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_STRING, CheckBox, text_radio_checked_disabled);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_STRING, CheckBox, text_radio_unchecked_disabled);
+ 
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, CheckBox, checkbox_checked_color);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, CheckBox, checkbox_unchecked_color);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, CheckBox, text_checked_color);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, CheckBox, text_unchecked_color);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, CheckBox, text_checked_disabled_color);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, CheckBox, text_unchecked_disabled_color);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, CheckBox, text_radio_checked_color);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, CheckBox, text_radio_unchecked_color);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, CheckBox, text_radio_checked_disabled_color);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, CheckBox, text_radio_unchecked_disabled_color);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_ROLE, CheckBox, text_checked_color_role);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_ROLE, CheckBox, text_unchecked_color_role);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_ROLE, CheckBox, text_checked_disabled_color_role);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_ROLE, CheckBox, text_unchecked_disabled_color_role);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_ROLE, CheckBox, text_radio_checked_color_role);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_ROLE, CheckBox, text_radio_unchecked_color_role);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_ROLE, CheckBox, text_radio_checked_disabled_color_role);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_ROLE, CheckBox, text_radio_unchecked_disabled_color_role);
+ }
+ 
+ CheckBox::CheckBox(const String &p_text) :
+diff --git a/scene/gui/check_box.h b/scene/gui/check_box.h
+index fcbacfcb18ba686cb5f992108a96140013a1a95c..a1782035413eafd5942a8c0ba057d83d9f32327c 100644
+--- a/scene/gui/check_box.h
++++ b/scene/gui/check_box.h
+@@ -48,14 +48,47 @@ class CheckBox : public Button {
+ 		Ref<Texture2D> unchecked_disabled;
+ 		Ref<Texture2D> radio_checked_disabled;
+ 		Ref<Texture2D> radio_unchecked_disabled;
++		Ref<Font> text_icon_font;
++		int text_icon_font_size = 0;
++
++		String text_checked;
++		String text_unchecked;
++		String text_checked_disabled;
++		String text_unchecked_disabled;
++		String text_radio_checked;
++		String text_radio_unchecked;
++		String text_radio_checked_disabled;
++		String text_radio_unchecked_disabled;
+ 
+ 		Color checkbox_checked_color;
+ 		Color checkbox_unchecked_color;
++		Color text_checked_color;
++		Color text_unchecked_color;
++		Color text_checked_disabled_color;
++		Color text_unchecked_disabled_color;
++		Color text_radio_checked_color;
++		Color text_radio_unchecked_color;
++		Color text_radio_checked_disabled_color;
++		Color text_radio_unchecked_disabled_color;
++		ColorRole text_checked_color_role = ColorRole::STATIC;
++		ColorRole text_unchecked_color_role = ColorRole::STATIC;
++		ColorRole text_checked_disabled_color_role = ColorRole::STATIC;
++		ColorRole text_unchecked_disabled_color_role = ColorRole::STATIC;
++		ColorRole text_radio_checked_color_role = ColorRole::STATIC;
++		ColorRole text_radio_unchecked_color_role = ColorRole::STATIC;
++		ColorRole text_radio_checked_disabled_color_role = ColorRole::STATIC;
++		ColorRole text_radio_unchecked_disabled_color_role = ColorRole::STATIC;
+ 	} theme_cache;
+ 
++	int _get_text_icon_size() const;
++	bool _has_state_text() const;
++	Color _get_state_text_color(bool p_pressed) const;
++	void _draw_state_text(const String &p_text, const Color &p_color, const Rect2 &p_rect) const;
++
+ protected:
+ 	Size2 get_icon_size() const;
+ 	Size2 get_minimum_size() const override;
++	String _get_state_text(bool p_pressed) const;
+ 
+ 	void _notification(int p_what);
+ 	static void _bind_methods();
+diff --git a/scene/gui/check_button.cpp b/scene/gui/check_button.cpp
+index f9650b39bdbdd2f419f3854b613873f3a1080153..cc72097e7d1ecca0091378de9b9232103f2bd5c2 100644
+--- a/scene/gui/check_button.cpp
++++ b/scene/gui/check_button.cpp
+@@ -33,6 +33,61 @@
+ #include "scene/theme/theme_db.h"
+ #include "servers/display/accessibility_server.h"
+ 
++int CheckButton::_get_text_icon_size() const {
++	int font_size = theme_cache.text_icon_font_size;
++	if (font_size <= 0) {
++		font_size = get_theme_default_font_size();
++	}
++	return MAX(0, font_size);
++}
++
++bool CheckButton::_has_state_text() const {
++	return !theme_cache.text_checked.is_empty() || !theme_cache.text_unchecked.is_empty() ||
++			!theme_cache.text_checked_disabled.is_empty() || !theme_cache.text_unchecked_disabled.is_empty() ||
++			!theme_cache.text_checked_mirrored.is_empty() || !theme_cache.text_unchecked_mirrored.is_empty() ||
++			!theme_cache.text_checked_disabled_mirrored.is_empty() || !theme_cache.text_unchecked_disabled_mirrored.is_empty();
++}
++
++String CheckButton::_get_state_text(bool p_pressed) const {
++	if (is_layout_rtl()) {
++		if (is_disabled()) {
++			return p_pressed ? theme_cache.text_checked_disabled_mirrored : theme_cache.text_unchecked_disabled_mirrored;
++		}
++		return p_pressed ? theme_cache.text_checked_mirrored : theme_cache.text_unchecked_mirrored;
++	}
++	if (is_disabled()) {
++		return p_pressed ? theme_cache.text_checked_disabled : theme_cache.text_unchecked_disabled;
++	}
++	return p_pressed ? theme_cache.text_checked : theme_cache.text_unchecked;
++}
++
++Color CheckButton::_get_state_text_color(bool p_pressed) const {
++	if (is_layout_rtl()) {
++		if (is_disabled()) {
++			return p_pressed ? theme_cache.text_checked_disabled_mirrored_color : theme_cache.text_unchecked_disabled_mirrored_color;
++		}
++		return p_pressed ? theme_cache.text_checked_mirrored_color : theme_cache.text_unchecked_mirrored_color;
++	}
++	if (is_disabled()) {
++		return p_pressed ? theme_cache.text_checked_disabled_color : theme_cache.text_unchecked_disabled_color;
++	}
++	return p_pressed ? theme_cache.text_checked_color : theme_cache.text_unchecked_color;
++}
++
++void CheckButton::_draw_state_text(const String &p_text, const Color &p_color, const Rect2 &p_rect) const {
++	if (p_text.is_empty() || theme_cache.text_icon_font.is_null() || !p_rect.has_area()) {
++		return;
++	}
++
++	const int font_size = MIN(_get_text_icon_size(), (int)Math::floor(MIN(p_rect.size.x, p_rect.size.y)));
++	if (font_size <= 0) {
++		return;
++	}
++	const float font_height = theme_cache.text_icon_font->get_height(font_size);
++	const Point2 baseline(p_rect.position.x, p_rect.position.y + (p_rect.size.y - font_height) / 2.0f + theme_cache.text_icon_font->get_ascent(font_size));
++	draw_string(theme_cache.text_icon_font, baseline, atr(p_text), HORIZONTAL_ALIGNMENT_CENTER, p_rect.size.x, font_size, p_color);
++}
++
+ Size2 CheckButton::get_icon_size() const {
+ 	Ref<Texture2D> on_tex;
+ 	Ref<Texture2D> off_tex;
+@@ -62,6 +117,10 @@ Size2 CheckButton::get_icon_size() const {
+ 	if (off_tex.is_valid()) {
+ 		tex_size = tex_size.max(off_tex->get_size());
+ 	}
++	if (theme_cache.text_icon_font.is_valid() && _has_state_text()) {
++		const float text_icon_size = _get_text_icon_size();
++		tex_size = tex_size.max(Size2(text_icon_size, text_icon_size));
++	}
+ 
+ 	return _fit_icon_size(tex_size);
+ }
+@@ -140,9 +199,13 @@ void CheckButton::_notification(int p_what) {
+ 			}
+ 			ofs.y = (get_size().height - tex_size.height) / 2 + theme_cache.check_v_offset;
+ 
+-			if (is_pressed()) {
++			const bool pressed = is_pressed();
++			const String state_text = _get_state_text(pressed);
++			if (!state_text.is_empty() && theme_cache.text_icon_font.is_valid()) {
++				_draw_state_text(state_text, _get_state_text_color(pressed), Rect2(ofs, tex_size));
++			} else if (pressed && on_tex.is_valid()) {
+ 				on_tex->draw_rect(ci, Rect2(ofs, _fit_icon_size(on_tex->get_size())), false, theme_cache.button_checked_color);
+-			} else {
++			} else if (!pressed && off_tex.is_valid()) {
+ 				off_tex->draw_rect(ci, Rect2(ofs, _fit_icon_size(off_tex->get_size())), false, theme_cache.button_unchecked_color);
+ 			}
+ 		} break;
+@@ -162,9 +225,36 @@ void CheckButton::_bind_methods() {
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_ICON, CheckButton, unchecked_mirrored);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_ICON, CheckButton, checked_disabled_mirrored);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_ICON, CheckButton, unchecked_disabled_mirrored);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_FONT, CheckButton, text_icon_font);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_FONT_SIZE, CheckButton, text_icon_font_size);
++
++	BIND_THEME_ITEM(Theme::DATA_TYPE_STRING, CheckButton, text_checked);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_STRING, CheckButton, text_unchecked);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_STRING, CheckButton, text_checked_disabled);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_STRING, CheckButton, text_unchecked_disabled);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_STRING, CheckButton, text_checked_mirrored);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_STRING, CheckButton, text_unchecked_mirrored);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_STRING, CheckButton, text_checked_disabled_mirrored);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_STRING, CheckButton, text_unchecked_disabled_mirrored);
+ 
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, CheckButton, button_checked_color);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, CheckButton, button_unchecked_color);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, CheckButton, text_checked_color);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, CheckButton, text_unchecked_color);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, CheckButton, text_checked_disabled_color);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, CheckButton, text_unchecked_disabled_color);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, CheckButton, text_checked_mirrored_color);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, CheckButton, text_unchecked_mirrored_color);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, CheckButton, text_checked_disabled_mirrored_color);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, CheckButton, text_unchecked_disabled_mirrored_color);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_ROLE, CheckButton, text_checked_color_role);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_ROLE, CheckButton, text_unchecked_color_role);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_ROLE, CheckButton, text_checked_disabled_color_role);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_ROLE, CheckButton, text_unchecked_disabled_color_role);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_ROLE, CheckButton, text_checked_mirrored_color_role);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_ROLE, CheckButton, text_unchecked_mirrored_color_role);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_ROLE, CheckButton, text_checked_disabled_mirrored_color_role);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_ROLE, CheckButton, text_unchecked_disabled_mirrored_color_role);
+ }
+ 
+ CheckButton::CheckButton(const String &p_text) :
+diff --git a/scene/gui/check_button.h b/scene/gui/check_button.h
+index 74b38d4930a98f3182f67128ec0b9877da64cfb4..680c816428515b0984d8bba99f42817eca2380f3 100644
+--- a/scene/gui/check_button.h
++++ b/scene/gui/check_button.h
+@@ -48,14 +48,47 @@ class CheckButton : public Button {
+ 		Ref<Texture2D> unchecked_mirrored;
+ 		Ref<Texture2D> checked_disabled_mirrored;
+ 		Ref<Texture2D> unchecked_disabled_mirrored;
++		Ref<Font> text_icon_font;
++		int text_icon_font_size = 0;
++
++		String text_checked;
++		String text_unchecked;
++		String text_checked_disabled;
++		String text_unchecked_disabled;
++		String text_checked_mirrored;
++		String text_unchecked_mirrored;
++		String text_checked_disabled_mirrored;
++		String text_unchecked_disabled_mirrored;
+ 
+ 		Color button_checked_color;
+ 		Color button_unchecked_color;
++		Color text_checked_color;
++		Color text_unchecked_color;
++		Color text_checked_disabled_color;
++		Color text_unchecked_disabled_color;
++		Color text_checked_mirrored_color;
++		Color text_unchecked_mirrored_color;
++		Color text_checked_disabled_mirrored_color;
++		Color text_unchecked_disabled_mirrored_color;
++		ColorRole text_checked_color_role = ColorRole::STATIC;
++		ColorRole text_unchecked_color_role = ColorRole::STATIC;
++		ColorRole text_checked_disabled_color_role = ColorRole::STATIC;
++		ColorRole text_unchecked_disabled_color_role = ColorRole::STATIC;
++		ColorRole text_checked_mirrored_color_role = ColorRole::STATIC;
++		ColorRole text_unchecked_mirrored_color_role = ColorRole::STATIC;
++		ColorRole text_checked_disabled_mirrored_color_role = ColorRole::STATIC;
++		ColorRole text_unchecked_disabled_mirrored_color_role = ColorRole::STATIC;
+ 	} theme_cache;
+ 
++	int _get_text_icon_size() const;
++	bool _has_state_text() const;
++	Color _get_state_text_color(bool p_pressed) const;
++	void _draw_state_text(const String &p_text, const Color &p_color, const Rect2 &p_rect) const;
++
+ protected:
+ 	Size2 get_icon_size() const;
+ 	virtual Size2 get_minimum_size() const override;
++	String _get_state_text(bool p_pressed) const;
+ 
+ 	void _notification(int p_what);
+ 	static void _bind_methods();
+diff --git a/scene/theme/default_theme.cpp b/scene/theme/default_theme.cpp
+index ac5c682822af1d52ee7e48592b26783cbb2f1bc3..3dc13ebb24da5512b0e90ca7e8b6a43a78f196e9 100644
+--- a/scene/theme/default_theme.cpp
++++ b/scene/theme/default_theme.cpp
+@@ -319,6 +319,16 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 
+ 	theme->set_font(SceneStringName(font), "CheckBox", Ref<Font>());
+ 	theme->set_font_size(SceneStringName(font_size), "CheckBox", -1);
++	theme->set_font("text_icon_font", "CheckBox", default_icon_font);
++	theme->set_font_size("text_icon_font_size", "CheckBox", Math::round(24 * scale));
++	theme->set_string("text_checked", "CheckBox", default_icon_font.is_valid() ? "checkbox-marked" : "");
++	theme->set_string("text_checked_disabled", "CheckBox", default_icon_font.is_valid() ? "checkbox-marked" : "");
++	theme->set_string("text_unchecked", "CheckBox", default_icon_font.is_valid() ? "checkbox-blank-outline" : "");
++	theme->set_string("text_unchecked_disabled", "CheckBox", default_icon_font.is_valid() ? "checkbox-blank-outline" : "");
++	theme->set_string("text_radio_checked", "CheckBox", default_icon_font.is_valid() ? "radiobox-marked" : "");
++	theme->set_string("text_radio_checked_disabled", "CheckBox", default_icon_font.is_valid() ? "radiobox-marked" : "");
++	theme->set_string("text_radio_unchecked", "CheckBox", default_icon_font.is_valid() ? "radiobox-blank" : "");
++	theme->set_string("text_radio_unchecked_disabled", "CheckBox", default_icon_font.is_valid() ? "radiobox-blank" : "");
+ 
+ 	theme->set_color(SceneStringName(font_color), "CheckBox", control_font_color);
+ 	theme->set_color("font_pressed_color", "CheckBox", control_font_pressed_color);
+@@ -334,6 +344,14 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 
+ 	theme->set_color("checkbox_checked_color", "CheckBox", Color(1, 1, 1));
+ 	theme->set_color("checkbox_unchecked_color", "CheckBox", Color(1, 1, 1));
++	theme->set_color("text_checked_color", "CheckBox", control_font_pressed_color);
++	theme->set_color("text_unchecked_color", "CheckBox", control_font_color);
++	theme->set_color("text_checked_disabled_color", "CheckBox", control_font_disabled_color);
++	theme->set_color("text_unchecked_disabled_color", "CheckBox", control_font_disabled_color);
++	theme->set_color("text_radio_checked_color", "CheckBox", control_font_pressed_color);
++	theme->set_color("text_radio_unchecked_color", "CheckBox", control_font_color);
++	theme->set_color("text_radio_checked_disabled_color", "CheckBox", control_font_disabled_color);
++	theme->set_color("text_radio_unchecked_disabled_color", "CheckBox", control_font_disabled_color);
+ 
+ 	// CheckButton
+ 
+@@ -359,6 +377,16 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 
+ 	theme->set_font(SceneStringName(font), "CheckButton", Ref<Font>());
+ 	theme->set_font_size(SceneStringName(font_size), "CheckButton", -1);
++	theme->set_font("text_icon_font", "CheckButton", default_icon_font);
++	theme->set_font_size("text_icon_font_size", "CheckButton", Math::round(32 * scale));
++	theme->set_string("text_checked", "CheckButton", default_icon_font.is_valid() ? "toggle-switch" : "");
++	theme->set_string("text_checked_disabled", "CheckButton", default_icon_font.is_valid() ? "toggle-switch" : "");
++	theme->set_string("text_unchecked", "CheckButton", default_icon_font.is_valid() ? "toggle-switch-off-outline" : "");
++	theme->set_string("text_unchecked_disabled", "CheckButton", default_icon_font.is_valid() ? "toggle-switch-off-outline" : "");
++	theme->set_string("text_checked_mirrored", "CheckButton", default_icon_font.is_valid() ? "toggle-switch-off" : "");
++	theme->set_string("text_checked_disabled_mirrored", "CheckButton", default_icon_font.is_valid() ? "toggle-switch-off" : "");
++	theme->set_string("text_unchecked_mirrored", "CheckButton", default_icon_font.is_valid() ? "toggle-switch-outline" : "");
++	theme->set_string("text_unchecked_disabled_mirrored", "CheckButton", default_icon_font.is_valid() ? "toggle-switch-outline" : "");
+ 
+ 	theme->set_color(SceneStringName(font_color), "CheckButton", control_font_color);
+ 	theme->set_color("font_pressed_color", "CheckButton", control_font_pressed_color);
+@@ -374,6 +402,14 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 
+ 	theme->set_color("button_checked_color", "CheckButton", Color(1, 1, 1));
+ 	theme->set_color("button_unchecked_color", "CheckButton", Color(1, 1, 1));
++	theme->set_color("text_checked_color", "CheckButton", control_font_pressed_color);
++	theme->set_color("text_unchecked_color", "CheckButton", control_font_color);
++	theme->set_color("text_checked_disabled_color", "CheckButton", control_font_disabled_color);
++	theme->set_color("text_unchecked_disabled_color", "CheckButton", control_font_disabled_color);
++	theme->set_color("text_checked_mirrored_color", "CheckButton", control_font_pressed_color);
++	theme->set_color("text_unchecked_mirrored_color", "CheckButton", control_font_color);
++	theme->set_color("text_checked_disabled_mirrored_color", "CheckButton", control_font_disabled_color);
++	theme->set_color("text_unchecked_disabled_mirrored_color", "CheckButton", control_font_disabled_color);
+ 
+ 	// Button variations
+ 
+diff --git a/tests/scene/test_button.cpp b/tests/scene/test_button.cpp
+index 6c3e22ee8fbcfd66a51c3eb710b13f770c97885f..3c123fb13f4ec958b30ce029f884ec34935b0874 100644
+--- a/tests/scene/test_button.cpp
++++ b/tests/scene/test_button.cpp
+@@ -33,6 +33,8 @@
+ TEST_FORCE_LINK(test_button)
+ 
+ #include "scene/gui/button.h"
++#include "scene/gui/check_box.h"
++#include "scene/gui/check_button.h"
+ #include "scene/main/scene_tree.h"
+ #include "scene/main/window.h"
+ #include "scene/resources/style_box.h"
+@@ -51,6 +53,36 @@ public:
+ 	}
+ };
+ 
++class TestableCheckBox : public CheckBox {
++public:
++	void update_theme_cache() {
++		_update_theme_item_cache();
++	}
++
++	String get_state_text(bool p_pressed) const {
++		return _get_state_text(p_pressed);
++	}
++
++	Size2 get_test_icon_size() const {
++		return get_icon_size();
++	}
++};
++
++class TestableCheckButton : public CheckButton {
++public:
++	void update_theme_cache() {
++		_update_theme_item_cache();
++	}
++
++	String get_state_text(bool p_pressed) const {
++		return _get_state_text(p_pressed);
++	}
++
++	Size2 get_test_icon_size() const {
++		return get_icon_size();
++	}
++};
++
+ TEST_CASE("[SceneTree][Button] is_hovered()") {
+ 	// Create new button instance.
+ 	Button *button = memnew(Button);
+@@ -124,4 +156,80 @@ TEST_CASE("[SceneTree][Button] uses text glyphs as fallback icons") {
+ 	memdelete(button);
+ }
+ 
++TEST_CASE("[SceneTree][CheckBox] resolves state text glyphs") {
++	TestableCheckBox *check_box = memnew(TestableCheckBox);
++	SceneTree::get_singleton()->get_root()->add_child(check_box);
++
++	Ref<Font> icon_font = check_box->get_theme_default_font();
++	REQUIRE(icon_font.is_valid());
++	check_box->add_theme_font_override("text_icon_font", icon_font);
++	check_box->add_theme_font_size_override("text_icon_font_size", 48);
++	check_box->add_theme_string_override("text_checked", "checked");
++	check_box->add_theme_string_override("text_unchecked", "unchecked");
++	check_box->add_theme_string_override("text_checked_disabled", "checked-disabled");
++	check_box->add_theme_string_override("text_unchecked_disabled", "unchecked-disabled");
++	check_box->add_theme_string_override("text_radio_checked", "radio-checked");
++	check_box->add_theme_string_override("text_radio_unchecked", "radio-unchecked");
++	check_box->add_theme_string_override("text_radio_checked_disabled", "radio-checked-disabled");
++	check_box->add_theme_string_override("text_radio_unchecked_disabled", "radio-unchecked-disabled");
++	check_box->update_theme_cache();
++
++	CHECK(check_box->get_state_text(true) == "checked");
++	CHECK(check_box->get_state_text(false) == "unchecked");
++	CHECK(check_box->get_test_icon_size().x >= 48);
++
++	check_box->set_disabled(true);
++	CHECK(check_box->get_state_text(true) == "checked-disabled");
++	CHECK(check_box->get_state_text(false) == "unchecked-disabled");
++
++	Ref<ButtonGroup> group;
++	group.instantiate();
++	check_box->set_button_group(group);
++	CHECK(check_box->get_state_text(true) == "radio-checked-disabled");
++	CHECK(check_box->get_state_text(false) == "radio-unchecked-disabled");
++
++	check_box->set_disabled(false);
++	CHECK(check_box->get_state_text(true) == "radio-checked");
++	CHECK(check_box->get_state_text(false) == "radio-unchecked");
++
++	memdelete(check_box);
++}
++
++TEST_CASE("[SceneTree][CheckButton] resolves mirrored state text glyphs") {
++	TestableCheckButton *check_button = memnew(TestableCheckButton);
++	SceneTree::get_singleton()->get_root()->add_child(check_button);
++
++	Ref<Font> icon_font = check_button->get_theme_default_font();
++	REQUIRE(icon_font.is_valid());
++	check_button->add_theme_font_override("text_icon_font", icon_font);
++	check_button->add_theme_font_size_override("text_icon_font_size", 48);
++	check_button->add_theme_string_override("text_checked", "checked");
++	check_button->add_theme_string_override("text_unchecked", "unchecked");
++	check_button->add_theme_string_override("text_checked_disabled", "checked-disabled");
++	check_button->add_theme_string_override("text_unchecked_disabled", "unchecked-disabled");
++	check_button->add_theme_string_override("text_checked_mirrored", "checked-rtl");
++	check_button->add_theme_string_override("text_unchecked_mirrored", "unchecked-rtl");
++	check_button->add_theme_string_override("text_checked_disabled_mirrored", "checked-disabled-rtl");
++	check_button->add_theme_string_override("text_unchecked_disabled_mirrored", "unchecked-disabled-rtl");
++	check_button->update_theme_cache();
++
++	CHECK(check_button->get_state_text(true) == "checked");
++	CHECK(check_button->get_state_text(false) == "unchecked");
++	CHECK(check_button->get_test_icon_size().x >= 48);
++
++	check_button->set_disabled(true);
++	CHECK(check_button->get_state_text(true) == "checked-disabled");
++	CHECK(check_button->get_state_text(false) == "unchecked-disabled");
++
++	check_button->set_layout_direction(Control::LAYOUT_DIRECTION_RTL);
++	CHECK(check_button->get_state_text(true) == "checked-disabled-rtl");
++	CHECK(check_button->get_state_text(false) == "unchecked-disabled-rtl");
++
++	check_button->set_disabled(false);
++	CHECK(check_button->get_state_text(true) == "checked-rtl");
++	CHECK(check_button->get_state_text(false) == "unchecked-rtl");
++
++	memdelete(check_button);
++}
++
+ } // namespace TestButton
+
+base-commit: 5ec4857b340b6284a18b49b2eda462bd250f219a
+prerequisite-patch-id: b38459b409a3326aed65d2433e1341638171f884
+prerequisite-patch-id: bdb0fe8d6ba7fff1b900ae33d9bec552ea61724c
+prerequisite-patch-id: 4dcdddc73066f768cb97c56444abacb21bda061c
+prerequisite-patch-id: 1f2fbc55f35da3e943dcbaeeb3c9a6d798621bf3
+prerequisite-patch-id: 4dd1cec6888d5160c85be2072b9e5dd05411d007
+prerequisite-patch-id: 60110ae09a2d09796ad65e339ee0b5abc2ce541a
+prerequisite-patch-id: bdb0025d4207a7cf0e1466ca96b2824d238b3caf
+prerequisite-patch-id: 8c55a8201fec417bc2629b903ea2d630aedab1d8
+prerequisite-patch-id: 9dfaaac9d4a47edf9d1eccce8fa66b69e674a911
+prerequisite-patch-id: 17fa223ec74d20c7792e45826a4f0d8ecd7f85d7
+prerequisite-patch-id: 0fb9ef780b3f10a7e82968e44defda508734fa91
+prerequisite-patch-id: 2af824bf187ff13746bd620b1032f57d166c0114
+prerequisite-patch-id: dc8aa901272b27086c9045fc0b9335986d3a8128
+prerequisite-patch-id: 0ce30d5045f596dbc6bf72cbcd9bb16472513013
+prerequisite-patch-id: 50d820c0fb3ac27ddef8f76b133637558f8bcc8e
+prerequisite-patch-id: 69b2baab747aed9362c0ca4c161fc02e5970db44
+prerequisite-patch-id: 41b4bd5af73a2a33c2e64048b72e0d4f3c664f19
+prerequisite-patch-id: 67083f15ed3c32a690794c698729f213a5245e20
+prerequisite-patch-id: 14ad80fb2ee81b00b9194186196bba9d350bc28e
+prerequisite-patch-id: 7d791289954a2144845e9b843451c6c9717daf6a

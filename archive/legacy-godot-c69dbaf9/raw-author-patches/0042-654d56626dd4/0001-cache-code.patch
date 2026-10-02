@@ -1,0 +1,835 @@
+From 654d56626dd46a2872b17320cc391f171e78dfc8 Mon Sep 17 00:00:00 2001
+From: aiaimimi0920 <153103332+aiaimimi0920@users.noreply.github.com>
+Date: Thu, 7 Mar 2024 03:46:20 +0800
+Subject: [PATCH] # cache code
+
+---
+ scene/gui/file_dialog.cpp     |   7 ++
+ scene/gui/file_dialog.h       |   8 ++
+ scene/gui/graph_edit.cpp      |   8 ++
+ scene/gui/graph_edit.h        |   7 ++
+ scene/gui/graph_node.cpp      |   1 +
+ scene/gui/graph_node.h        |   3 +
+ scene/gui/item_list.cpp       |   6 ++
+ scene/gui/item_list.h         |   6 ++
+ scene/gui/popup_menu.cpp      |   8 ++
+ scene/gui/popup_menu.h        |   8 ++
+ scene/gui/rich_text_label.cpp |  15 ++-
+ scene/gui/rich_text_label.h   |  11 ++
+ scene/gui/tab_bar.cpp         |   9 ++
+ scene/gui/tab_bar.h           |   7 ++
+ scene/gui/tab_container.cpp   |   9 ++
+ scene/gui/tab_container.h     |   8 +-
+ scene/gui/tree.cpp            |  11 ++
+ scene/gui/tree.h              |  12 +++
+ scene/theme/default_theme.cpp | 189 ++++++++++++++++++++++++++--------
+ 19 files changed, 283 insertions(+), 50 deletions(-)
+
+diff --git a/scene/gui/file_dialog.cpp b/scene/gui/file_dialog.cpp
+index 137bb66ef4ca2704d2d4f56afb7142e3817c12ea..88f467eac4db3f1ff8d2e1e1fd90f3351b8119e3 100644
+--- a/scene/gui/file_dialog.cpp
++++ b/scene/gui/file_dialog.cpp
+@@ -1099,6 +1099,13 @@ void FileDialog::_bind_methods() {
+ 	BIND_THEME_ITEM_EXT(Theme::DATA_TYPE_COLOR, FileDialog, icon_focus_color, "font_focus_color", "Button");
+ 	BIND_THEME_ITEM_EXT(Theme::DATA_TYPE_COLOR, FileDialog, icon_pressed_color, "font_pressed_color", "Button");
+ 
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, FileDialog, folder_icon_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, FileDialog, file_icon_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, FileDialog, file_disabled_color_scale);
++	BIND_THEME_ITEM_EXT(Theme::DATA_TYPE_COLOR, FileDialog, icon_normal_color_scale, "font_color_scale", "Button");
++	BIND_THEME_ITEM_EXT(Theme::DATA_TYPE_COLOR, FileDialog, icon_hover_color_scale, "font_hover_color_scale", "Button");
++	BIND_THEME_ITEM_EXT(Theme::DATA_TYPE_COLOR, FileDialog, icon_focus_color_scale, "font_focus_color_scale", "Button");
++	BIND_THEME_ITEM_EXT(Theme::DATA_TYPE_COLOR, FileDialog, icon_pressed_color_scale, "font_pressed_color_scale", "Button");
+ }
+ 
+ void FileDialog::set_show_hidden_files(bool p_show) {
+diff --git a/scene/gui/file_dialog.h b/scene/gui/file_dialog.h
+index 6e3297f2c03c6ab4e630c24724e4a9a076d37f6b..fdc114bf7ed3aafc6b9232608b781118d4b4d1c1 100644
+--- a/scene/gui/file_dialog.h
++++ b/scene/gui/file_dialog.h
+@@ -120,6 +120,14 @@ private:
+ 
+ 		Ref<ColorScheme> default_color_scheme;
+ 
++		Color folder_icon_color_scale;
++		Color file_icon_color_scale;
++		Color file_disabled_color_scale;
++		Color icon_normal_color_scale;
++		Color icon_hover_color_scale;
++		Color icon_focus_color_scale;
++		Color icon_pressed_color_scale;
++
+ 		Color folder_icon_color;
+ 		Color file_icon_color;
+ 		Color file_disabled_color;
+diff --git a/scene/gui/graph_edit.cpp b/scene/gui/graph_edit.cpp
+index c60c8d7e87e65cd661ba3adf9dabafc38aa27aa7..4611ceed26ad64dedb5ad87b357011d7fc95616a 100644
+--- a/scene/gui/graph_edit.cpp
++++ b/scene/gui/graph_edit.cpp
+@@ -208,6 +208,7 @@ void GraphEditMinimap::_bind_methods() {
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_SCHEME, GraphEditMinimap, resizer_color_scheme);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_ROLE, GraphEditMinimap, resizer_color_role);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, GraphEditMinimap, resizer_color);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, GraphEditMinimap, resizer_color_scale);
+ }
+ 
+ GraphEditMinimap::GraphEditMinimap(GraphEdit *p_edit) {
+@@ -1991,10 +1992,17 @@ void GraphEdit::_bind_methods() {
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_STYLEBOX, GraphEdit, panel);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, GraphEdit, grid_major);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, GraphEdit, grid_minor);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, GraphEdit, grid_major_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, GraphEdit, grid_minor_scale);
+ 
+ 	BIND_THEME_ITEM_CUSTOM(Theme::DATA_TYPE_COLOR, GraphEdit, activity_color, "activity");
++	BIND_THEME_ITEM_CUSTOM(Theme::DATA_TYPE_COLOR, GraphEdit, activity_color_scale, "activity_scale");
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, GraphEdit, selection_fill);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, GraphEdit, selection_stroke);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, GraphEdit, selection_fill_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, GraphEdit, selection_stroke_scale);
++
++
+ 
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_STYLEBOX, GraphEdit, menu_panel);
+ 
+diff --git a/scene/gui/graph_edit.h b/scene/gui/graph_edit.h
+index 0a444f51ce80d3b0a5d68ec18ec641a324b59b32..dfc9dd416277abcd7521e8fb80c38b389f9310d7 100644
+--- a/scene/gui/graph_edit.h
++++ b/scene/gui/graph_edit.h
+@@ -85,6 +85,7 @@ class GraphEditMinimap : public Control {
+ 
+ 		Ref<Texture2D> resizer;
+ 		Color resizer_color;
++		Color resizer_color_scale;
+ 		ColorRole resizer_color_role;
+ 		Ref<ColorScheme> resizer_color_scheme;
+ 	} theme_cache;
+@@ -263,6 +264,12 @@ private:
+ 		Ref<Texture2D> minimap_toggle;
+ 		Ref<Texture2D> layout;
+ 
++		Color grid_major_scale;
++		Color grid_minor_scale;
++		Color activity_color_scale;
++		Color selection_fill_scale;
++		Color selection_stroke_scale;
++
+ 		ColorRole grid_major_role;
+ 		ColorRole grid_minor_role;
+ 		ColorRole activity_color_role;
+diff --git a/scene/gui/graph_node.cpp b/scene/gui/graph_node.cpp
+index fd2cfd49180e97f223a3358dbbe1550c32de2a7c..aedd22f6ae373277f830d4bebce462beedaa5aee 100644
+--- a/scene/gui/graph_node.cpp
++++ b/scene/gui/graph_node.cpp
+@@ -842,6 +842,7 @@ void GraphNode::_bind_methods() {
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_SCHEME, GraphNode, resizer_color_scheme);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_ROLE, GraphNode, resizer_color_role);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, GraphNode, resizer_color);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, GraphNode, resizer_color_scale);
+ }
+ 
+ GraphNode::GraphNode() {
+diff --git a/scene/gui/graph_node.h b/scene/gui/graph_node.h
+index 60904944b1f6ee495592b1b041cd4fc3cfde0ef1..e977374d7e4c42732e3375986b56910e3ff6119f 100644
+--- a/scene/gui/graph_node.h
++++ b/scene/gui/graph_node.h
+@@ -92,6 +92,9 @@ class GraphNode : public GraphElement {
+ 
+ 		Ref<Texture2D> port;
+ 		Ref<Texture2D> resizer;
++
++		Color resizer_color_scale;
++
+ 		Color resizer_color;
+ 		ColorRole resizer_color_role;
+ 		Ref<ColorScheme> resizer_color_scheme;
+diff --git a/scene/gui/item_list.cpp b/scene/gui/item_list.cpp
+index a5daad5e5506187cabd7fa55e9bc2cf40de44e47..0fda3d8a08a4e8b62a4670b36fc2dd5badf2f1a6 100644
+--- a/scene/gui/item_list.cpp
++++ b/scene/gui/item_list.cpp
+@@ -1916,6 +1916,12 @@ void ItemList::_bind_methods() {
+ 	BIND_THEME_ITEM_CUSTOM(Theme::DATA_TYPE_CONSTANT, ItemList, font_outline_size, "outline_size");
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, ItemList, font_outline_color);
+ 
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, ItemList, font_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, ItemList, font_hovered_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, ItemList, font_selected_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, ItemList, font_outline_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, ItemList, guide_color_scale);
++
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_CONSTANT, ItemList, line_separation);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_CONSTANT, ItemList, icon_margin);
+ 	BIND_THEME_ITEM_CUSTOM(Theme::DATA_TYPE_STYLEBOX, ItemList, hovered_style, "hovered");
+diff --git a/scene/gui/item_list.h b/scene/gui/item_list.h
+index 2ea1ccd02899b02a798a6ba9e689351a6fda5cd0..16575ab363cc8a59b67a1ce801e210680b5e787f 100644
+--- a/scene/gui/item_list.h
++++ b/scene/gui/item_list.h
+@@ -148,6 +148,12 @@ private:
+ 		Ref<StyleBox> cursor_focus_style;
+ 		Color guide_color;
+ 
++		Color font_color_scale;
++		Color font_hovered_color_scale;
++		Color font_selected_color_scale;
++		Color font_outline_color_scale;
++		Color guide_color_scale;
++
+ 		ColorRole font_color_role;
+ 		ColorRole font_hovered_color_role;
+ 		ColorRole font_selected_color_role;
+diff --git a/scene/gui/popup_menu.cpp b/scene/gui/popup_menu.cpp
+index 60486cd84ac8259219a71eefaccb6081c08c13a8..6a39a411c985ad8d4d26f7385bb92e2de18a55aa 100644
+--- a/scene/gui/popup_menu.cpp
++++ b/scene/gui/popup_menu.cpp
+@@ -2778,6 +2778,14 @@ void PopupMenu::_bind_methods() {
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_ROLE, PopupMenu, font_separator_color_role);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR_ROLE, PopupMenu, font_separator_outline_color_role);
+ 
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, PopupMenu, font_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, PopupMenu, font_hover_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, PopupMenu, font_disabled_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, PopupMenu, font_accelerator_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, PopupMenu, font_outline_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, PopupMenu, font_separator_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, PopupMenu, font_separator_outline_color_scale);
++
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, PopupMenu, font_color);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, PopupMenu, font_hover_color);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, PopupMenu, font_disabled_color);
+diff --git a/scene/gui/popup_menu.h b/scene/gui/popup_menu.h
+index 5b87756c2c14688287740e90a5cf52dd81510e78..f72dd24dba8f757899c4ce4f695f787958b9bfc3 100644
+--- a/scene/gui/popup_menu.h
++++ b/scene/gui/popup_menu.h
+@@ -202,6 +202,14 @@ class PopupMenu : public Popup {
+ 		Ref<ColorScheme> font_separator_color_scheme;
+ 		Ref<ColorScheme> font_separator_outline_color_scheme;
+ 
++		Color font_color_scale;
++		Color font_hover_color_scale;
++		Color font_disabled_color_scale;
++		Color font_accelerator_color_scale;
++		Color font_outline_color_scale;
++		Color font_separator_color_scale;
++		Color font_separator_outline_color_scale;
++
+ 	} theme_cache;
+ 
+ 	void _draw_items();
+diff --git a/scene/gui/rich_text_label.cpp b/scene/gui/rich_text_label.cpp
+index 84ca081d66d4cd72c20b131af74b021042cd81db..e98a0695fda21936d0c75a219630799fca102224 100644
+--- a/scene/gui/rich_text_label.cpp
++++ b/scene/gui/rich_text_label.cpp
+@@ -6052,6 +6052,7 @@ void RichTextLabel::_bind_methods() {
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, RichTextLabel, selection_color);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, RichTextLabel, font_outline_color);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, RichTextLabel, font_shadow_color);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, RichTextLabel, outline_color);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_CONSTANT, RichTextLabel, shadow_outline_size);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_CONSTANT, RichTextLabel, shadow_offset_x);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_CONSTANT, RichTextLabel, shadow_offset_y);
+@@ -6075,12 +6076,18 @@ void RichTextLabel::_bind_methods() {
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, RichTextLabel, table_odd_row_bg);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, RichTextLabel, table_even_row_bg);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, RichTextLabel, table_border);
+-}
+-
+-
+-
+ 
+ 
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, RichTextLabel, font_default_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, RichTextLabel, font_selected_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, RichTextLabel, selection_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, RichTextLabel, font_outline_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, RichTextLabel, font_shadow_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, RichTextLabel, outline_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, RichTextLabel, table_odd_row_bg_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, RichTextLabel, table_even_row_bg_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, RichTextLabel, table_border_scale);
++}
+ 
+ 
+ TextServer::VisibleCharactersBehavior RichTextLabel::get_visible_characters_behavior() const {
+diff --git a/scene/gui/rich_text_label.h b/scene/gui/rich_text_label.h
+index 4cd172aae43017b82daa3d656b9268299e6c16a0..48be0f269e8329ba62e4ad6e8c5fc9428aced96d 100644
+--- a/scene/gui/rich_text_label.h
++++ b/scene/gui/rich_text_label.h
+@@ -621,6 +621,17 @@ private:
+ 		Color table_even_row_bg;
+ 		Color table_border;
+ 
++		Color font_default_color_scale;
++		Color font_selected_color_scale;
++		Color selection_color_scale;
++		Color font_outline_color_scale;
++		Color font_shadow_color_scale;
++		Color outline_color_scale;
++		Color table_odd_row_bg_scale;
++		Color table_even_row_bg_scale;
++		Color table_border_scale;
++
++
+ 		ColorRole font_default_color_role;
+ 		ColorRole font_selected_color_role;
+ 		ColorRole selection_color_role;
+diff --git a/scene/gui/tab_bar.cpp b/scene/gui/tab_bar.cpp
+index 4b75704ab9637fed546e59d8aa734ff7f428af63..d552b59e02b977be5b1ed2c7facba18e4cd393ac 100644
+--- a/scene/gui/tab_bar.cpp
++++ b/scene/gui/tab_bar.cpp
+@@ -1830,6 +1830,15 @@ void TabBar::_bind_methods() {
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, TabBar, font_disabled_color);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, TabBar, font_outline_color);
+ 
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, TabBar, drop_mark_color_scale);
++
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, TabBar, font_selected_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, TabBar, font_hovered_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, TabBar, font_unselected_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, TabBar, font_disabled_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, TabBar, font_outline_color_scale);
++
++
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_FONT, TabBar, font);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_FONT_SIZE, TabBar, font_size);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_CONSTANT, TabBar, outline_size);
+diff --git a/scene/gui/tab_bar.h b/scene/gui/tab_bar.h
+index bb8ed0f2638b5d331621fef0947e42af688f15be..a142809f1d62971c44b49caac5ac2d8f19982de9 100644
+--- a/scene/gui/tab_bar.h
++++ b/scene/gui/tab_bar.h
+@@ -139,6 +139,13 @@ private:
+ 		Color font_disabled_color;
+ 		Color font_outline_color;
+ 
++		Color drop_mark_color_scale;
++		Color font_selected_color_scale;
++		Color font_hovered_color_scale;
++		Color font_unselected_color_scale;
++		Color font_disabled_color_scale;
++		Color font_outline_color_scale;
++
+ 		Ref<Texture2D> close_icon;
+ 		Ref<StyleBox> button_pressed_style;
+ 		Ref<StyleBox> button_hl_style;
+diff --git a/scene/gui/tab_container.cpp b/scene/gui/tab_container.cpp
+index 5be50a511ebc6a6d2c9a908af3d0efe61ee4f98a..1cf101da31fb3731c5ae127bfaa581cf1dba5364 100644
+--- a/scene/gui/tab_container.cpp
++++ b/scene/gui/tab_container.cpp
+@@ -980,6 +980,15 @@ void TabContainer::_bind_methods() {
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, TabContainer, font_disabled_color);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, TabContainer, font_outline_color);
+ 
++
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, TabContainer, drop_mark_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, TabContainer, font_selected_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, TabContainer, font_hovered_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, TabContainer, font_unselected_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, TabContainer, font_disabled_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, TabContainer, font_outline_color_scale);
++
++
+ 	BIND_THEME_ITEM_CUSTOM(Theme::DATA_TYPE_FONT, TabContainer, tab_font, "font");
+ 	BIND_THEME_ITEM_CUSTOM(Theme::DATA_TYPE_FONT_SIZE, TabContainer, tab_font_size, "font_size");
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_CONSTANT, TabContainer, outline_size);
+diff --git a/scene/gui/tab_container.h b/scene/gui/tab_container.h
+index 685e775f373db49d73d73ae7eb7c438f1522e386..edd1bd686fc74f890661a1480d91c735878f6ad5 100644
+--- a/scene/gui/tab_container.h
++++ b/scene/gui/tab_container.h
+@@ -78,13 +78,19 @@ class TabContainer : public Container {
+ 		Ref<ColorScheme> default_color_scheme;
+ 
+ 		Color drop_mark_color;
+-
+ 		Color font_selected_color;
+ 		Color font_hovered_color;
+ 		Color font_unselected_color;
+ 		Color font_disabled_color;
+ 		Color font_outline_color;
+ 
++		Color drop_mark_color_scale;
++		Color font_selected_color_scale;
++		Color font_hovered_color_scale;
++		Color font_unselected_color_scale;
++		Color font_disabled_color_scale;
++		Color font_outline_color_scale;
++
+ 		ColorRole drop_mark_color_role;
+ 		ColorRole font_selected_color_role;
+ 		ColorRole font_hovered_color_role;
+diff --git a/scene/gui/tree.cpp b/scene/gui/tree.cpp
+index 1fe297857f7af26758f913c4d26d797070251fa6..355a2ce2937627767df68146014601a137a97216 100644
+--- a/scene/gui/tree.cpp
++++ b/scene/gui/tree.cpp
+@@ -5563,6 +5563,17 @@ void Tree::_bind_methods() {
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_STYLEBOX, Tree, custom_button_pressed);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, Tree, custom_button_font_highlight);
+ 
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, Tree, title_button_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, Tree, font_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, Tree, font_selected_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, Tree, guide_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, Tree, drop_position_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, Tree, relationship_line_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, Tree, parent_hl_line_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, Tree, children_hl_line_color_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, Tree, custom_button_font_highlight_scale);
++	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, Tree, font_outline_color_scale);
++
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, Tree, font_color);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, Tree, font_selected_color);
+ 	BIND_THEME_ITEM(Theme::DATA_TYPE_COLOR, Tree, drop_position_color);
+diff --git a/scene/gui/tree.h b/scene/gui/tree.h
+index a4ff3b4c57bb627bf877469d2b5aa790362510ff..a5aa6c142e08863f6c2d6b170e08ff0107e61ff0 100644
+--- a/scene/gui/tree.h
++++ b/scene/gui/tree.h
+@@ -534,6 +534,8 @@ private:
+ 
+ 		Ref<ColorScheme> default_color_scheme;
+ 
++		Color title_button_color_scale;
++
+ 		Color title_button_color;
+ 		ColorRole title_button_color_role;
+ 		Ref<ColorScheme> title_button_color_scheme;
+@@ -547,6 +549,16 @@ private:
+ 		Ref<Texture2D> select_arrow;
+ 		Ref<Texture2D> updown;
+ 
++		Color font_color_scale;
++		Color font_selected_color_scale;
++		Color guide_color_scale;
++		Color drop_position_color_scale;
++		Color relationship_line_color_scale;
++		Color parent_hl_line_color_scale;
++		Color children_hl_line_color_scale;
++		Color custom_button_font_highlight_scale;
++		Color font_outline_color_scale;
++
+ 		Color font_color;
+ 		Color font_selected_color;
+ 		Color guide_color;
+diff --git a/scene/theme/default_theme.cpp b/scene/theme/default_theme.cpp
+index e071bf54143ebacc90a35c6de050439c89caf8b9..aaf715749d2e332fa0fe0f3ccad2fecb0132afec 100644
+--- a/scene/theme/default_theme.cpp
++++ b/scene/theme/default_theme.cpp
+@@ -1127,34 +1127,43 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 	theme->set_color("icon_focus_color", "FileDialog", Color(1, 1, 1, 0.25));
+ 	theme->set_color("icon_pressed_color", "FileDialog", Color(1, 1, 1, 0.25));
+ 
++	theme->set_color("folder_icon_color_scale", "FileDialog", Color(1, 1, 1));
++	theme->set_color("file_icon_color_scale", "FileDialog", Color(1, 1, 1));
++	theme->set_color("file_disabled_color_scale", "FileDialog", Color(1, 1, 1, 0.25));
++	theme->set_color("icon_normal_color_scale", "FileDialog", Color(1, 1, 1, 0.25));
++	theme->set_color("icon_hover_color_scale", "FileDialog", Color(1, 1, 1, 0.25));
++	theme->set_color("icon_focus_color_scale", "FileDialog", Color(1, 1, 1, 0.25));
++	theme->set_color("icon_pressed_color_scale", "FileDialog", Color(1, 1, 1, 0.25));
++
+ 	// Popup
+ 
+-	theme->set_stylebox("panel", "PopupPanel", make_flat_stylebox(style_normal_color));
++	theme->set_stylebox("panel", "PopupPanel", make_color_role_flat_stylebox(ColorRole::PRIMARY,style_normal_color));
+ 
+ 	// PopupDialog
+ 
+-	theme->set_stylebox("panel", "PopupDialog", make_flat_stylebox(style_normal_color));
++	theme->set_stylebox("panel", "PopupDialog", make_color_role_flat_stylebox(ColorRole::PRIMARY,style_normal_color));
+ 
+ 	// PopupMenu
+ 
+ 	Ref<StyleBoxLine> separator_horizontal = memnew(StyleBoxLine);
+ 	separator_horizontal->set_thickness(Math::round(scale));
+ 	separator_horizontal->set_color(style_separator_color);
++	separator_horizontal->set_color_scale(style_separator_color);
+ 	separator_horizontal->set_content_margin_individual(default_margin, 0, default_margin, 0);
+ 	separator_horizontal->set_color_scheme(default_color_scheme);
+-	separator_horizontal->set_color_role(ColorRole::OUTLINE_VARIANT);
++	separator_horizontal->set_color_role(ColorRole::PRIMARY_CONTAINER);
+ 
+ 	Ref<StyleBoxLine> separator_vertical = separator_horizontal->duplicate();
+ 	separator_vertical->set_vertical(true);
+ 	separator_vertical->set_content_margin_individual(0, default_margin, 0, default_margin);
+ 
+ 	// Always display a border for PopupMenus so they can be distinguished from their background.
+-	Ref<StyleBoxFlat> style_popup_panel = make_flat_stylebox(style_popup_color);
++	Ref<StyleBoxFlat> style_popup_panel = make_color_role_flat_stylebox(ColorRole::PRIMARY,style_popup_color);
+ 	style_popup_panel->set_border_width_all(2);
+ 	style_popup_panel->set_border_color(style_popup_border_color);
+ 
+ 	theme->set_stylebox("panel", "PopupMenu", style_popup_panel);
+-	theme->set_stylebox("hover", "PopupMenu", make_flat_stylebox(style_popup_hover_color));
++	theme->set_stylebox("hover", "PopupMenu", make_color_role_flat_stylebox(ColorRole::PRIMARY,style_popup_hover_color));
+ 	theme->set_stylebox("separator", "PopupMenu", separator_horizontal);
+ 	theme->set_stylebox("labeled_separator_left", "PopupMenu", separator_horizontal);
+ 	theme->set_stylebox("labeled_separator_right", "PopupMenu", separator_horizontal);
+@@ -1177,6 +1186,13 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 
+ 	theme->set_color_scheme("default_color_scheme", "PopupMenu", default_color_scheme);
+ 
++	theme->set_color("font_color_scale", "PopupMenu", control_font_color);
++	theme->set_color("font_accelerator_color_scale", "PopupMenu", Color(0.7, 0.7, 0.7, 0.8));
++	theme->set_color("font_disabled_color_scale", "PopupMenu", Color(0.4, 0.4, 0.4, 0.8));
++	theme->set_color("font_hover_color_scale", "PopupMenu", control_font_color);
++	theme->set_color("font_separator_color_scale", "PopupMenu", control_font_color);
++	theme->set_color("font_outline_color_scale", "PopupMenu", Color(1, 1, 1));
++	theme->set_color("font_separator_outline_color_scale", "PopupMenu", Color(1, 1, 1));
+ 
+ 	theme->set_color_scheme("font_color_scheme", "PopupMenu", Ref<ColorScheme>());
+ 	theme->set_color_scheme("font_accelerator_color_scheme", "PopupMenu", Ref<ColorScheme>());
+@@ -1186,13 +1202,13 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 	theme->set_color_scheme("font_outline_color_scheme", "PopupMenu", Ref<ColorScheme>());
+ 	theme->set_color_scheme("font_separator_outline_color_scheme", "PopupMenu", Ref<ColorScheme>());
+ 
+-	theme->set_color_role("font_color_role", "PopupMenu", ColorRole::PRIMARY);
+-	theme->set_color_role("font_accelerator_color_role", "PopupMenu", ColorRole::PRIMARY);
+-	theme->set_color_role("font_disabled_color_role", "PopupMenu", ColorRole::PRIMARY);
+-	theme->set_color_role("font_hover_color_role", "PopupMenu", ColorRole::PRIMARY);
+-	theme->set_color_role("font_separator_color_role", "PopupMenu", ColorRole::PRIMARY);
+-	theme->set_color_role("font_outline_color_role", "PopupMenu", ColorRole::PRIMARY);
+-	theme->set_color_role("font_separator_outline_color_role", "PopupMenu", ColorRole::PRIMARY);
++	theme->set_color_role("font_color_role", "PopupMenu", ColorRole::ON_PRIMARY);
++	theme->set_color_role("font_accelerator_color_role", "PopupMenu", ColorRole::ON_PRIMARY);
++	theme->set_color_role("font_disabled_color_role", "PopupMenu", ColorRole::ON_PRIMARY);
++	theme->set_color_role("font_hover_color_role", "PopupMenu", ColorRole::ON_PRIMARY);
++	theme->set_color_role("font_separator_color_role", "PopupMenu", ColorRole::ON_PRIMARY);
++	theme->set_color_role("font_outline_color_role", "PopupMenu", ColorRole::OUTLINE);
++	theme->set_color_role("font_separator_outline_color_role", "PopupMenu", ColorRole::OUTLINE_VARIANT);
+ 
+ 	theme->set_color("font_color", "PopupMenu", control_font_color);
+ 	theme->set_color("font_accelerator_color", "PopupMenu", Color(0.7, 0.7, 0.7, 0.8));
+@@ -1213,14 +1229,17 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 
+ 	// GraphNode
+ 
+-	Ref<StyleBoxFlat> graphnode_normal = make_flat_stylebox(style_normal_color, 18, 12, 18, 12);
++	Ref<StyleBoxFlat> graphnode_normal = make_color_role_flat_stylebox(ColorRole::PRIMARY,style_normal_color, 18, 12, 18, 12);
+ 	graphnode_normal->set_border_color(Color(0.325, 0.325, 0.325, 0.6));
++	graphnode_normal->set_border_color_scale(Color(0.325, 0.325, 0.325, 0.6));
+ 	Ref<StyleBoxFlat> graphnode_selected = graphnode_normal->duplicate();
+ 	graphnode_selected->set_border_color(Color(0.625, 0.625, 0.625, 0.6));
++	graphnode_selected->set_border_color_scale(Color(0.625, 0.625, 0.625, 0.6));
+ 
+-	Ref<StyleBoxFlat> graphn_sb_titlebar = make_flat_stylebox(style_normal_color.lightened(0.3), 4, 4, 4, 4);
++	Ref<StyleBoxFlat> graphn_sb_titlebar = make_color_role_flat_stylebox(ColorRole::PRIMARY,style_normal_color.lightened(0.3), 4, 4, 4, 4);
+ 	Ref<StyleBoxFlat> graphn_sb_titlebar_selected = graphnode_normal->duplicate();
+ 	graphn_sb_titlebar_selected->set_bg_color(Color(1.0, 0.625, 0.625, 0.6));
++	graphn_sb_titlebar_selected->set_bg_color_scale(Color(1.0, 0.625, 0.625, 0.6));
+ 	Ref<StyleBoxEmpty> graphnode_slot = make_empty_stylebox(0, 0, 0, 0);
+ 
+ 	theme->set_stylebox("panel", "GraphNode", graphnode_normal);
+@@ -1235,6 +1254,7 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 	theme->set_color_scheme("resizer_color_scheme", "GraphNode", Ref<ColorScheme>());
+ 	theme->set_color_role("resizer_color_role", "GraphNode", ColorRole::PRIMARY);
+ 	theme->set_color("resizer_color", "GraphNode", control_font_color);
++	theme->set_color("resizer_color_scale", "GraphNode", control_font_color);
+ 	theme->set_constant("separation", "GraphNode", Math::round(2 * scale));
+ 	theme->set_constant("port_h_offset", "GraphNode", 0);
+ 
+@@ -1252,6 +1272,10 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 	theme->set_color_scheme("font_shadow_color_scheme", "GraphNodeTitleLabel", Ref<ColorScheme>());
+ 	theme->set_color_scheme("font_outline_color_scheme", "GraphNodeTitleLabel", Ref<ColorScheme>());
+ 
++	theme->set_color("font_color_scale", "GraphNodeTitleLabel", control_font_color);
++	theme->set_color("font_shadow_color_scale", "GraphNodeTitleLabel", Color(0, 0, 0, 0));
++	theme->set_color("font_outline_color_scale", "GraphNodeTitleLabel", control_font_color);
++
+ 	theme->set_color_role("font_color_role", "GraphNodeTitleLabel", ColorRole::PRIMARY);
+ 	theme->set_color_role("font_shadow_color_role", "GraphNodeTitleLabel", ColorRole::SHADOW);
+ 	theme->set_color_role("font_outline_color_role", "GraphNodeTitleLabel", ColorRole::PRIMARY);
+@@ -1268,16 +1292,16 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 
+ 	// Tree
+ 
+-	theme->set_stylebox("panel", "Tree", make_flat_stylebox(style_normal_color, 4, 4, 4, 5));
++	theme->set_stylebox("panel", "Tree", make_color_role_flat_stylebox(ColorRole::PRIMARY,style_normal_color, 4, 4, 4, 5));
+ 	theme->set_stylebox("focus", "Tree", focus);
+-	theme->set_stylebox("selected", "Tree", make_flat_stylebox(style_selected_color));
+-	theme->set_stylebox("selected_focus", "Tree", make_flat_stylebox(style_selected_color));
++	theme->set_stylebox("selected", "Tree", make_color_role_flat_stylebox(ColorRole::PRIMARY,style_selected_color));
++	theme->set_stylebox("selected_focus", "Tree", make_color_role_flat_stylebox(ColorRole::PRIMARY,style_selected_color));
+ 	theme->set_stylebox("cursor", "Tree", focus);
+ 	theme->set_stylebox("cursor_unfocused", "Tree", focus);
+ 	theme->set_stylebox("button_pressed", "Tree", button_pressed);
+-	theme->set_stylebox("title_button_normal", "Tree", make_flat_stylebox(style_pressed_color, 4, 4, 4, 4));
+-	theme->set_stylebox("title_button_pressed", "Tree", make_flat_stylebox(style_hover_color, 4, 4, 4, 4));
+-	theme->set_stylebox("title_button_hover", "Tree", make_flat_stylebox(style_normal_color, 4, 4, 4, 4));
++	theme->set_stylebox("title_button_normal", "Tree", make_color_role_flat_stylebox(ColorRole::PRIMARY,style_pressed_color, 4, 4, 4, 4));
++	theme->set_stylebox("title_button_pressed", "Tree", make_color_role_flat_stylebox(ColorRole::PRIMARY,style_hover_color, 4, 4, 4, 4));
++	theme->set_stylebox("title_button_hover", "Tree", make_color_role_flat_stylebox(ColorRole::PRIMARY,style_normal_color, 4, 4, 4, 4));
+ 	theme->set_stylebox("custom_button", "Tree", button_normal);
+ 	theme->set_stylebox("custom_button_pressed", "Tree", button_pressed);
+ 	theme->set_stylebox("custom_button_hover", "Tree", button_hover);
+@@ -1320,6 +1344,17 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 	theme->set_color_role("custom_button_font_highlight_role", "Tree", ColorRole::PRIMARY);
+ 	theme->set_color_role("font_outline_color_role", "Tree", ColorRole::PRIMARY);
+ 
++	theme->set_color("title_button_color_scale", "Tree", control_font_color);
++	theme->set_color("font_color_scale", "Tree", control_font_low_color);
++	theme->set_color("font_selected_color_scale", "Tree", control_font_pressed_color);
++	theme->set_color("font_outline_color_scale", "Tree", Color(1, 1, 1));
++	theme->set_color("guide_color_scale", "Tree", Color(0.7, 0.7, 0.7, 0.25));
++	theme->set_color("drop_position_color_scale", "Tree", Color(1, 1, 1));
++	theme->set_color("relationship_line_color_scale", "Tree", Color(0.27, 0.27, 0.27));
++	theme->set_color("parent_hl_line_color_scale", "Tree", Color(0.27, 0.27, 0.27));
++	theme->set_color("children_hl_line_color_scale", "Tree", Color(0.27, 0.27, 0.27));
++	theme->set_color("custom_button_font_highlight_scale", "Tree", control_font_hover_color);
++
+ 	theme->set_color("title_button_color", "Tree", control_font_color);
+ 	theme->set_color("font_color", "Tree", control_font_low_color);
+ 	theme->set_color("font_selected_color", "Tree", control_font_pressed_color);
+@@ -1358,7 +1393,7 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 
+ 	// ItemList
+ 
+-	theme->set_stylebox("panel", "ItemList", make_flat_stylebox(style_normal_color));
++	theme->set_stylebox("panel", "ItemList", make_color_role_flat_stylebox(ColorRole::PRIMARY, style_normal_color));
+ 	theme->set_stylebox("focus", "ItemList", focus);
+ 	theme->set_constant("h_separation", "ItemList", Math::round(4 * scale));
+ 	theme->set_constant("v_separation", "ItemList", Math::round(2 * scale));
+@@ -1382,14 +1417,21 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 	theme->set_color_role("font_outline_color_role", "ItemList", ColorRole::PRIMARY);
+ 	theme->set_color_role("guide_color_role", "ItemList", ColorRole::SHADOW);
+ 
++	theme->set_color("font_color_scale", "ItemList", control_font_lower_color);
++	theme->set_color("font_hovered_color_scale", "ItemList", control_font_hover_color);
++	theme->set_color("font_selected_color_scale", "ItemList", control_font_pressed_color);
++	theme->set_color("font_outline_color_scale", "ItemList", Color(1, 1, 1));
++	theme->set_color("guide_color_scale", "ItemList", Color(0.7, 0.7, 0.7, 0.25));
++
+ 	theme->set_color("font_color", "ItemList", control_font_lower_color);
+ 	theme->set_color("font_hovered_color", "ItemList", control_font_hover_color);
+ 	theme->set_color("font_selected_color", "ItemList", control_font_pressed_color);
+ 	theme->set_color("font_outline_color", "ItemList", Color(1, 1, 1));
+ 	theme->set_color("guide_color", "ItemList", Color(0.7, 0.7, 0.7, 0.25));
+-	theme->set_stylebox("hovered", "ItemList", make_flat_stylebox(Color(1, 1, 1, 0.07)));
+-	theme->set_stylebox("selected", "ItemList", make_flat_stylebox(style_selected_color));
+-	theme->set_stylebox("selected_focus", "ItemList", make_flat_stylebox(style_selected_color));
++
++	theme->set_stylebox("hovered", "ItemList", make_color_role_flat_stylebox(ColorRole::PRIMARY, Color(1, 1, 1, 0.07)));
++	theme->set_stylebox("selected", "ItemList", make_color_role_flat_stylebox(ColorRole::PRIMARY, style_selected_color));
++	theme->set_stylebox("selected_focus", "ItemList", make_color_role_flat_stylebox(ColorRole::PRIMARY, style_selected_color));
+ 	theme->set_stylebox("cursor", "ItemList", focus);
+ 	theme->set_stylebox("cursor_unfocused", "ItemList", focus);
+ 
+@@ -1397,18 +1439,22 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 
+ 	// TabContainer
+ 
+-	Ref<StyleBoxFlat> style_tab_selected = make_flat_stylebox(style_normal_color, 10, 4, 10, 4, 0);
++	Ref<StyleBoxFlat> style_tab_selected = make_color_role_flat_stylebox(ColorRole::PRIMARY, style_normal_color, 10, 4, 10, 4, 0);
+ 	style_tab_selected->set_border_width(SIDE_TOP, Math::round(2 * scale));
+ 	style_tab_selected->set_border_color(style_focus_color);
+-	Ref<StyleBoxFlat> style_tab_unselected = make_flat_stylebox(style_pressed_color, 10, 4, 10, 4, 0);
++	style_tab_selected->set_border_color_scale(style_focus_color);
++	Ref<StyleBoxFlat> style_tab_unselected = make_color_role_flat_stylebox(ColorRole::PRIMARY, style_pressed_color, 10, 4, 10, 4, 0);
+ 	// Add some spacing between unselected tabs to make them easier to distinguish from each other.
+ 	style_tab_unselected->set_border_width(SIDE_LEFT, Math::round(scale));
+ 	style_tab_unselected->set_border_width(SIDE_RIGHT, Math::round(scale));
+ 	style_tab_unselected->set_border_color(style_popup_border_color);
++	style_tab_unselected->set_border_color_scale(style_popup_border_color);
+ 	Ref<StyleBoxFlat> style_tab_disabled = style_tab_unselected->duplicate();
+ 	style_tab_disabled->set_bg_color(style_disabled_color);
++	style_tab_disabled->set_bg_color_scale(style_disabled_color);
+ 	Ref<StyleBoxFlat> style_tab_hovered = style_tab_unselected->duplicate();
+ 	style_tab_hovered->set_bg_color(Color(0.1, 0.1, 0.1, 0.3));
++	style_tab_hovered->set_bg_color_scale(Color(0.1, 0.1, 0.1, 0.3));
+ 	Ref<StyleBoxFlat> style_tab_focus = focus->duplicate();
+ 
+ 	theme->set_stylebox("tab_selected", "TabContainer", style_tab_selected);
+@@ -1416,7 +1462,7 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 	theme->set_stylebox("tab_unselected", "TabContainer", style_tab_unselected);
+ 	theme->set_stylebox("tab_disabled", "TabContainer", style_tab_disabled);
+ 	theme->set_stylebox("tab_focus", "TabContainer", style_tab_focus);
+-	theme->set_stylebox("panel", "TabContainer", make_flat_stylebox(style_normal_color, 0, 0, 0, 0));
++	theme->set_stylebox("panel", "TabContainer", make_color_role_flat_stylebox(ColorRole::PRIMARY, style_normal_color, 0, 0, 0, 0));
+ 	theme->set_stylebox("tabbar_background", "TabContainer", make_empty_stylebox(0, 0, 0, 0));
+ 
+ 	theme->set_icon("increment", "TabContainer", icons["scroll_button_right"]);
+@@ -1439,12 +1485,19 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 	theme->set_color_scheme("font_disabled_color_scheme", "TabContainer", Ref<ColorScheme>());
+ 	theme->set_color_scheme("font_outline_color_scheme", "TabContainer", Ref<ColorScheme>());
+ 
+-	theme->set_color_role("drop_mark_color_role", "TabContainer", ColorRole::PRIMARY);
+-	theme->set_color_role("font_selected_color_role", "TabContainer", ColorRole::SHADOW);
+-	theme->set_color_role("font_hovered_color_role", "TabContainer", ColorRole::PRIMARY);
+-	theme->set_color_role("font_unselected_color_role", "TabContainer", ColorRole::PRIMARY);
+-	theme->set_color_role("font_disabled_color_role", "TabContainer", ColorRole::SHADOW);
+-	theme->set_color_role("font_outline_color_role", "TabContainer", ColorRole::SHADOW);
++	theme->set_color_role("drop_mark_color_role", "TabContainer", ColorRole::ON_PRIMARY);
++	theme->set_color_role("font_selected_color_role", "TabContainer", ColorRole::ON_PRIMARY);
++	theme->set_color_role("font_hovered_color_role", "TabContainer", ColorRole::ON_PRIMARY);
++	theme->set_color_role("font_unselected_color_role", "TabContainer", ColorRole::ON_PRIMARY);
++	theme->set_color_role("font_disabled_color_role", "TabContainer", ColorRole::ON_PRIMARY);
++	theme->set_color_role("font_outline_color_role", "TabContainer", ColorRole::OUTLINE);
++
++	theme->set_color("font_selected_color_scale", "TabContainer", control_font_hover_color);
++	theme->set_color("font_hovered_color_scale", "TabContainer", control_font_hover_color);
++	theme->set_color("font_unselected_color_scale", "TabContainer", control_font_low_color);
++	theme->set_color("font_disabled_color_scale", "TabContainer", control_font_disabled_color);
++	theme->set_color("font_outline_color_scale", "TabContainer", Color(1, 1, 1));
++	theme->set_color("drop_mark_color_scale", "TabContainer", Color(1, 1, 1));
+ 
+ 	theme->set_color("font_selected_color", "TabContainer", control_font_hover_color);
+ 	theme->set_color("font_hovered_color", "TabContainer", control_font_hover_color);
+@@ -1494,6 +1547,13 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 	theme->set_color_role("font_disabled_color_role", "TabBar", ColorRole::SHADOW);
+ 	theme->set_color_role("font_outline_color_role", "TabBar", ColorRole::SHADOW);
+ 
++	theme->set_color("font_selected_color_scale", "TabBar", control_font_hover_color);
++	theme->set_color("font_hovered_color_scale", "TabBar", control_font_hover_color);
++	theme->set_color("font_unselected_color_scale", "TabBar", control_font_low_color);
++	theme->set_color("font_disabled_color_scale", "TabBar", control_font_disabled_color);
++	theme->set_color("font_outline_color_scale", "TabBar", Color(1, 1, 1));
++	theme->set_color("drop_mark_color_scale", "TabBar", Color(1, 1, 1));
++
+ 	theme->set_color("font_selected_color", "TabBar", control_font_hover_color);
+ 	theme->set_color("font_hovered_color", "TabBar", control_font_hover_color);
+ 	theme->set_color("font_unselected_color", "TabBar", control_font_low_color);
+@@ -1628,12 +1688,20 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 	theme->set_color("font_disabled_color", "ColorPickerButton", Color(0.9, 0.9, 0.9, 0.3));
+ 	theme->set_color("font_outline_color", "ColorPickerButton", Color(1, 1, 1));
+ 
++	theme->set_color("font_color_scale", "ColorPickerButton", Color(1, 1, 1, 1));
++	theme->set_color("font_pressed_color_scale", "ColorPickerButton", Color(0.8, 0.8, 0.8, 1));
++	theme->set_color("font_hover_color_scale", "ColorPickerButton", Color(1, 1, 1, 1));
++	theme->set_color("font_focus_color_scale", "ColorPickerButton", Color(1, 1, 1, 1));
++	theme->set_color("font_hover_pressed_color_scale", "ColorPickerButton", Color(0.9, 0.9, 0.9, 0.3));
++	theme->set_color("font_disabled_color_scale", "ColorPickerButton", Color(0.9, 0.9, 0.9, 0.3));
++	theme->set_color("font_outline_color_scale", "ColorPickerButton", Color(1, 1, 1));
++
+ 	theme->set_constant("h_separation", "ColorPickerButton", Math::round(4 * scale));
+ 	theme->set_constant("outline_size", "ColorPickerButton", 0);
+ 
+ 	// ColorPresetButton
+ 
+-	Ref<StyleBoxFlat> preset_sb = make_flat_stylebox(Color(1, 1, 1), 2, 2, 2, 2);
++	Ref<StyleBoxFlat> preset_sb = make_color_role_flat_stylebox(ColorRole::PRIMARY, Color(1, 1, 1), 2, 2, 2, 2);
+ 	preset_sb->set_corner_radius_all(Math::round(2 * scale));
+ 	preset_sb->set_corner_detail(Math::round(2 * scale));
+ 	preset_sb->set_anti_aliased(false);
+@@ -1646,7 +1714,7 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 
+ 	theme->set_type_variation("TooltipPanel", "PopupPanel");
+ 	theme->set_stylebox("panel", "TooltipPanel",
+-			make_flat_stylebox(Color(0, 0, 0, 0.5), 2 * default_margin, 0.5 * default_margin, 2 * default_margin, 0.5 * default_margin));
++			make_color_role_flat_stylebox(ColorRole::PRIMARY, Color(0, 0, 0, 0.5), 2 * default_margin, 0.5 * default_margin, 2 * default_margin, 0.5 * default_margin));
+ 
+ 	theme->set_type_variation("TooltipLabel", "Label");
+ 	theme->set_font_size("font_size", "TooltipLabel", -1);
+@@ -1660,6 +1728,10 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 	theme->set_color_role("font_shadow_color_role", "TooltipLabel", ColorRole::SHADOW);
+ 	theme->set_color_role("font_outline_color_role", "TooltipLabel", ColorRole::PRIMARY);
+ 
++	theme->set_color("font_color_scale", "TooltipLabel", control_font_color);
++	theme->set_color("font_shadow_color_scale", "TooltipLabel", Color(0, 0, 0, 0));
++	theme->set_color("font_outline_color_scale", "TooltipLabel", Color(0, 0, 0, 0));
++
+ 	theme->set_color("font_color", "TooltipLabel", control_font_color);
+ 	theme->set_color("font_shadow_color", "TooltipLabel", Color(0, 0, 0, 0));
+ 	theme->set_color("font_outline_color", "TooltipLabel", Color(0, 0, 0, 0));
+@@ -1696,6 +1768,27 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 	theme->set_color_scheme("table_even_row_bg_scheme", "RichTextLabel", Ref<ColorScheme>());
+ 	theme->set_color_scheme("table_border_scheme", "RichTextLabel", Ref<ColorScheme>());
+ 
++	theme->set_color("font_default_color_scale", "RichTextLabel", Color(1, 1, 1));
++	theme->set_color("font_selected_color_scale", "RichTextLabel", Color(0, 0, 0, 0));
++	theme->set_color("selection_color_scale", "RichTextLabel", Color(0.1, 0.1, 1, 0.8));
++	theme->set_color("font_outline_color_scale", "RichTextLabel", Color(1, 1, 1));
++	theme->set_color("font_shadow_color_scale", "RichTextLabel", Color(0, 0, 0, 0));
++	theme->set_color("outline_color_scale_scale", "RichTextLabel", Color(0, 0, 0, 0));
++	theme->set_color("table_odd_row_bg_scale", "RichTextLabel", Color(0, 0, 0, 0));
++	theme->set_color("table_even_row_bg_scale", "RichTextLabel", Color(0, 0, 0, 0));
++	theme->set_color("table_border_scale", "RichTextLabel", Color(0, 0, 0, 0));
++
++	theme->set_color("font_default_color", "RichTextLabel", Color(1, 1, 1));
++	theme->set_color("font_selected_color", "RichTextLabel", Color(0, 0, 0, 0));
++	theme->set_color("selection_color", "RichTextLabel", Color(0.1, 0.1, 1, 0.8));
++	theme->set_color("font_outline_color", "RichTextLabel", Color(1, 1, 1));
++	theme->set_color("font_shadow_color", "RichTextLabel", Color(0, 0, 0, 0));
++	theme->set_color("outline_color_scale", "RichTextLabel", Color(0, 0, 0, 0));
++	theme->set_color("table_odd_row_bg", "RichTextLabel", Color(0, 0, 0, 0));
++	theme->set_color("table_even_row_bg", "RichTextLabel", Color(0, 0, 0, 0));
++	theme->set_color("table_border", "RichTextLabel", Color(0, 0, 0, 0));
++
++
+ 	theme->set_color_role("font_default_color_role", "RichTextLabel", ColorRole::PRIMARY);
+ 	theme->set_color_role("font_selected_color_role", "RichTextLabel", ColorRole::PRIMARY);
+ 	theme->set_color_role("selection_color_role", "RichTextLabel", ColorRole::PRIMARY);
+@@ -1706,14 +1799,12 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 	theme->set_color_role("table_even_row_bg_role", "RichTextLabel", ColorRole::OUTLINE);
+ 	theme->set_color_role("table_border_role", "RichTextLabel", ColorRole::OUTLINE);
+ 
+-
+ 	theme->set_color("font_default_color", "RichTextLabel", Color(1, 1, 1));
+ 	theme->set_color("font_selected_color", "RichTextLabel", Color(0, 0, 0, 0));
+ 	theme->set_color("selection_color", "RichTextLabel", Color(0.1, 0.1, 1, 0.8));
+-
+ 	theme->set_color("font_shadow_color", "RichTextLabel", Color(0, 0, 0, 0));
+-
+ 	theme->set_color("font_outline_color", "RichTextLabel", Color(1, 1, 1));
++	theme->set_color("outline_color", "RichTextLabel", Color(1, 1, 1));
+ 
+ 	theme->set_constant("shadow_offset_x", "RichTextLabel", Math::round(1 * scale));
+ 	theme->set_constant("shadow_offset_y", "RichTextLabel", Math::round(1 * scale));
+@@ -1764,7 +1855,7 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 	theme->set_constant("h_separation", "VFlowContainer", Math::round(4 * scale));
+ 	theme->set_constant("v_separation", "VFlowContainer", Math::round(4 * scale));
+ 
+-	theme->set_stylebox("panel", "PanelContainer", make_flat_stylebox(style_normal_color, 0, 0, 0, 0));
++	theme->set_stylebox("panel", "PanelContainer", make_color_role_flat_stylebox(ColorRole::PRIMARY, style_normal_color, 0, 0, 0, 0));
+ 
+ 	theme->set_icon("zoom_out", "GraphEdit", icons["zoom_less"]);
+ 	theme->set_icon("zoom_in", "GraphEdit", icons["zoom_more"]);
+@@ -1774,9 +1865,9 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 	theme->set_icon("snapping_toggle", "GraphEdit", icons["grid_snap"]);
+ 	theme->set_icon("layout", "GraphEdit", icons["grid_layout"]);
+ 
+-	theme->set_stylebox("panel", "GraphEdit", make_flat_stylebox(style_normal_color, 4, 4, 4, 5));
++	theme->set_stylebox("panel", "GraphEdit", make_color_role_flat_stylebox(ColorRole::PRIMARY, style_normal_color, 4, 4, 4, 5));
+ 
+-	Ref<StyleBoxFlat> graph_toolbar_style = make_flat_stylebox(Color(0.24, 0.24, 0.24, 0.6), 4, 2, 4, 2);
++	Ref<StyleBoxFlat> graph_toolbar_style = make_color_role_flat_stylebox(ColorRole::PRIMARY, Color(0.24, 0.24, 0.24, 0.6), 4, 2, 4, 2);
+ 	theme->set_stylebox("menu_panel", "GraphEdit", graph_toolbar_style);
+ 
+ 	theme->set_color_scheme("default_color_scheme", "GraphEdit", default_color_scheme);
+@@ -1797,17 +1888,24 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 	theme->set_color("selection_stroke", "GraphEdit", Color(1, 1, 1, 0.8));
+ 	theme->set_color("activity", "GraphEdit", Color(1, 1, 1));
+ 
++	theme->set_color("grid_minor_scale", "GraphEdit", Color(1, 1, 1, 0.05));
++	theme->set_color("grid_major_scale", "GraphEdit", Color(1, 1, 1, 0.2));
++	theme->set_color("selection_fill_scale", "GraphEdit", Color(1, 1, 1, 0.3));
++	theme->set_color("selection_stroke_scale", "GraphEdit", Color(1, 1, 1, 0.8));
++	theme->set_color("activity_scale", "GraphEdit", Color(1, 1, 1));
++
++
+ 	// Visual Node Ports
+ 
+ 	theme->set_constant("port_hotzone_inner_extent", "GraphEdit", 22 * scale);
+ 	theme->set_constant("port_hotzone_outer_extent", "GraphEdit", 26 * scale);
+ 
+-	theme->set_stylebox("panel", "GraphEditMinimap", make_flat_stylebox(Color(0.24, 0.24, 0.24), 0, 0, 0, 0));
+-	Ref<StyleBoxFlat> style_minimap_camera = make_flat_stylebox(Color(0.65, 0.65, 0.65, 0.2), 0, 0, 0, 0, 0);
++	theme->set_stylebox("panel", "GraphEditMinimap", make_color_role_flat_stylebox(ColorRole::PRIMARY, Color(0.24, 0.24, 0.24), 0, 0, 0, 0));
++	Ref<StyleBoxFlat> style_minimap_camera = make_color_role_flat_stylebox(ColorRole::PRIMARY, Color(0.65, 0.65, 0.65, 0.2), 0, 0, 0, 0, 0);
+ 	style_minimap_camera->set_border_color(Color(0.65, 0.65, 0.65, 0.45));
+ 	style_minimap_camera->set_border_width_all(1);
+ 	theme->set_stylebox("camera", "GraphEditMinimap", style_minimap_camera);
+-	theme->set_stylebox("node", "GraphEditMinimap", make_flat_stylebox(Color(1, 1, 1), 0, 0, 0, 0, 2));
++	theme->set_stylebox("node", "GraphEditMinimap", make_color_role_flat_stylebox(ColorRole::PRIMARY, Color(1, 1, 1), 0, 0, 0, 0, 2));
+ 
+ 	theme->set_color_scheme("default_color_scheme", "GraphEditMinimap", default_color_scheme);
+ 	theme->set_color_scheme("resizer_color_scheme", "GraphEditMinimap", Ref<ColorScheme>());
+@@ -1815,12 +1913,13 @@ void fill_default_theme(Ref<Theme> &theme, const Ref<Font> &default_font, const
+ 
+ 	theme->set_icon("resizer", "GraphEditMinimap", icons["resizer_nw"]);
+ 	theme->set_color("resizer_color", "GraphEditMinimap", Color(1, 1, 1, 0.85));
++	theme->set_color("resizer_color_scale", "GraphEditMinimap", Color(1, 1, 1, 0.85));
+ 
+ 	// Theme
+ 
+ 	default_icon = icons["error_icon"];
+ 	// Same color as the error icon.
+-	default_style = make_flat_stylebox(Color(1, 0.365, 0.365), 4, 4, 4, 4, 0, false, 2);
++	default_style = make_color_role_flat_stylebox(ColorRole::PRIMARY, Color(1, 0.365, 0.365), 4, 4, 4, 4, 0, false, 2);
+ }
+ 
+ void make_default_theme(float p_scale, Ref<Font> p_font, Ref<ColorScheme> p_color_scheme, TextServer::SubpixelPositioning p_font_subpixel, TextServer::Hinting p_font_hinting, TextServer::FontAntialiasing p_font_antialiasing, bool p_font_msdf, bool p_font_generate_mipmaps) {

@@ -1,0 +1,7 @@
+missing.png
+size: 2, 2
+format: RGBA8888
+filter: Linear, Linear
+repeat: none
+region
+bounds: 0, 0, 2, 2

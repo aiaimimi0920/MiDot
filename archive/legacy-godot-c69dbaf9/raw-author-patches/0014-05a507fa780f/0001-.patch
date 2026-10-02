@@ -1,0 +1,44 @@
+From 05a507fa780f41cdb4966d53389be9b21ef1d3ac Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?=E9=9B=85=E8=A7=85=E5=A8=B1=5C=E7=93=B6=E5=AD=90?=
+ <pingzi@yamiyu.com>
+Date: Fri, 20 Oct 2023 11:48:14 +0800
+Subject: [PATCH] =?UTF-8?q?=E4=BF=AE=E5=A4=8D=E6=8A=A5=E9=94=99?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ modules/spine_godot/SpineAnimationTrack.cpp | 2 +-
+ modules/spine_godot/SpineSprite.cpp         | 3 ++-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/modules/spine_godot/SpineAnimationTrack.cpp b/modules/spine_godot/SpineAnimationTrack.cpp
+index 344dbd7cf39d2db7def9b03282bdb63fd8520bf1..c916c119e366bdc98b1047d608d4fe6782cf2a7c 100644
+--- a/modules/spine_godot/SpineAnimationTrack.cpp
++++ b/modules/spine_godot/SpineAnimationTrack.cpp
+@@ -37,7 +37,7 @@
+ #include "scene/resources/animation.h"
+ 
+ #ifdef TOOLS_ENABLED
+-#include "godot/editor/editor_node.h"
++#include "editor/editor_node.h"
+ #include "editor/plugins/animation_player_editor_plugin.h"
+ #include "editor/plugins/animation_tree_editor_plugin.h"
+ #endif
+diff --git a/modules/spine_godot/SpineSprite.cpp b/modules/spine_godot/SpineSprite.cpp
+index 6d26bd57fb703494f7f728fe5e0f51de0a9cd690..d27ff799d1aa0c247799ffc435cc6db30dde8fe1 100644
+--- a/modules/spine_godot/SpineSprite.cpp
++++ b/modules/spine_godot/SpineSprite.cpp
+@@ -143,10 +143,11 @@ void SpineMesh2D::update_mesh(const Vector<Point2> &vertices,
+ 		arrays[Mesh::ARRAY_COLOR] = colors;
+ 		arrays[Mesh::ARRAY_INDEX] = indices;
+ 		RS::SurfaceData surface;
++		uint32_t normal_tangent_stride;
+ 		uint32_t skin_stride;
+ 		RS::get_singleton()->mesh_create_surface_data_from_arrays(&surface, (RS::PrimitiveType) Mesh::PRIMITIVE_TRIANGLES, arrays, TypedArray<Array>(), Dictionary(), Mesh::ArrayFormat::ARRAY_FLAG_USE_DYNAMIC_UPDATE);
+ 		RS::get_singleton()->mesh_add_surface(mesh, surface);
+-		RS::get_singleton()->mesh_surface_make_offsets_from_format(surface.format, surface.vertex_count, surface.index_count, surface_offsets, vertex_stride, attribute_stride, skin_stride);
++		RS::get_singleton()->mesh_surface_make_offsets_from_format(surface.format, surface.vertex_count, surface.index_count, surface_offsets, vertex_stride, normal_tangent_stride, attribute_stride, skin_stride);
+ 		num_vertices = vertices.size();
+ 		num_indices = indices.size();
+ 		vertex_buffer = surface.vertex_data;

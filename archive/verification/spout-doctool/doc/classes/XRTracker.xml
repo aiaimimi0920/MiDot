@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="XRTracker" inherits="RefCounted" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<members>
+		<member name="description" type="String" setter="set_tracker_desc" getter="get_tracker_desc" default="&quot;&quot;">
+		</member>
+		<member name="name" type="StringName" setter="set_tracker_name" getter="get_tracker_name" default="&amp;&quot;Unknown&quot;">
+		</member>
+		<member name="type" type="int" setter="set_tracker_type" getter="get_tracker_type" enum="XRServer.TrackerType" default="128">
+		</member>
+	</members>
+</class>

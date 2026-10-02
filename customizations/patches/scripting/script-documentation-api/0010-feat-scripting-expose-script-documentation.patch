@@ -1,0 +1,286 @@
+From dfb6dc26b39b98e68ad7a95980b78e379d96ad01 Mon Sep 17 00:00:00 2001
+From: aiaimimi0920 <153103332+aiaimimi0920@users.noreply.github.com>
+Date: Sun, 30 Aug 2026 19:26:59 +0800
+Subject: [PATCH] feat(scripting): expose script documentation
+
+Restore the legacy structured documentation API without changing modern DocData internals.
+
+Godot-Patch-Topic: scripting.script-documentation-api
+---
+ core/object/script_language.cpp               | 104 ++++++++++++++++++
+ core/object/script_language.h                 |   1 +
+ doc/classes/Script.xml                        |   7 ++
+ .../gdscript/test_script_documentation.cpp    | 101 +++++++++++++++++
+ 4 files changed, 213 insertions(+)
+ create mode 100644 tests/modules/gdscript/test_script_documentation.cpp
+
+diff --git a/core/object/script_language.cpp b/core/object/script_language.cpp
+index 7a5e998e667aea77975f278240a69555a7193824..e0d1783494eebeeede3214e4fc5833942325ccdd 100644
+--- a/core/object/script_language.cpp
++++ b/core/object/script_language.cpp
+@@ -160,6 +160,109 @@ PropertyInfo Script::get_class_category() const {
+ 
+ #endif // TOOLS_ENABLED
+ 
++TypedArray<Dictionary> Script::_get_script_documentation_list() {
++	TypedArray<Dictionary> result;
++
++#ifdef TOOLS_ENABLED
++	for (const DocData::ClassDoc &class_doc : get_documentation()) {
++		Dictionary class_dict;
++		class_dict["name"] = class_doc.name;
++		class_dict["inherits"] = class_doc.inherits;
++		class_dict["brief_description"] = class_doc.brief_description.strip_edges();
++		class_dict["description"] = class_doc.description.strip_edges();
++
++		TypedArray<Dictionary> tutorials;
++		for (const DocData::TutorialDoc &tutorial_doc : class_doc.tutorials) {
++			Dictionary tutorial;
++			tutorial["title"] = tutorial_doc.title;
++			tutorial["link"] = tutorial_doc.link;
++			tutorials.push_back(tutorial);
++		}
++		class_dict["tutorials"] = tutorials;
++
++		TypedArray<Dictionary> enums;
++		for (const KeyValue<String, DocData::EnumDoc> &E : class_doc.enums) {
++			Dictionary enumeration;
++			enumeration["name"] = E.key;
++			enumeration["description"] = E.value.description.strip_edges();
++			enums.push_back(enumeration);
++		}
++		class_dict["enums"] = enums;
++
++		TypedArray<Dictionary> constants;
++		for (const DocData::ConstantDoc &constant_doc : class_doc.constants) {
++			Dictionary constant;
++			constant["name"] = constant_doc.name;
++			constant["value"] = constant_doc.value;
++			constant["enumeration"] = constant_doc.enumeration;
++			constant["description"] = constant_doc.description.strip_edges();
++			constants.push_back(constant);
++		}
++		class_dict["constants"] = constants;
++
++		TypedArray<Dictionary> signals;
++		for (const DocData::MethodDoc &signal_doc : class_doc.signals) {
++			Dictionary signal;
++			signal["name"] = signal_doc.name;
++			signal["return_type"] = signal_doc.return_type;
++			signal["qualifiers"] = signal_doc.qualifiers;
++			signal["description"] = signal_doc.description.strip_edges();
++
++			TypedArray<Dictionary> arguments;
++			for (const DocData::ArgumentDoc &argument_doc : signal_doc.arguments) {
++				Dictionary argument;
++				argument["name"] = argument_doc.name;
++				argument["type"] = argument_doc.type.is_empty() ? String("Variant") : argument_doc.type;
++				argument["default_value"] = argument_doc.default_value;
++				arguments.push_back(argument);
++			}
++			signal["arguments"] = arguments;
++			signals.push_back(signal);
++		}
++		class_dict["signals"] = signals;
++
++		TypedArray<Dictionary> variables;
++		for (const DocData::PropertyDoc &property_doc : class_doc.properties) {
++			Dictionary variable;
++			variable["name"] = property_doc.name;
++			variable["type"] = property_doc.type;
++			variable["enumeration"] = property_doc.enumeration;
++			variable["description"] = property_doc.description.strip_edges();
++			variable["default_value"] = property_doc.default_value;
++			variable["setter"] = property_doc.setter;
++			variable["getter"] = property_doc.getter;
++			variables.push_back(variable);
++		}
++		class_dict["variables"] = variables;
++
++		TypedArray<Dictionary> methods;
++		for (const DocData::MethodDoc &method_doc : class_doc.methods) {
++			Dictionary method;
++			method["name"] = method_doc.name;
++			method["return_type"] = method_doc.return_type;
++			method["qualifiers"] = method_doc.qualifiers;
++			method["description"] = method_doc.description.strip_edges();
++
++			TypedArray<Dictionary> arguments;
++			for (const DocData::ArgumentDoc &argument_doc : method_doc.arguments) {
++				Dictionary argument;
++				argument["name"] = argument_doc.name;
++				argument["type"] = argument_doc.type;
++				argument["default_value"] = argument_doc.default_value;
++				arguments.push_back(argument);
++			}
++			method["arguments"] = arguments;
++			methods.push_back(method);
++		}
++		class_dict["methods"] = methods;
++
++		result.push_back(class_dict);
++	}
++#endif // TOOLS_ENABLED
++
++	return result;
++}
++
+ void Script::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("can_instantiate"), &Script::can_instantiate);
+ 	//ClassDB::bind_method(D_METHOD("instance_create","base_object"),&Script::instance_create);
+@@ -178,6 +281,7 @@ void Script::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("get_script_property_list"), &Script::_get_script_property_list);
+ 	ClassDB::bind_method(D_METHOD("get_script_method_list"), &Script::_get_script_method_list);
+ 	ClassDB::bind_method(D_METHOD("get_script_signal_list"), &Script::_get_script_signal_list);
++	ClassDB::bind_method(D_METHOD("get_script_documentation_list"), &Script::_get_script_documentation_list);
+ 	ClassDB::bind_method(D_METHOD("get_script_constant_map"), &Script::_get_script_constant_map);
+ 	ClassDB::bind_method(D_METHOD("get_property_default_value", "property"), &Script::_get_property_default_value);
+ 
+diff --git a/core/object/script_language.h b/core/object/script_language.h
+index e22e2485e31c13301bc01b6e9d8c208f0a706d28..910adfb1a80a37f3a74eb2a957b14c60add911ae 100644
+--- a/core/object/script_language.h
++++ b/core/object/script_language.h
+@@ -133,6 +133,7 @@ protected:
+ 	TypedArray<Dictionary> _get_script_property_list();
+ 	TypedArray<Dictionary> _get_script_method_list();
+ 	TypedArray<Dictionary> _get_script_signal_list();
++	TypedArray<Dictionary> _get_script_documentation_list();
+ 	Dictionary _get_script_constant_map();
+ 
+ 	void _set_debugger_break_language();
+diff --git a/doc/classes/Script.xml b/doc/classes/Script.xml
+index 1b2252461c1cfbdf5381b75e38fd1216c4590b87..a3b483c4da5bcdaef284f653679fc4500dae3bce 100644
+--- a/doc/classes/Script.xml
++++ b/doc/classes/Script.xml
+@@ -71,6 +71,13 @@
+ 				Returns a dictionary containing constant names and their values.
+ 			</description>
+ 		</method>
++		<method name="get_script_documentation_list">
++			<return type="Dictionary[]" />
++			<description>
++				Returns structured documentation for this script and its inner classes. Each dictionary contains the class [code]name[/code], [code]inherits[/code], descriptions, tutorials, enums, constants, signals, variables, and methods.
++				Signal and method entries include their arguments. This method returns an empty array outside editor builds.
++			</description>
++		</method>
+ 		<method name="get_script_method_list">
+ 			<return type="Dictionary[]" />
+ 			<description>
+diff --git a/tests/modules/gdscript/test_script_documentation.cpp b/tests/modules/gdscript/test_script_documentation.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..aabea695f5b6048db3287c7f5a037814cc77b313
+--- /dev/null
++++ b/tests/modules/gdscript/test_script_documentation.cpp
+@@ -0,0 +1,101 @@
++/**************************************************************************/
++/*  test_script_documentation.cpp                                         */
++/**************************************************************************/
++/*                         This file is part of:                          */
++/*                             GODOT ENGINE                               */
++/*                        https://godotengine.org                          */
++/**************************************************************************/
++/* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
++/* Copyright (c) 2007-2014 Juan Linietsky, Ariel Manzur.                  */
++/*                                                                        */
++/* Permission is hereby granted, free of charge, to any person obtaining */
++/* a copy of this software and associated documentation files (the       */
++/* "Software"), to deal in the Software without restriction, including   */
++/* without limitation the rights to use, copy, modify, merge, publish,   */
++/* distribute, sublicense, and/or sell copies of the Software, and to    */
++/* permit persons to whom the Software is furnished to do so, subject to */
++/* the following conditions:                                             */
++/*                                                                        */
++/* The above copyright notice and this permission notice shall be        */
++/* included in all copies or substantial portions of the Software.       */
++/*                                                                        */
++/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,       */
++/* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF    */
++/* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.*/
++/* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY  */
++/* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,   */
++/* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     */
++/* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                */
++/**************************************************************************/
++
++#include "tests/test_macros.h"
++
++TEST_FORCE_LINK(test_script_documentation)
++
++#include "modules/modules_enabled.gen.h"
++
++#ifdef MODULE_GDSCRIPT_ENABLED
++
++#include "core/object/class_db.h"
++
++#include "modules/gdscript/gdscript.h"
++
++namespace TestScriptDocumentation {
++
++TEST_CASE("[Script] Structured documentation is exposed to scripts") {
++	CHECK(ClassDB::has_method(SNAME("Script"), SNAME("get_script_documentation_list")));
++	GDScriptLanguage::get_singleton()->init();
++
++	Ref<GDScript> script;
++	script.instantiate();
++	script->set_path("res://test_script_documentation.gd");
++	script->set_source_code(R"(## Test brief.
++##
++## Test description.
++extends RefCounted
++
++## Stored value.
++var value: int = 7
++
++## Greets a name.
++func greet(name: String = "world") -> String:
++	return name
++)");
++	const Error reload_error = script->reload();
++	REQUIRE(reload_error == OK);
++	if (reload_error != OK) {
++		return;
++	}
++
++	Variant documentation_variant = script->call(SNAME("get_script_documentation_list"));
++	REQUIRE(documentation_variant.get_type() == Variant::ARRAY);
++	TypedArray<Dictionary> documentation = documentation_variant;
++	REQUIRE(documentation.size() == 1);
++	if (documentation.size() != 1) {
++		return;
++	}
++
++	Dictionary class_documentation = documentation[0];
++	CHECK(class_documentation["brief_description"] == String("Test brief."));
++	CHECK(String(class_documentation["description"]).contains("Test description."));
++
++	TypedArray<Dictionary> variables = class_documentation["variables"];
++	REQUIRE(variables.size() == 1);
++	Dictionary variable = variables[0];
++	CHECK(variable["name"] == String("value"));
++	CHECK(variable["type"] == String("int"));
++
++	TypedArray<Dictionary> methods = class_documentation["methods"];
++	REQUIRE(methods.size() == 1);
++	Dictionary method = methods[0];
++	CHECK(method["name"] == String("greet"));
++	TypedArray<Dictionary> arguments = method["arguments"];
++	REQUIRE(arguments.size() == 1);
++	Dictionary argument = arguments[0];
++	CHECK(argument["name"] == String("name"));
++	CHECK(argument["type"] == String("String"));
++}
++
++} // namespace TestScriptDocumentation
++
++#endif // MODULE_GDSCRIPT_ENABLED
+
+base-commit: 5ec4857b340b6284a18b49b2eda462bd250f219a
+prerequisite-patch-id: b38459b409a3326aed65d2433e1341638171f884
+prerequisite-patch-id: bdb0fe8d6ba7fff1b900ae33d9bec552ea61724c
+prerequisite-patch-id: 4dcdddc73066f768cb97c56444abacb21bda061c
+prerequisite-patch-id: 1f2fbc55f35da3e943dcbaeeb3c9a6d798621bf3
+prerequisite-patch-id: 4dd1cec6888d5160c85be2072b9e5dd05411d007
+prerequisite-patch-id: 60110ae09a2d09796ad65e339ee0b5abc2ce541a
+prerequisite-patch-id: bdb0025d4207a7cf0e1466ca96b2824d238b3caf
+prerequisite-patch-id: 8c55a8201fec417bc2629b903ea2d630aedab1d8
+prerequisite-patch-id: 9dfaaac9d4a47edf9d1eccce8fa66b69e674a911

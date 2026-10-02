@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="OpenXRSpatialComponentData" inherits="RefCounted" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="_get_component_type" qualifiers="virtual const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="_get_structure_data" qualifiers="virtual">
+			<return type="int" />
+			<param index="0" name="next" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="_set_capacity" qualifiers="virtual">
+			<return type="void" />
+			<param index="0" name="capacity" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_component_type" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="set_capacity">
+			<return type="void" />
+			<param index="0" name="capacity" type="int" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>

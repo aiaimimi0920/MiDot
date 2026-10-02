@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ImageFrames" inherits="Resource" api_type="core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../doc/class.xsd">
+	<brief_description>
+	</brief_description>
+	<description>
+	</description>
+	<tutorials>
+	</tutorials>
+	<methods>
+		<method name="add_frame">
+			<return type="void" />
+			<param index="0" name="image" type="Image" />
+			<param index="1" name="duration" type="float" default="0.05" />
+			<description>
+			</description>
+		</method>
+		<method name="clear">
+			<return type="void" />
+			<description>
+			</description>
+		</method>
+		<method name="get_bounding_rect" qualifiers="const">
+			<return type="Rect2" />
+			<description>
+			</description>
+		</method>
+		<method name="get_frame_count" qualifiers="const">
+			<return type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_frame_duration" qualifiers="const">
+			<return type="float" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="get_frame_image" qualifiers="const">
+			<return type="Image" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="load">
+			<return type="int" enum="Error" />
+			<param index="0" name="path" type="String" />
+			<param index="1" name="max_frames" type="int" default="0" />
+			<description>
+			</description>
+		</method>
+		<method name="load_gif_from_buffer">
+			<return type="int" enum="Error" />
+			<param index="0" name="data" type="PackedByteArray" />
+			<param index="1" name="max_frames" type="int" default="0" />
+			<description>
+			</description>
+		</method>
+		<method name="remove_frame">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<description>
+			</description>
+		</method>
+		<method name="save_gif">
+			<return type="int" enum="Error" />
+			<param index="0" name="filepath" type="String" />
+			<param index="1" name="color_count" type="int" default="256" />
+			<description>
+			</description>
+		</method>
+		<method name="set_frame_duration">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="duration" type="float" />
+			<description>
+			</description>
+		</method>
+		<method name="set_frame_image">
+			<return type="void" />
+			<param index="0" name="index" type="int" />
+			<param index="1" name="image" type="Image" />
+			<description>
+			</description>
+		</method>
+	</methods>
+</class>
