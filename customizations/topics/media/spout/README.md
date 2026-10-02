@@ -66,6 +66,13 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File `
 The smoke does not replace the cross-process GPU texture round trip because that
 requires a compatible Windows GPU, graphics context, and live Spout peer.
 
+The complementary no-peer API boundary fixture is
+[verification/api_smoke.gd](verification/api_smoke.gd), migrated from the old
+archive. It emits `SPOUT_SMOKE_OK` and uses the same project as the lifecycle
+fixture; see the [fixture guide](../../../tests/README.md).
+Its six deliberately invalid calls emit expected native validation diagnostics;
+require those exact rejection branches, exit code 0, and the success marker.
+
 ## Upstream status
 
 Active external integration; no equivalent module exists in the inspected

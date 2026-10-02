@@ -89,6 +89,10 @@ whole modern source file with its Godot 4.2 version.
 
 ## Verification
 
+The earlier review probes are maintained in
+[dynamic_color_theme_review](../../../tests/dynamic_color_theme_review/).
+They emit observations, not a replacement for the current assertion-based suite.
+
 Run the topic verifier and a full editor build. Runtime checks must switch source
 color, dark mode, and contrast, then verify live updates in controls, windows,
 style boxes, default theme resources, and Theme editor serialization.

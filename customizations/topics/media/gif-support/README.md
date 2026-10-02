@@ -53,6 +53,11 @@ removed compatibility names.
 Run the topic verifier, compile the module, then round-trip static and animated
 GIF fixtures and import one fixture into each supported resource type.
 
+Maintained inputs and scripts are in [verification/](verification/). Keep
+`fixture.gif` and its import settings in Git, but generate round-trip,
+transparency, and quantization outputs only in a temporary project copy.
+The [fixture guide](../../../tests/README.md) describes both importer modes.
+
 ## Upstream status
 
 Active personal feature; upstream Godot has generic image and frame APIs but no

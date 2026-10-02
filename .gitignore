@@ -8,11 +8,21 @@
 /archive/export-*/
 /archive/engine-color-dynamic-*/
 
-# Local tool installations and duplicate temporary checkouts.
+# Local tool installations and temporary workspaces.
 /.tools/
 /.codex_tmp/
-/.tmp/mimi-stack-replay/
+/.tmp/
 /.validation/dynamic-theme-final/toolchain/
+
+# Reproducible documentation snapshots and superseded fixture locations.
+# Maintained fixture sources live in customizations/tests or topic verification/.
+/archive/analysis/color-doc*/
+/archive/verification/*-doctool*/
+/archive/verification/gdscript-helper-smoke/
+/archive/verification/gif-smoke/
+/archive/verification/process-smoke/
+/archive/verification/spine-smoke/
+/archive/verification/spout-smoke/
 
 # Generated caches. Keep historical source, probes, patches, and fixtures.
 **/.godot/
@@ -33,5 +43,4 @@
 /.runtime/**/*.dll
 /.runtime/**/*.pck
 /.runtime/**/*.pdb
-/.tmp/**/*.log
 /archive/verification/**/*.log

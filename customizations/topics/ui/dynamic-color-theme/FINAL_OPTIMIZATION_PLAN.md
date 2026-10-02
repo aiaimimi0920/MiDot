@@ -4,7 +4,7 @@
 
 本计划综合了[独立代码审查](INDEPENDENT_REVIEW_PLAN.md)与[既有计划的逐项复核](PLAN_COMPARISON.md)。执行时以本文为准；两份输入文档保留审查过程和证据来源。
 
-基线为 `engine/personal/main` 的 `db1af1e99a5025bfbf8b05ef27dd4a5e739ec371`，Godot `4.8.dev`；topic 为 `ui.dynamic-color-theme`，基础功能提交为 `5884522a3dd1b906d8d08086decc30dfa53e3202`。引擎源码位置以 `engine/` 为根，`customizations/` 和 `.tmp/` 路径以工作区为根；行号对应该 HEAD。
+基线为 `engine/personal/main` 的 `db1af1e99a5025bfbf8b05ef27dd4a5e739ec371`，Godot `4.8.dev`；topic 为 `ui.dynamic-color-theme`，基础功能提交为 `5884522a3dd1b906d8d08086decc30dfa53e3202`。引擎源码位置以 `engine/` 为根，`customizations/` 路径以工作区为根；行号对应该 HEAD。原临时审查探针已于 2026-10-02 迁至 `customizations/tests/dynamic_color_theme_review/`，历史检查结果不变。
 
 ## 目标与优先级
 

@@ -49,6 +49,10 @@ objects whose lifetime is shorter than the result.
 Run the topic verifier, compile the GDScript module, and execute validation,
 completion, and lookup smoke cases from GDScript.
 
+The maintained fixture is [verification/smoke.gd](verification/smoke.gd), migrated
+from the old archive. Run a temporary project copy; its success marker is
+`GDSCRIPT_HELPER_SMOKE_OK`. See the [fixture guide](../../../tests/README.md).
+
 ## Upstream status
 
 Active personal feature; modern upstream has no `GDScriptHelper` class.

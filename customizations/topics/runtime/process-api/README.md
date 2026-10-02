@@ -64,6 +64,12 @@ handles fail before a partially initialized `Process` object is returned. Run a
 repeated-child stress probe and verify that native handle count, object count,
 and static memory do not grow with the number of completed children.
 
+The Windows pipe/exit/termination fixture is
+[verification/smoke.gd](verification/smoke.gd), with success marker
+`PROCESS_SMOKE_OK`. Run it from a local temporary project copy as described in the
+[fixture guide](../../../tests/README.md); it is not a replacement for the broader
+handle and allocation stress checks above.
+
 ## Upstream status
 
 Active personal feature; not patch-equivalent to the cached upstream master.

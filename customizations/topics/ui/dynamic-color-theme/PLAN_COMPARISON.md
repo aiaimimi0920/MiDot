@@ -103,11 +103,13 @@ B 还排除了两个容易产生误报的方向：ColorRole 枚举/绑定/hint �
 
 ## 本轮追加验证
 
-比较阶段脚本：`.tmp/dynamic-color-theme-review-20260922/comparison_probes.gd`。
+路径维护说明（2026-10-02）：下列路径随测试源码归档整理更新，不改变本节记录的历史执行结果。
+
+比较阶段脚本：`customizations/tests/dynamic_color_theme_review/comparison_probes.gd`。
 
 ```powershell
-rtk gdscript-post-check --format .tmp/dynamic-color-theme-review-20260922/comparison_probes.gd
-rtk proxy engine/bin/godot.windows.editor.dev.x86_64.console.exe --headless --path .tmp/dynamic-color-theme-review-20260922 --script res://comparison_probes.gd
+rtk gdscript-post-check --format customizations/tests/dynamic_color_theme_review/comparison_probes.gd
+rtk proxy engine/bin/godot.windows.editor.dev.x86_64.console.exe --headless --path customizations/tests/dynamic_color_theme_review --script res://comparison_probes.gd
 ```
 
 格式/静态检查通过；探针正常完成，无引擎 warning/error；执行后运行了专属进程清理 helper。二进制及与 HEAD 的相关源码一致性依据见独立计划。未重复执行已经通过的 14 个基础用例，追加验证仅针对比较后新增或仍需确定的问题。

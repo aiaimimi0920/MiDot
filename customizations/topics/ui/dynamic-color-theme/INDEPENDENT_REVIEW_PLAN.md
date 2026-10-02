@@ -163,18 +163,20 @@ Theme 的 `connect_changed(...bind(false))` 与不带 bind 的 disconnect 不能
 
 ## 本次验证记录及限制
 
+路径维护说明（2026-10-02）：下列探针路径已更新到正式测试目录；本文的历史源码身份、执行日期和结果不变。
+
 已执行：
 
 ```powershell
 rtk powershell.exe -NoProfile -ExecutionPolicy Bypass -File customizations/scripts/verify-topic.ps1 -Topic ui.dynamic-color-theme
 rtk proxy engine/bin/godot.windows.editor.dev.x86_64.console.exe --headless --test '--test-case=*[ColorScheme]*,*[Theme]*,*Dynamic theme colors*'
-rtk gdscript-post-check --format .tmp/dynamic-color-theme-review-20260922/review_probes.gd
-rtk proxy engine/bin/godot.windows.editor.dev.x86_64.console.exe --headless --path .tmp/dynamic-color-theme-review-20260922 --script res://review_probes.gd
+rtk gdscript-post-check --format customizations/tests/dynamic_color_theme_review/review_probes.gd
+rtk proxy engine/bin/godot.windows.editor.dev.x86_64.console.exe --headless --path customizations/tests/dynamic_color_theme_review --script res://review_probes.gd
 ```
 
 - topic verifier 通过。`customizations/scripts/verify-topic.ps1:49-69、151-159` 只验证文件/文本标记，不能代表运行行为正确。
 - 相关 C++ 测试：14 / 14 用例通过，706 / 706 断言通过。
-- 定点探针位于 `.tmp/dynamic-color-theme-review-20260922/`；最后一次执行无引擎 warning/error。首次探针遗漏了非 RefCounted UndoRedo 的释放，修正后已复跑，不将探针自身泄漏归因于功能包。
+- 定点探针位于 `customizations/tests/dynamic_color_theme_review/`；最后一次执行无引擎 warning/error。首次探针遗漏了非 RefCounted UndoRedo 的释放，修正后已复跑，不将探针自身泄漏归因于功能包。
 - GDScript 后置格式/静态检查通过；运行后调用了专属 Godot 测试清理 helper。
 - 实测使用现有 `4.8.dev.custom_build.661246efd` 二进制。其提交为 `661246efd04f9fb4c040e9ae48b987817414fb5f`。已对比该提交与当前 HEAD：本 topic 的 119 个文件及 `core/object/object.cpp`、`core/io/resource.cpp`、`scene/theme/theme_context.cpp` 没有差异。这是接入层的运行证据，不是对当前 HEAD 整体重新构建的声明。
 - 未执行完整 editor/template 构建、关闭模块的构建、真实 Theme 编辑器交互和像素级视觉验证。它们列入后续实施验收，未伪报为已通过。
