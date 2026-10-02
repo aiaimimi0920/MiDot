@@ -6,6 +6,7 @@ on:
       - '.github/workflows/linux-editor.yml'
       - 'customizations/scripts/build-linux-editor.py'
       - 'customizations/scripts/probe-linux-editor.gd'
+      - 'customizations/scripts/probe-linux-import.py'
       - 'customizations/scripts/initialize-engine.ps1'
       - 'customizations/scripts/verify-stack.ps1'
       - 'customizations/scripts/lib/PatchStack.Common.ps1'
@@ -61,12 +62,17 @@ jobs:
           .linux-build-venv/bin/python customizations/scripts/build-linux-editor.py \
             --engine engine --output linux-editor-artifact --jobs 2 \
             --expected-commit "$EXPECTED_ENGINE_COMMIT"
+      - name: Check bounded empty editor import
+        shell: bash
+        run: python3 customizations/scripts/probe-linux-import.py --artifact linux-editor-artifact
       - name: Retain build evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: linux-editor-evidence-${{ github.run_id }}
-          path: linux-editor-artifact/*.log
+          path: |
+            linux-editor-artifact/*.log
+            linux-editor-artifact/empty-import-report.json
           if-no-files-found: ignore
           retention-days: 7
       - name: Upload verified editor archive
