@@ -22,8 +22,16 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
-      - name: Run isolated Git fixture regressions
-        shell: ${{ matrix.shell }}
+      - name: Run fixtures in Windows PowerShell 5.1
+        if: matrix.shell == 'powershell'
+        shell: powershell
+        run: |
+          $PSVersionTable
+          & ./customizations/tests/run.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Run fixtures in PowerShell 7
+        if: matrix.shell == 'pwsh'
+        shell: pwsh
         run: |
           $PSVersionTable
           & ./customizations/tests/run.ps1
