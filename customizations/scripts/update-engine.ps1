@@ -49,7 +49,7 @@ try {
             $state.catalog -ne $stack -or $state.configSha256 -ne $configHash) {
             Throw-PatchStackError -Message "Pending update belongs to a different catalog, configuration, or branch." -ExitCode 3
         }
-        # A retry cannot silently drop verification requested by the original update.
+        # A retry cannot silently drop verification requested by an earlier attempt.
         $RunTests = $RunTests -or [bool]$state.runTests
         $backupRef = [string]$state.backupRef
         if ((Resolve-GitCommit -Repository $engine -Reference $backupRef) -ne [string]$state.originalHead) {
@@ -76,6 +76,10 @@ try {
         # rather than silently export a different base than the resumed update.
         if ((Resolve-GitCommit -Repository $engine -Reference (Get-PatchStackShortRef -Config $config)) -ne $upstreamCommit) {
             Throw-PatchStackError -Message "Upstream tracking ref changed since this update; inspect the pending state." -ExitCode 3
+        }
+        if ($RunTests -and -not [bool]$state.runTests) {
+            $state.runTests = $true
+            Write-Utf8NoBom -Path $statePath -Content (($state | ConvertTo-Json) + "`n")
         }
     }
     else {
@@ -176,4 +180,3 @@ catch {
     [Console]::Error.WriteLine("Engine update failed: $($_.Exception.Message)")
     exit $exitCode
 }
-

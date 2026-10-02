@@ -103,6 +103,23 @@ Assert-TestEqual 0 $retryFinished.ExitCode "Retry after export and verification 
 Assert-TestTrue (-not (Test-Path -LiteralPath $pendingPath)) 'Verified retry left pending state.'
 Write-Output 'PASS recovery retry: failed export and failed verification preserve resumable state'
 
+# A verification request added during finalization must survive later retries too.
+Remove-Item -LiteralPath $verificationReady
+Write-TestUtf8NoBom -Path $failExportMarker -Content 'fail'
+$unverifiedStart = Invoke-TestScript -Name 'update-engine.ps1' -ScriptDirectory $resumeScripts -Arguments @('-EnginePath', $bootstrapped, '-StackPath', $stack)
+Assert-TestEqual 2 $unverifiedStart.ExitCode 'Could not prepare an update without initial RunTests.'
+Remove-Item -LiteralPath $failExportMarker
+$requestedTests = Invoke-TestScript -Name 'update-engine.ps1' -Arguments @('-EnginePath', $bootstrapped, '-StackPath', $stack, '-Finalize', '-RunTests')
+Assert-TestEqual 1 $requestedTests.ExitCode 'Finalization did not run newly requested verification.'
+$requiredRetry = Invoke-TestScript -Name 'update-engine.ps1' -Arguments @('-EnginePath', $bootstrapped, '-StackPath', $stack, '-Finalize')
+Assert-TestEqual 1 $requiredRetry.ExitCode 'A retry silently dropped verification requested during finalization.'
+Assert-TestTrue (Test-Path -LiteralPath $pendingPath) 'Failed required verification removed recovery state.'
+Write-TestUtf8NoBom -Path $verificationReady -Content 'ready'
+$verifiedRetry = Invoke-TestScript -Name 'update-engine.ps1' -Arguments @('-EnginePath', $bootstrapped, '-StackPath', $stack, '-Finalize')
+Assert-TestEqual 0 $verifiedRetry.ExitCode "Required verification could not finish after repair: $($verifiedRetry.Text)"
+Assert-TestTrue (-not (Test-Path -LiteralPath $pendingPath)) 'Successful verified retry left pending state.'
+Write-Output 'PASS recovery retry: verification requested during finalization remains required'
+
 Write-TestUtf8NoBom -Path (Join-Path $bootstrapped 'editor/editor_node.cpp') -Content "broken fixture`n"
 [void](Invoke-TestGit -Repository $bootstrapped -Arguments @('add', 'editor/editor_node.cpp'))
 [void](Invoke-TestGit -Repository $bootstrapped -Arguments @('commit', '-m', 'Fixture missing verifier contract', '-m', 'Godot-Patch-Topic: core.alpha'))
