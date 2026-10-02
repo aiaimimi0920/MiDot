@@ -202,43 +202,61 @@ try {
         ) -ExitCode 3
     }
 
-    if ($existing.Count -gt 0) {
-        $backup = Join-Path $stack (".patch-stack-backup-" + [guid]::NewGuid().ToString("N"))
-        [void](New-Item -ItemType Directory -Path $backup)
-        foreach ($name in $existing) {
-            Move-Item -LiteralPath (Join-Path $stack $name) -Destination (Join-Path $backup $name)
-        }
-    }
-
+    $backedUp = New-Object System.Collections.ArrayList
+    $installedOutputs = New-Object System.Collections.ArrayList
     try {
+        if ($existing.Count -gt 0) {
+            $backup = Join-Path $stack (".patch-stack-backup-" + [guid]::NewGuid().ToString("N"))
+            [void](New-Item -ItemType Directory -Path $backup)
+            foreach ($name in $existing) {
+                Move-Item -LiteralPath (Join-Path $stack $name) -Destination (Join-Path $backup $name)
+                [void]$backedUp.Add($name)
+            }
+        }
         foreach ($name in $outputs) {
             $generatedPath = Join-Path $staging $name
             if (Test-Path -LiteralPath $generatedPath) {
                 Move-Item -LiteralPath $generatedPath -Destination (Join-Path $stack $name)
+                [void]$installedOutputs.Add($name)
             }
         }
     }
     catch {
-        foreach ($name in $outputs) {
-            $installed = Join-Path $stack $name
-            if (Test-Path -LiteralPath $installed) {
-                if ((Get-Item -LiteralPath $installed).PSIsContainer) {
+        $installError = $_
+        $rollbackErrors = New-Object System.Collections.ArrayList
+        # Only remove outputs installed by this attempt. Unmoved old outputs
+        # must survive a failure half way through the backup phase.
+        foreach ($name in $installedOutputs) {
+            try {
+                $installed = Join-Path $stack $name
+                if (Test-Path -LiteralPath $installed) {
                     Remove-Item -LiteralPath $installed -Recurse -Force
                 }
-                else {
-                    Remove-Item -LiteralPath $installed -Force
-                }
             }
-            if ($null -ne $backup) {
-                $saved = Join-Path $backup $name
-                if (Test-Path -LiteralPath $saved) {
-                    Move-Item -LiteralPath $saved -Destination $installed
-                }
-            }
+            catch { [void]$rollbackErrors.Add($_.Exception.Message) }
         }
-        throw
+        foreach ($name in $backedUp) {
+            try {
+                $installed = Join-Path $stack $name
+                if (Test-Path -LiteralPath $installed) {
+                    throw "Refusing to overwrite an occupied rollback destination: $installed"
+                }
+                Move-Item -LiteralPath (Join-Path $backup $name) -Destination $installed
+            }
+            catch { [void]$rollbackErrors.Add($_.Exception.Message) }
+        }
+        if ($rollbackErrors.Count -gt 0) {
+            Throw-PatchStackError -Message (
+                "Export failed: $($installError.Exception.Message). Rollback needs inspection: " +
+                ($rollbackErrors -join "; ") + ". Preserved backup: $backup"
+            )
+        }
+        if ($null -ne $backup) {
+            Remove-PatchStackTemporaryDirectory -StackPath $stack -Path $backup
+            $backup = $null
+        }
+        throw $installError
     }
-
     if ($null -ne $backup -and (Test-Path -LiteralPath $backup)) {
         Remove-PatchStackTemporaryDirectory -StackPath $stack -Path $backup
         $backup = $null
@@ -267,3 +285,4 @@ catch {
     }
     exit $exitCode
 }
+

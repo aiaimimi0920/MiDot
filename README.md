@@ -42,7 +42,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\customizations\scripts
 
 脚本建立安全引用，获取官方 `master`，将本地 `personal/main` rebase 到新基线，推进纯净的本地 `master`，重新生成补丁、增量提交归档及锁文件，最后校验。若浅仓库缺少 merge base，会停止并提示补充历史；不要用 merge 替代 rebase。
 
-遇到不兼容时按当前功能主题处理冲突，显式 `git rebase --continue` 或 `git rebase --abort`，不自动跳过补丁或猜测冲突。手工完成 rebase 后，重新执行导出和校验。新导出的 catalog 应作为一个整体提交到 MiDot，供其他环境恢复。
+遇到不兼容时按当前功能主题处理冲突，显式 `git rebase --continue` 或 `git rebase --abort`，不自动跳过补丁或猜测冲突。手工完成 rebase 后，执行 `update-engine.ps1 -Finalize`：它核验本次更新记录、安全引用及目标基线，推进本地 `master`，重新导出并校验 catalog。若导出或校验失败，也可修复原因后用 `-Finalize` 重试；成功后才清除位于引擎 Git 目录中的 `patch-stack-update.json`。完成前不要再次 fetch 或启动新的更新。显式 `git rebase --abort` 后，如决定放弃这次更新，应先检查分支与安全引用，再手工移除该 pending 文件；脚本不会自动重置、清理或跳过提交。新导出的 catalog 应作为一个整体提交到 MiDot，供其他环境恢复。
 
 ## 修改定制功能
 
@@ -72,3 +72,11 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\customizations\scripts
 ## 许可证
 
 Godot 引擎许可证见初始化后的 `engine/LICENSE.txt`，第三方版权和许可证见 `engine/COPYRIGHT.txt` 及相关源码目录。个人集成项目的来源、固定版本和许可证记录见 `customizations/audits/external_upstreams.md`。使用和发布仍须遵守各组件许可证。
+
+
+## 维护脚本回归测试
+
+执行 `powershell.exe -NoProfile -ExecutionPolicy Bypass -File customizations/tests/run.ps1`。
+测试仅使用临时 Git 仓库，覆盖精确提交恢复、补丁重放、真实 rebase 冲突后的完成流程、自定义引擎路径验证，以及导出备份/安装八个移动边界的故障回滚。它不编译 Godot，也不替代功能主题的运行测试。
+
+`verify-stack.ps1 -RunTests` 对内置 `verify-topic.ps1` 显式传递所选 `-EnginePath`，并使用当前脚本安装中的绝对路径；其他自定义 verification 命令的参数保持原样。并发修改同一 catalog 不受支持，运行更新或导出时不要同时启动另一实例。

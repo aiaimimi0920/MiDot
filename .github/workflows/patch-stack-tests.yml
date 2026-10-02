@@ -1,0 +1,30 @@
+name: Patch-stack regression tests
+on:
+  pull_request:
+    paths:
+      - 'customizations/scripts/**'
+      - 'customizations/tests/*.ps1'
+      - '.github/workflows/patch-stack-tests.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  patch-stack:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    env:
+      POWERSHELL_TELEMETRY_OPTOUT: '1'
+    strategy:
+      fail-fast: false
+      matrix:
+        shell: [powershell, pwsh]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Run isolated Git fixture regressions
+        shell: ${{ matrix.shell }}
+        run: |
+          $PSVersionTable
+          & ./customizations/tests/run.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

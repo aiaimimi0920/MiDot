@@ -57,10 +57,11 @@ function Invoke-TestScript {
         [Parameter(Mandatory = $true)]
         [string]$Name,
         [Parameter(Mandatory = $true)]
-        [string[]]$Arguments
+        [string[]]$Arguments,
+        [string]$ScriptDirectory = $scripts
     )
 
-    $scriptPath = Join-Path $scripts $Name
+    $scriptPath = Join-Path $ScriptDirectory $Name
     $previousErrorActionPreference = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
     try {
@@ -373,6 +374,7 @@ try {
     Assert-TestTrue -Condition ($newUpstream -ne $initialBase) `
         -Message "Fixture upstream did not advance."
 
+    Configure-TestIdentity -Repository $bootstrapped
     $update = Invoke-TestScript -Name "update-engine.ps1" -Arguments @(
         "-EnginePath", $bootstrapped, "-StackPath", $stack
     )
@@ -406,6 +408,8 @@ try {
         "Initialization from the updated catalog failed: $($afterUpdate.Text)"
     )
 
+    . (Join-Path $PSScriptRoot "reliability.ps1")
+
     Write-Output "PASS export: ordered text and binary patches"
     Write-Output "PASS initialize: exact commit identity, repeat safety, independent repository boundary"
     Write-Output "PASS apply: exact-base git am --3way reconstruction"
@@ -423,7 +427,7 @@ catch {
 finally {
     $tempRoot = $temporaryBase
     $resolvedTestRoot = [System.IO.Path]::GetFullPath($testRoot)
-    $expectedPrefix = $tempRoot + "\godot-patch-stack-tests-"
+    $expectedPrefix = Join-Path $tempRoot "godot-patch-stack-tests-"
     if ($resolvedTestRoot.StartsWith(
         $expectedPrefix,
         [System.StringComparison]::OrdinalIgnoreCase
@@ -431,3 +435,4 @@ finally {
         Remove-Item -LiteralPath $resolvedTestRoot -Recurse -Force -ErrorAction SilentlyContinue
     }
 }
+
