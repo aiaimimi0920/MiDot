@@ -701,6 +701,33 @@ function Invoke-PatchStackVerificationCommands {
         foreach ($verification in @($topic.verification)) {
             $file = [string]$verification.file
             $arguments = @($verification.arguments | ForEach-Object { [string]$_ })
+            # The shipped catalog names this script relative to the conventional
+            # engine/ layout. Bind that built-in verifier to this script installation
+            # and the selected checkout, even when EnginePath is elsewhere. Leave
+            # arbitrary user verification commands and their arguments unchanged.
+            $executableName = ($file.Replace("\", "/") -split "/")[-1]
+            $isPowerShell = @("powershell.exe", "powershell", "pwsh.exe", "pwsh") -icontains $executableName
+            for ($argumentIndex = 0; $isPowerShell -and $argumentIndex -lt ($arguments.Count - 1); $argumentIndex++) {
+                if ($arguments[$argumentIndex] -ieq "-File" -and
+                    $arguments[$argumentIndex + 1].Replace("\", "/") -ieq
+                    "../customizations/scripts/verify-topic.ps1") {
+                    $arguments[$argumentIndex + 1] = Join-Path $PSScriptRoot "../verify-topic.ps1"
+                    $engineArgument = -1
+                    for ($index = 0; $index -lt $arguments.Count; $index++) {
+                        if ($arguments[$index] -ieq "-EnginePath") { $engineArgument = $index; break }
+                    }
+                    if ($engineArgument -ge 0) {
+                        if ($engineArgument + 1 -ge $arguments.Count) {
+                            Throw-PatchStackError -Message "Missing verification EnginePath argument."
+                        }
+                        $arguments[$engineArgument + 1] = $EnginePath
+                    }
+                    else {
+                        $arguments += @("-EnginePath", $EnginePath)
+                    }
+                    break
+                }
+            }
             $workingDirectory = $EnginePath
             if ($verification.PSObject.Properties.Name -contains "workingDirectory" -and
                 -not [string]::IsNullOrWhiteSpace([string]$verification.workingDirectory)) {
@@ -737,3 +764,4 @@ function Invoke-PatchStackVerificationCommands {
         }
     }
 }
+
