@@ -20,6 +20,8 @@ jobs:
     name: Secrets and Actions audit
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    outputs:
+      report_artifact_id: ${{ steps.report.outputs.artifact-id }}
     steps:
       - name: Check out the scanned revision
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -28,14 +30,16 @@ jobs:
       - name: Check runner behavior with real scanner fixtures
         env:
           MIDOT_SECURITY_TOOLS: ${{ runner.temp }}/midot-security-tools
-        run: python3 -m unittest discover -s scripts/security -p test_checks.py -v
+        run: python3 -m unittest discover -s scripts/security -p 'test_*.py' -v
       - name: Scan tracked text, patches and Actions definitions
         if: ${{ !cancelled() }}
         run: >-
           python3 scripts/security/run_checks.py
           --tools-dir "$RUNNER_TEMP/midot-security-tools"
           --output "$RUNNER_TEMP/midot-security-report"
+          --mode advisory
       - name: Retain sanitized report
+        id: report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
@@ -43,3 +47,32 @@ jobs:
           path: ${{ runner.temp }}/midot-security-report/*.json
           if-no-files-found: error
           retention-days: 14
+
+  track-advisory:
+    name: Track main-branch findings separately
+    needs: scan
+    if: ${{ needs.scan.result == 'success' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Check out trusted tracking code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Read this run's sanitized report
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: security-report
+          path: ${{ runner.temp }}/midot-security-report
+      - name: Maintain a separate advisory issue
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          REPORT_ARTIFACT_ID: ${{ needs.scan.outputs.report_artifact_id }}
+        run: >-
+          python3 scripts/security/track_issue.py
+          --report "$RUNNER_TEMP/midot-security-report/summary.json"
+          --artifact-id "$REPORT_ARTIFACT_ID"

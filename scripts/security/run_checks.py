@@ -15,6 +15,8 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[2]
 LOCK = Path(__file__).with_name('tool-lock.json')
+SEVERITIES = ('Informational', 'Low', 'Medium', 'High')
+CONFIDENCES = ('Low', 'Medium', 'High')
 
 
 class CheckError(Exception):
@@ -119,7 +121,29 @@ def snapshot(repo, destination):
             'files': files, 'skipped': skipped, 'actions_inputs': workflows}
 
 
-def parse_findings(tool, result, raw):
+def safe_path(value, directory=None):
+    if not isinstance(value, str) or not value or any(ord(c) < 32 for c in value):
+        raise CheckError('Scanner returned an invalid finding path')
+    value = value.replace('\\', '/')
+    if directory is not None:
+        prefix = directory.resolve().as_posix() + '/'
+        if value.startswith(prefix):
+            value = value[len(prefix):]
+    relative = PurePosixPath(value)
+    if relative.is_absolute() or '..' in relative.parts or ':' in value:
+        raise CheckError('Scanner returned a finding outside the tracked snapshot')
+    if directory is not None and not (directory / relative).is_file():
+        raise CheckError('Scanner returned a finding outside the tracked snapshot')
+    return relative.as_posix()
+
+
+def position(value, minimum=0):
+    if type(value) is not int or value < minimum:
+        raise CheckError('Scanner returned an invalid finding position')
+    return value
+
+
+def parse_findings(tool, result, raw, directory=None):
     try:
         findings = json.loads(raw)
     except (ValueError, UnicodeError) as exc:
@@ -135,14 +159,34 @@ def parse_findings(tool, result, raw):
         if not isinstance(item.get(key), str) or not re.fullmatch(r'[a-zA-Z0-9_.-]+', item[key]):
             raise CheckError(f'{tool} returned an invalid finding identifier')
         if tool == 'gitleaks':
-            if not isinstance(item.get('File'), str) or type(item.get('StartLine')) is not int:
-                raise CheckError('gitleaks returned an invalid finding location')
-            safe.append({'rule': item[key], 'file': item['File'], 'line': item['StartLine']})
+            line = position(item.get('StartLine'), 1)
+            safe.append({'rule': item[key], 'file': safe_path(item.get('File'), directory),
+                         'line': line, 'end_line': position(item.get('EndLine', line), line),
+                         'column': position(item.get('StartColumn', 0)),
+                         'end_column': position(item.get('EndColumn', 0))})
         else:
-            if not isinstance(item.get('locations'), list) or not isinstance(item.get('determinations'), dict):
+            if (not isinstance(item.get('locations'), list) or not item['locations']
+                    or not isinstance(item.get('determinations'), dict)):
                 raise CheckError('zizmor returned an invalid finding location')
-            # JSON source features can include secrets. Retain only rule/severity.
-            safe.append({'rule': item[key], 'severity': item['determinations'].get('severity')})
+            determinations = item['determinations']
+            if determinations.get('severity') not in SEVERITIES or determinations.get('confidence') not in CONFIDENCES:
+                raise CheckError('zizmor returned an invalid finding determination')
+            locations = []
+            for location in item['locations']:
+                try:
+                    symbolic = location['symbolic']
+                    path = safe_path(symbolic['key']['Local']['verbatim_path'], directory)
+                    bounds = location['concrete']['location']
+                    start, end = bounds['start_point'], bounds['end_point']
+                    locations.append({'file': path, 'line': position(start['row']) + 1,
+                                      'column': position(start['column']) + 1,
+                                      'end_line': position(end['row']) + 1,
+                                      'end_column': position(end['column']) + 1})
+                except (KeyError, TypeError) as exc:
+                    raise CheckError('zizmor returned an invalid finding location') from exc
+            # Never retain source features, annotations, comments, matches or secrets.
+            safe.append({'rule': item[key], 'severity': determinations['severity'],
+                         'confidence': determinations['confidence'], 'locations': locations})
     return safe
 
 
@@ -166,8 +210,8 @@ def scan_snapshot(directory, inputs, tools):
             try:
                 process = checked_process(command, directory)
                 raw = report.read_bytes() if tool == 'gitleaks' else process.stdout
-                findings = parse_findings(tool, process, raw)
-                result[tool] = {'status': 'fail' if findings else 'pass', 'exit_code': process.returncode,
+                findings = parse_findings(tool, process, raw, directory)
+                result[tool] = {'status': 'findings' if findings else 'pass', 'exit_code': process.returncode,
                                 'findings': findings}
             except (CheckError, OSError) as exc:
                 message = str(exc) if isinstance(exc, CheckError) else f'{tool} produced no readable JSON report'
@@ -175,22 +219,30 @@ def scan_snapshot(directory, inputs, tools):
     return result
 
 
-def run(repo, tools_dir, output):
+def run(repo, tools_dir, output, mode='advisory'):
     repo = repo.resolve()
     output.mkdir(parents=True, exist_ok=True)
-    summary = {'schema_version': 1, 'status': 'error',
+    summary = {'schema_version': 1, 'status': 'error', 'mode': mode,
                'coverage': 'tracked UTF-8 inputs using Gitleaks built-in rules and offline Actions audit',
                'limitations': ['Gitleaks built-in allowlists can exclude text paths/tokens (including SVG, GLTF and lock files)',
                                'Binary/non-UTF-8 inputs, bundle contents and Git history are not secret-scanned',
                                'Godot/third-party C++ vulnerabilities and online Actions advisories are not audited']}
     try:
+        if mode not in ('advisory', 'strict'):
+            raise CheckError('Unknown security policy mode')
         tools = ensure_tools(tools_dir)
         with tempfile.TemporaryDirectory(prefix='midot-snapshot-') as temp:
             directory = Path(temp)
             summary['source'] = snapshot(repo, directory)
             summary['tools'] = json.loads(LOCK.read_text(encoding='utf-8'))['tools']
             summary['checks'] = scan_snapshot(directory, summary['source']['actions_inputs'], tools)
-        summary['status'] = 'pass' if all(c['status'] == 'pass' for c in summary['checks'].values()) else 'fail'
+        summary['finding_count'] = sum(len(c.get('findings', [])) for c in summary['checks'].values())
+        if any(c['status'] == 'error' for c in summary['checks'].values()):
+            summary['status'] = 'error'
+        elif summary['finding_count']:
+            summary['status'] = 'advisory' if mode == 'advisory' else 'fail'
+        else:
+            summary['status'] = 'pass'
     except (CheckError, OSError, ValueError, KeyError) as exc:
         # Never echo scanner stdout/stderr, source contents, or network exceptions.
         summary['error'] = str(exc) if isinstance(exc, CheckError) else 'Preparation failed; no successful scan'
@@ -203,10 +255,13 @@ def main():
     parser.add_argument('--repo', type=Path, default=ROOT)
     parser.add_argument('--tools-dir', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--mode', choices=('advisory', 'strict'), default='advisory')
     args = parser.parse_args()
-    summary = run(args.repo, args.tools_dir, args.output)
+    summary = run(args.repo, args.tools_dir, args.output, args.mode)
     print(f"Security checks: {summary['status']}; sanitized summary.json written")
-    return 0 if summary['status'] == 'pass' else 1
+    if summary['status'] == 'advisory':
+        print(f"::warning::{summary['finding_count']} valid security findings; see the sanitized report artifact")
+    return 0 if summary['status'] in ('pass', 'advisory') else 1
 
 
 if __name__ == '__main__':
