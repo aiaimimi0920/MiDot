@@ -33,7 +33,7 @@ jobs:
       EXPECTED_ENGINE_COMMIT: 38b6ddee72e16d9d646057ee6ba533c122afc47c
       EXPECTED_UPSTREAM_COMMIT: 5ec4857b340b6284a18b49b2eda462bd250f219a
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
