@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -105,6 +106,39 @@ class RunnerBoundaryTests(unittest.TestCase):
                 checks.ensure_tools(root)
             self.assertEqual(path.read_bytes(), b'tampered')
 
+    def test_advisory_never_downgrades_preparation_errors(self):
+        with tempfile.TemporaryDirectory() as temp, patch.object(checks, 'ensure_tools', side_effect=checks.CheckError('hash mismatch')):
+            for mode in ('advisory', 'strict'):
+                report = checks.run(Path(temp), Path(temp), Path(temp) / mode, mode=mode)
+                self.assertEqual(report['status'], 'error')
+
+    def test_zizmor_locations_survive_without_sensitive_source_fields(self):
+        location = {'symbolic': {'key': {'Local': {'verbatim_path': '.github/workflows/check.yml'}},
+                                 'annotation': 'sensitive-annotation'},
+                    'concrete': {'feature': 'sensitive-source', 'comments': ['sensitive-comment'],
+                                 'location': {'start_point': {'row': 2, 'column': 3},
+                                              'end_point': {'row': 2, 'column': 8}}}}
+        finding = {'ident': 'fixture', 'determinations': {'severity': 'High', 'confidence': 'High'},
+                   'locations': [location]}
+        safe = checks.parse_findings('zizmor', subprocess.CompletedProcess([], 14), json.dumps([finding]))
+        self.assertEqual(safe[0]['locations'][0]['line'], 3)
+        self.assertEqual(safe[0]['locations'][0]['file'], '.github/workflows/check.yml')
+        self.assertNotIn('sensitive-', json.dumps(safe))
+        finding['determinations']['severity'] = 'malformed'
+        with self.assertRaises(checks.CheckError):
+            checks.parse_findings('zizmor', subprocess.CompletedProcess([], 14), json.dumps([finding]))
+        for field in ('severity', 'confidence'):
+            finding['determinations'] = {'severity': 'High', 'confidence': 'High'}
+            finding['determinations'][field] = 'Unknown'
+            with self.subTest(field=field), self.assertRaises(checks.CheckError):
+                checks.parse_findings('zizmor', subprocess.CompletedProcess([], 14), json.dumps([finding]))
+
+    def test_invalid_finding_paths_and_positions_fail_closed(self):
+        for name, line in [('../escape', 1), ('/absolute', 1), ('file', 0), ('file', True)]:
+            finding = {'RuleID': 'fixture', 'File': name, 'StartLine': line}
+            with self.subTest(name=name, line=line), self.assertRaises(checks.CheckError):
+                checks.parse_findings('gitleaks', subprocess.CompletedProcess([], 1), json.dumps([finding]))
+
 
 class RealScannerTests(unittest.TestCase):
     @classmethod
@@ -137,9 +171,9 @@ class RealScannerTests(unittest.TestCase):
             path.write_text('diff --git a/token.txt b/token.txt\n+TOKEN=' + secret + '\n')
             stage(root)
             output = Path(temp) / 'output'
-            report = checks.run(root, self.tools_dir, output)
+            report = checks.run(root, self.tools_dir, output, mode='strict')
             self.assertEqual(report['status'], 'fail')
-            self.assertEqual(report['checks']['gitleaks']['status'], 'fail', report)
+            self.assertEqual(report['checks']['gitleaks']['status'], 'findings', report)
             self.assertTrue(any(f['file'].endswith('synthetic.patch') for f in report['checks']['gitleaks']['findings']))
             self.assertNotIn(secret, (output / 'summary.json').read_text())
 
@@ -151,7 +185,7 @@ class RealScannerTests(unittest.TestCase):
             root = Path(temp) / 'repo'
             fixture(root, unsafe)
             stage(root)
-            report = checks.run(root, self.tools_dir, Path(temp) / 'output')
+            report = checks.run(root, self.tools_dir, Path(temp) / 'output', mode='strict')
             self.assertEqual(report['status'], 'fail')
             findings = report['checks']['zizmor']['findings']
             self.assertTrue(any(f['rule'] == 'template-injection' for f in findings), report)
@@ -185,6 +219,64 @@ class RealScannerTests(unittest.TestCase):
             report = checks.run(root, self.tools_dir, Path(temp) / 'output')
             self.assertNotEqual(report['status'], 'pass')
             self.assertEqual(report['checks']['zizmor']['status'], 'error')
+
+    def test_real_findings_are_advisory_but_strict_cli_fails(self):
+        secret = 'gh' + 'p_' + 'aZ9qU8xW7vT6sR5pN4mL3kJ2hG1fE0dC9bA8'
+        expression = '$' + '{{ github.event.pull_request.title }}'
+        workflow = CLEAN.replace('on: workflow_dispatch', 'on: pull_request').replace('echo checked', 'echo "' + expression + '"')
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp) / 'repo'
+            fixture(root, workflow)
+            (root / 'token.patch').write_text('+TOKEN=' + secret)
+            stage(root)
+            for mode, code, status in [('advisory', 0, 'advisory'), ('strict', 1, 'fail')]:
+                output = Path(temp) / mode
+                environment = os.environ.copy()
+                environment.pop('GITHUB_OUTPUT', None)
+                result = subprocess.run([sys.executable, str(Path(checks.__file__).resolve()), '--repo', str(root),
+                                         '--tools-dir', str(self.tools_dir), '--output', str(output), '--mode', mode],
+                                        capture_output=True, env=environment)
+                self.assertEqual(result.returncode, code, result.stdout)
+                text = (output / 'summary.json').read_text()
+                report = json.loads(text)
+                self.assertEqual(report['status'], status)
+                self.assertGreaterEqual(report['finding_count'], 2)
+                self.assertTrue(report['checks']['zizmor']['findings'][0]['locations'])
+                self.assertNotIn(secret, text)
+
+    def test_real_malformed_workflow_is_nonzero_in_advisory_cli(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp) / 'repo'
+            fixture(root, 'on: [\n')
+            stage(root)
+            output = Path(temp) / 'output'
+            environment = os.environ.copy()
+            environment.pop('GITHUB_OUTPUT', None)
+            result = subprocess.run([sys.executable, str(Path(checks.__file__).resolve()), '--repo', str(root),
+                                     '--tools-dir', str(self.tools_dir), '--output', str(output), '--mode', 'advisory'],
+                                    capture_output=True, env=environment)
+            self.assertEqual(result.returncode, 1)
+            self.assertEqual(json.loads((output / 'summary.json').read_text())['status'], 'error')
+
+    def test_real_informational_finding_is_advisory_and_strict_fails(self):
+        # Static scanner input only; this text is never executed or published.
+        workflow = CLEAN.replace('echo checked', 'twine upload dist/*')
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp) / 'repo'
+            fixture(root, workflow)
+            stage(root)
+            for mode, code in [('advisory', 0), ('strict', 1)]:
+                output = Path(temp) / mode
+                environment = os.environ.copy()
+                environment.pop('GITHUB_OUTPUT', None)
+                result = subprocess.run([sys.executable, str(Path(checks.__file__).resolve()), '--repo', str(root),
+                                         '--tools-dir', str(self.tools_dir), '--output', str(output), '--mode', mode],
+                                        capture_output=True, env=environment)
+                self.assertEqual(result.returncode, code, result.stdout)
+                report = json.loads((output / 'summary.json').read_text())
+                finding = report['checks']['zizmor']['findings'][0]
+                self.assertEqual(finding['severity'], 'Informational')
+                self.assertEqual(report['checks']['zizmor']['exit_code'], 11)
 
 
 if __name__ == '__main__':
