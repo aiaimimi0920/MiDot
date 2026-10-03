@@ -1,0 +1,83 @@
+name: Locked Linux release template
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/linux-template.yml'
+      - 'customizations/scripts/build-linux-template.py'
+      - 'customizations/tests/test-linux-template.py'
+      - 'customizations/scripts/initialize-engine.ps1'
+      - 'customizations/scripts/verify-stack.ps1'
+      - 'customizations/scripts/lib/PatchStack.Common.ps1'
+      - 'customizations/stack.json'
+      - 'customizations/stack.lock.json'
+      - 'customizations/series.txt'
+      - 'customizations/personal-history.bundle'
+      - 'customizations/patches/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: linux-template-release-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux-template-release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      POWERSHELL_TELEMETRY_OPTOUT: '1'
+      EXPECTED_ENGINE_COMMIT: 38b6ddee72e16d9d646057ee6ba533c122afc47c
+      EXPECTED_UPSTREAM_COMMIT: 5ec4857b340b6284a18b49b2eda462bd250f219a
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Check template provenance and packaging controls
+        run: python3 customizations/tests/test-linux-template.py
+      - name: Restore and verify exact engine history
+        shell: pwsh
+        run: |
+          $lock = Get-Content customizations/stack.lock.json -Raw | ConvertFrom-Json
+          if ($lock.integration.commit -ne $env:EXPECTED_ENGINE_COMMIT -or $lock.upstream.commit -ne $env:EXPECTED_UPSTREAM_COMMIT) {
+            throw 'The catalog differs from the reviewed engine identity.'
+          }
+          & ./customizations/scripts/initialize-engine.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & ./customizations/scripts/verify-stack.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Install isolated locked build dependency
+        shell: bash
+        run: |
+          python3 -m venv .linux-build-venv
+          printf '%s\n' 'SCons==4.10.1 --hash=sha256:bd9d1c52f908d874eba92a8c0c0a8dcf2ed9f3b88ab956d0fce1da479c4e7126' > .linux-build-venv/requirements.txt
+          .linux-build-venv/bin/python -m pip --isolated install --disable-pip-version-check \
+            --index-url https://pypi.org/simple --only-binary=:all: --require-hashes \
+            -r .linux-build-venv/requirements.txt
+      - name: Compile and identify release export template
+        shell: bash
+        run: |
+          .linux-build-venv/bin/python customizations/scripts/build-linux-template.py \
+            --engine engine --output linux-template-artifact --jobs 2
+      - name: Retain build evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: linux-template-evidence-${{ github.run_id }}
+          path: |
+            linux-template-artifact/*.log
+            linux-template-artifact/source-report.json
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Upload verified release template archive
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: midot-linux-template-release-x86_64-${{ env.EXPECTED_ENGINE_COMMIT }}
+          path: |
+            linux-template-artifact/midot-linux-template-release-x86_64.tar.gz
+            linux-template-artifact/midot-linux-template-release-x86_64.tar.gz.sha256
+          if-no-files-found: error
+          retention-days: 14
