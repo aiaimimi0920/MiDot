@@ -125,7 +125,8 @@ def main():
     destination.mkdir(parents=True, exist_ok=False)
     flags = ["platform=linuxbsd", "target=template_release", "arch=x86_64",
              "dev_build=no", "debug_symbols=no", "optimize=size", "lto=none",
-             "accesskit=no", "wayland=no", "x11=yes", f"-j{args.jobs}"]
+             "accesskit=no", "wayland=no", "x11=yes", "cxxflags=-include cfloat",
+             f"-j{args.jobs}"]
     manifest = {
         "schema_version": 1, **source, "target": "template_release",
         "build_flags": flags, "compiler": output(["g++", "--version"]).splitlines()[0],

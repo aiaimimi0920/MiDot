@@ -11,6 +11,9 @@ and patch hashes, and uses the editor workflow's isolated SCons 4.10.1 wheel
 pin. A fresh engine with no untracked or ignored inputs is required before
 compilation; extra `custom.py` files or modules are refused without cleanup.
 Compilation uses two jobs, no debug symbols or LTO, and size optimization.
+The fixed Spine release source uses `FLT_MAX` without including its standard
+header. The recorded `cxxflags=-include cfloat` compiler option supplies that
+header without changing engine sources, patch identities or enabled modules.
 The resulting ELF architecture and `--version` source suffix are checked.
 CI does not export a project, launch a game, publish a release, sign or deploy.
 PRs may be merged under the user's authorization after independent review and
