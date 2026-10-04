@@ -90,6 +90,7 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--jobs", type=int, choices=range(1, 5), default=2)
     parser.add_argument("--check-only", action="store_true")
+    parser.add_argument("--cache-dir", type=Path)
     args = parser.parse_args()
     engine = args.engine.resolve()
     destination = args.output.resolve()
@@ -111,11 +112,13 @@ def main():
         return
     destination.mkdir(parents=True, exist_ok=False)
     flags = ["platform=linuxbsd", "target=editor", "arch=x86_64", "dev_build=no", "debug_symbols=no", "optimize=size", "lto=none", "accesskit=no", "wayland=no", "x11=yes", f"-j{args.jobs}"]
+    cache_flags = ([f"cache_path={args.cache_dir.resolve()}", "cache_limit=3"]
+                   if args.cache_dir else [])
     try:
         for relative, (_, after) in changes.items():
             (engine / relative).write_bytes(after)
         with (destination / "build.log").open("w") as stream:
-            subprocess.run([sys.executable, "-m", "SCons", *flags], cwd=engine, stdout=stream, stderr=subprocess.STDOUT, check=True)
+            subprocess.run([sys.executable, "-m", "SCons", *flags, *cache_flags], cwd=engine, stdout=stream, stderr=subprocess.STDOUT, check=True)
     finally:
         for relative, (before, _) in changes.items():
             (engine / relative).write_bytes(before)

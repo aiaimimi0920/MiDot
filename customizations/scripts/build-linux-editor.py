@@ -32,6 +32,7 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--jobs", type=int, choices=range(1, 5), default=1)
     parser.add_argument("--expected-commit", required=True)
+    parser.add_argument("--cache-dir", type=Path)
     args = parser.parse_args()
     repository = Path(__file__).resolve().parents[2]
     engine = args.engine.resolve()
@@ -48,6 +49,8 @@ def main():
              "debug_symbols=no", "optimize=size", "lto=none", "accesskit=no",
              "wayland=no", "x11=yes", f"-j{args.jobs}"]
     command = [sys.executable, "-m", "SCons", *flags]
+    if args.cache_dir:
+        command.extend([f"cache_path={args.cache_dir.resolve()}", "cache_limit=3"])
     run_logged(command, destination / "build.log", cwd=engine)
     candidates = list((engine / "bin").glob("godot.linuxbsd.editor.x86_64"))
     if len(candidates) != 1 or not candidates[0].is_file():

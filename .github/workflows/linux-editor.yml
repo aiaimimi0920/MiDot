@@ -5,6 +5,26 @@ on:
     paths:
       - '.github/workflows/linux-editor.yml'
       - 'customizations/scripts/build-linux-editor.py'
+      - 'customizations/tests/test_linux_build_cache.py'
+      - 'customizations/tests/test_scons_cache.py'
+      - 'customizations/scripts/probe-linux-editor.gd'
+      - 'customizations/scripts/probe-linux-import.py'
+      - 'customizations/scripts/initialize-engine.ps1'
+      - 'customizations/scripts/verify-stack.ps1'
+      - 'customizations/scripts/lib/PatchStack.Common.ps1'
+      - 'customizations/stack.json'
+      - 'customizations/stack.lock.json'
+      - 'customizations/series.txt'
+      - 'customizations/personal-history.bundle'
+      - 'customizations/patches/**'
+  # PR caches are scoped to their PR. Main builds seed a cache new PRs can read.
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/linux-editor.yml'
+      - 'customizations/scripts/build-linux-editor.py'
+      - 'customizations/tests/test_linux_build_cache.py'
+      - 'customizations/tests/test_scons_cache.py'
       - 'customizations/scripts/probe-linux-editor.gd'
       - 'customizations/scripts/probe-linux-import.py'
       - 'customizations/scripts/initialize-engine.ps1'
@@ -37,6 +57,8 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+      - name: Check build cache contracts
+        run: python3 customizations/tests/test_linux_build_cache.py
       - name: Restore and verify exact engine history
         shell: pwsh
         run: |
@@ -48,6 +70,21 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           & ./customizations/scripts/verify-stack.ps1
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Identify compiler cache boundary
+        id: compiler
+        shell: bash
+        run: |
+          fingerprint=$( { g++ --version; ld --version; sha256sum "$(command -v g++)" "$(command -v ld)"; } | sha256sum | cut -d ' ' -f 1)
+          echo "fingerprint=$fingerprint" >> "$GITHUB_OUTPUT"
+      # Cache objects, not acceptance evidence. SCons rechecks source signatures;
+      # production and instrumented builds have separate bounded namespaces.
+      - name: Cache SCons objects
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/midot-scons
+          key: scons-v1-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-${{ steps.compiler.outputs.fingerprint }}-${{ hashFiles('.github/workflows/linux-*.yml', 'customizations/scripts/build-linux-*.py') }}-${{ hashFiles('customizations/stack.lock.json') }}-${{ github.sha }}
+          restore-keys: |
+            scons-v1-${{ runner.os }}-${{ runner.arch }}-${{ github.job }}-${{ steps.compiler.outputs.fingerprint }}-${{ hashFiles('.github/workflows/linux-*.yml', 'customizations/scripts/build-linux-*.py') }}-
       - name: Install isolated locked build dependency
         shell: bash
         run: |
@@ -56,11 +93,14 @@ jobs:
           .linux-build-venv/bin/python -m pip --isolated install --disable-pip-version-check \
             --index-url https://pypi.org/simple --only-binary=:all: --require-hashes \
             -r .linux-build-venv/requirements.txt
+      - name: Verify SCons cache retrieval and invalidation
+        run: .linux-build-venv/bin/python customizations/tests/test_scons_cache.py
       - name: Build and identify Linux editor
         shell: bash
         run: |
           .linux-build-venv/bin/python customizations/scripts/build-linux-editor.py \
             --engine engine --output linux-editor-artifact --jobs 2 \
+            --cache-dir "$RUNNER_TEMP/midot-scons" \
             --expected-commit "$EXPECTED_ENGINE_COMMIT"
       - name: Check bounded empty editor import
         shell: bash
