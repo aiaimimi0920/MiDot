@@ -11,10 +11,10 @@ import sys
 import tarfile
 import time
 
-ENGINE = "38b6ddee72e16d9d646057ee6ba533c122afc47c"
+ENGINE = "aa99fb9b9e029fb7406c8521bc00efe4565cdf6f"
 SOURCES = {
-    "editor/editor_node.cpp": "faa21de3dd4a682b7e5233ac360d1ab8a39b926b0f2143dd7037c8951bc8119f",
-    "main/main.cpp": "4ec346bd8387ceb46db01c554994c318b043da7dac36424d23f7349e33b29c23",
+    "editor/editor_node.cpp": "4e790fb9684baef681553e5370222dad434aacca08edc5558e92344cb2633e7c",
+    "main/main.cpp": "3daf2a8714c6ff740e5eb234bcd620ba4e219b3c074c7aac2ba74bf969085421",
 }
 
 

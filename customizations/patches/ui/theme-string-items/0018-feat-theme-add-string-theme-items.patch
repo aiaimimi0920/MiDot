@@ -1,4 +1,4 @@
-From cdded424f1496efeff24e727c8d5b24d1c43baa1 Mon Sep 17 00:00:00 2001
+From 578db0140d40fae512985fb26bae8bfd733dfd0a Mon Sep 17 00:00:00 2001
 From: aiaimimi0920 <153103332+aiaimimi0920@users.noreply.github.com>
 Date: Mon, 31 Aug 2026 01:28:43 +0800
 Subject: [PATCH] feat(theme): add string theme items
@@ -6,28 +6,28 @@ Subject: [PATCH] feat(theme): add string theme items
 Godot-Patch-Topic: ui.theme-string-items
 ---
  doc/classes/Control.xml                  |  38 +++++
- doc/classes/Theme.xml                    |  60 +++++++-
+ doc/classes/Theme.xml                    |  62 +++++++-
  doc/classes/Window.xml                   |  42 ++++++
  editor/doc/doc_tools.cpp                 |   4 +
- editor/scene/gui/theme_editor_plugin.cpp | 158 ++++++++++++++++++-
+ editor/scene/gui/theme_editor_plugin.cpp | 156 ++++++++++++++++++-
  editor/scene/gui/theme_editor_plugin.h   |  10 ++
- scene/gui/control.cpp                    | 107 ++++++++++++-
+ scene/gui/control.cpp                    | 101 ++++++++++++-
  scene/gui/control.h                      |   7 +
- scene/main/window.cpp                    | 105 ++++++++++++-
+ scene/main/window.cpp                    |  99 +++++++++++-
  scene/main/window.h                      |   7 +
  scene/resources/theme.cpp                | 184 +++++++++++++++++++++++
  scene/resources/theme.h                  |  17 +++
  tests/scene/test_control.cpp             |  24 +++
  tests/scene/test_theme.cpp               |  26 ++++
  tests/scene/test_window.cpp              |  24 +++
- 15 files changed, 789 insertions(+), 24 deletions(-)
+ 15 files changed, 783 insertions(+), 18 deletions(-)
 
 diff --git a/doc/classes/Control.xml b/doc/classes/Control.xml
-index 8330738a6b2786b8f9e26aedcd2ad743f46b84de..08341da69685fec8c77908977c8bf7a01aaa7c9a 100644
+index 0044e63c4314a25456a5a32bd53388ff66f1c0af..f390a53dd34bc581b901bf2aa9894acf7f5ebd81 100644
 --- a/doc/classes/Control.xml
 +++ b/doc/classes/Control.xml
-@@ -355,6 +355,14 @@
- 				See also [method get_theme_icon].
+@@ -364,6 +364,14 @@
+ 				See also [method get_theme_sound].
  			</description>
  		</method>
 +		<method name="add_theme_string_override">
@@ -41,7 +41,7 @@ index 8330738a6b2786b8f9e26aedcd2ad743f46b84de..08341da69685fec8c77908977c8bf7a0
  		<method name="add_theme_stylebox_override">
  			<return type="void" />
  			<param index="0" name="name" type="StringName" />
-@@ -673,6 +681,14 @@
+@@ -691,6 +699,14 @@
  				See [method get_theme_color] for details.
  			</description>
  		</method>
@@ -56,8 +56,8 @@ index 8330738a6b2786b8f9e26aedcd2ad743f46b84de..08341da69685fec8c77908977c8bf7a0
  		<method name="get_theme_stylebox" qualifiers="const">
  			<return type="StyleBox" />
  			<param index="0" name="name" type="StringName" />
-@@ -841,6 +857,21 @@
- 				See [method add_theme_icon_override].
+@@ -876,6 +892,21 @@
+ 				See [method add_theme_sound_override].
  			</description>
  		</method>
 +		<method name="has_theme_string" qualifiers="const">
@@ -78,8 +78,8 @@ index 8330738a6b2786b8f9e26aedcd2ad743f46b84de..08341da69685fec8c77908977c8bf7a0
  		<method name="has_theme_stylebox" qualifiers="const">
  			<return type="bool" />
  			<param index="0" name="name" type="StringName" />
-@@ -926,6 +957,13 @@
- 				Removes a local override for a theme icon with the specified [param name] previously added by [method add_theme_icon_override] or via the Inspector dock.
+@@ -976,6 +1007,13 @@
+ 				Removes a local override for a theme sound with the specified [param name] previously added by [method add_theme_sound_override] or via the Inspector dock.
  			</description>
  		</method>
 +		<method name="remove_theme_string_override">
@@ -93,10 +93,10 @@ index 8330738a6b2786b8f9e26aedcd2ad743f46b84de..08341da69685fec8c77908977c8bf7a0
  			<return type="void" />
  			<param index="0" name="name" type="StringName" />
 diff --git a/doc/classes/Theme.xml b/doc/classes/Theme.xml
-index 77aa2f824585218abc3c173094d2e4643e0db3a7..0c9778bc1844eaeef3ead4a587b7037c56d0a863 100644
+index c5a6d4c41a466eb981d084e4c82bb1c2e230df82..be5dbbeb0a2fd861276d0820ee2ec254ecc98412 100644
 --- a/doc/classes/Theme.xml
 +++ b/doc/classes/Theme.xml
-@@ -97,6 +97,14 @@
+@@ -106,6 +106,14 @@
  				Fails if it doesn't exist. Use [method has_stylebox] to check for existence.
  			</description>
  		</method>
@@ -111,7 +111,7 @@ index 77aa2f824585218abc3c173094d2e4643e0db3a7..0c9778bc1844eaeef3ead4a587b7037c
  		<method name="clear_theme_item">
  			<return type="void" />
  			<param index="0" name="data_type" type="int" enum="Theme.DataType" />
-@@ -291,6 +299,27 @@
+@@ -322,6 +330,27 @@
  				Returns a list of all unique theme type names for [StyleBox] properties. Use [method get_type_list] to get a list of all unique theme types.
  			</description>
  		</method>
@@ -139,7 +139,7 @@ index 77aa2f824585218abc3c173094d2e4643e0db3a7..0c9778bc1844eaeef3ead4a587b7037c
  		<method name="get_theme_item" qualifiers="const">
  			<return type="Variant" />
  			<param index="0" name="data_type" type="int" enum="Theme.DataType" />
-@@ -436,6 +465,14 @@
+@@ -476,6 +505,14 @@
  				Returns [code]false[/code] if it doesn't exist. Use [method set_stylebox] to define it.
  			</description>
  		</method>
@@ -154,7 +154,7 @@ index 77aa2f824585218abc3c173094d2e4643e0db3a7..0c9778bc1844eaeef3ead4a587b7037c
  		<method name="has_theme_item" qualifiers="const">
  			<return type="bool" />
  			<param index="0" name="data_type" type="int" enum="Theme.DataType" />
-@@ -548,6 +585,15 @@
+@@ -598,6 +635,15 @@
  				Fails if it doesn't exist, or if a similar property with the new name already exists. Use [method has_stylebox] to check for existence, and [method clear_stylebox] to remove the existing property.
  			</description>
  		</method>
@@ -170,7 +170,7 @@ index 77aa2f824585218abc3c173094d2e4643e0db3a7..0c9778bc1844eaeef3ead4a587b7037c
  		<method name="rename_theme_item">
  			<return type="void" />
  			<param index="0" name="data_type" type="int" enum="Theme.DataType" />
-@@ -641,6 +687,15 @@
+@@ -700,6 +746,15 @@
  				Creates or changes the value of the [StyleBox] property defined by [param name] and [param theme_type]. Use [method clear_stylebox] to remove the property.
  			</description>
  		</method>
@@ -186,24 +186,28 @@ index 77aa2f824585218abc3c173094d2e4643e0db3a7..0c9778bc1844eaeef3ead4a587b7037c
  		<method name="set_theme_item">
  			<return type="void" />
  			<param index="0" name="data_type" type="int" enum="Theme.DataType" />
-@@ -708,7 +763,10 @@
+@@ -767,10 +822,13 @@
  		<constant name="DATA_TYPE_COLOR_SCHEME" value="7" enum="DataType">
  			Theme's [ColorScheme] item type.
  		</constant>
--		<constant name="DATA_TYPE_MAX" value="8" enum="DataType">
+-		<constant name="DATA_TYPE_SOUND" value="8" enum="DataType">
 +		<constant name="DATA_TYPE_STRING" value="8" enum="DataType">
 +			Theme's [String] item type.
 +		</constant>
-+		<constant name="DATA_TYPE_MAX" value="9" enum="DataType">
++		<constant name="DATA_TYPE_SOUND" value="9" enum="DataType">
+ 			Theme's [AudioStream] item type.
+ 		</constant>
+-		<constant name="DATA_TYPE_MAX" value="9" enum="DataType">
++		<constant name="DATA_TYPE_MAX" value="10" enum="DataType">
  			Maximum value for the DataType enum.
  		</constant>
  	</constants>
 diff --git a/doc/classes/Window.xml b/doc/classes/Window.xml
-index 680df619719bef983eea7879c6a7a3839670aab1..89c24f01274eeb2fb7e50395d505c41505727eb7 100644
+index ab10ab9aa1ef8bf456104d53f9fa3efbada6d493..ffed2ad852bd032e8ad98cbba1ee027772e4f75b 100644
 --- a/doc/classes/Window.xml
 +++ b/doc/classes/Window.xml
-@@ -79,6 +79,15 @@
- 				See also [method get_theme_icon].
+@@ -88,6 +88,15 @@
+ 				See also [method get_theme_sound].
  			</description>
  		</method>
 +		<method name="add_theme_string_override">
@@ -218,7 +222,7 @@ index 680df619719bef983eea7879c6a7a3839670aab1..89c24f01274eeb2fb7e50395d505c415
  		<method name="add_theme_stylebox_override">
  			<return type="void" />
  			<param index="0" name="name" type="StringName" />
-@@ -273,6 +282,15 @@
+@@ -291,6 +300,15 @@
  				See [method Control.get_theme_color] for details.
  			</description>
  		</method>
@@ -234,8 +238,8 @@ index 680df619719bef983eea7879c6a7a3839670aab1..89c24f01274eeb2fb7e50395d505c415
  		<method name="get_theme_stylebox" qualifiers="const">
  			<return type="StyleBox" />
  			<param index="0" name="name" type="StringName" />
-@@ -415,6 +433,23 @@
- 				See [method add_theme_icon_override].
+@@ -450,6 +468,23 @@
+ 				See [method add_theme_sound_override].
  			</description>
  		</method>
 +		<method name="has_theme_string" qualifiers="const">
@@ -258,8 +262,8 @@ index 680df619719bef983eea7879c6a7a3839670aab1..89c24f01274eeb2fb7e50395d505c415
  		<method name="has_theme_stylebox" qualifiers="const">
  			<return type="bool" />
  			<param index="0" name="name" type="StringName" />
-@@ -611,6 +646,13 @@
- 				Removes a local override for a theme icon with the specified [param name] previously added by [method add_theme_icon_override] or via the Inspector dock.
+@@ -653,6 +688,13 @@
+ 				Removes a local override for a theme sound with the specified [param name] previously added by [method add_theme_sound_override] or via the Inspector dock.
  			</description>
  		</method>
 +		<method name="remove_theme_string_override">
@@ -273,10 +277,10 @@ index 680df619719bef983eea7879c6a7a3839670aab1..89c24f01274eeb2fb7e50395d505c415
  			<return type="void" />
  			<param index="0" name="name" type="StringName" />
 diff --git a/editor/doc/doc_tools.cpp b/editor/doc/doc_tools.cpp
-index 1b9a06e4877d3341153997f97b0c74380e8b6dee..b343b001e40f2cbc8f55cb2f720f85af2aadb5e4 100644
+index b42db4d7ad909bb9a300d687081cdbf40203dcfb..ab65d35415986cb54c7ee0a23bbddb6f42fa5027 100644
 --- a/editor/doc/doc_tools.cpp
 +++ b/editor/doc/doc_tools.cpp
-@@ -787,6 +787,10 @@ void DocTools::generate(BitField<GenerateFlags> p_flags) {
+@@ -791,6 +791,10 @@ void DocTools::generate(BitField<GenerateFlags> p_flags) {
  							tid.type = "ColorScheme";
  							tid.data_type = "color_scheme";
  							break;
@@ -288,26 +292,26 @@ index 1b9a06e4877d3341153997f97b0c74380e8b6dee..b343b001e40f2cbc8f55cb2f720f85af
  							break; // Can't happen, but silences warning.
  					}
 diff --git a/editor/scene/gui/theme_editor_plugin.cpp b/editor/scene/gui/theme_editor_plugin.cpp
-index 646d5047b810e9c6606194bde03219c594cdd396..160b61374284ab4ccaa05dd4c36616604838a7bc 100644
+index 9e80d72a1681019e62a84d47ec6e359bdb711d0f..9783c6b4e5b0df60c31fd1e00eb4ea810f02b8f8 100644
 --- a/editor/scene/gui/theme_editor_plugin.cpp
 +++ b/editor/scene/gui/theme_editor_plugin.cpp
-@@ -109,6 +109,7 @@ void ThemeItemImportTree::_update_items_tree() {
- 	int stylebox_amount = 0;
+@@ -113,6 +113,7 @@ void ThemeItemImportTree::_update_items_tree() {
+ 	int sound_amount = 0;
  	int color_role_amount = 0;
  	int color_scheme_amount = 0;
 +	int string_amount = 0;
  
  	tree_color_items.clear();
  	tree_constant_items.clear();
-@@ -118,6 +119,7 @@ void ThemeItemImportTree::_update_items_tree() {
- 	tree_stylebox_items.clear();
+@@ -123,6 +124,7 @@ void ThemeItemImportTree::_update_items_tree() {
+ 	tree_sound_items.clear();
  	tree_color_role_items.clear();
  	tree_color_scheme_items.clear();
 +	tree_string_items.clear();
  
  	for (const StringName &E : types) {
  		String type_name = (String)E;
-@@ -250,6 +252,14 @@ void ThemeItemImportTree::_update_items_tree() {
+@@ -274,6 +276,14 @@ void ThemeItemImportTree::_update_items_tree() {
  					color_scheme_amount += filtered_names.size();
  					break;
  
@@ -322,7 +326,7 @@ index 646d5047b810e9c6606194bde03219c594cdd396..160b61374284ab4ccaa05dd4c3661660
  				case Theme::DATA_TYPE_MAX:
  					break; // Can't happen, but silences warning.
  			}
-@@ -392,6 +402,19 @@ void ThemeItemImportTree::_update_items_tree() {
+@@ -426,6 +436,19 @@ void ThemeItemImportTree::_update_items_tree() {
  		select_full_color_schemes_button->set_visible(false);
  		deselect_all_color_schemes_button->set_visible(false);
  	}
@@ -342,7 +346,7 @@ index 646d5047b810e9c6606194bde03219c594cdd396..160b61374284ab4ccaa05dd4c3661660
  }
  
  void ThemeItemImportTree::_toggle_type_items(bool p_collapse) {
-@@ -517,6 +540,10 @@ void ThemeItemImportTree::_update_total_selected(Theme::DataType p_data_type) {
+@@ -555,6 +578,10 @@ void ThemeItemImportTree::_update_total_selected(Theme::DataType p_data_type) {
  			total_selected_items_label = total_selected_color_schemes_label;
  			break;
  
@@ -353,7 +357,7 @@ index 646d5047b810e9c6606194bde03219c594cdd396..160b61374284ab4ccaa05dd4c3661660
  		case Theme::DATA_TYPE_MAX:
  			return; // Can't happen, but silences warning.
  	}
-@@ -689,6 +716,10 @@ void ThemeItemImportTree::_select_all_data_type_pressed(int p_data_type) {
+@@ -730,6 +757,10 @@ void ThemeItemImportTree::_select_all_data_type_pressed(int p_data_type) {
  			item_list = &tree_color_scheme_items;
  			break;
  
@@ -364,7 +368,7 @@ index 646d5047b810e9c6606194bde03219c594cdd396..160b61374284ab4ccaa05dd4c3661660
  		case Theme::DATA_TYPE_MAX:
  			return; // Can't happen, but silences warning.
  	}
-@@ -752,6 +783,10 @@ void ThemeItemImportTree::_select_full_data_type_pressed(int p_data_type) {
+@@ -797,6 +828,10 @@ void ThemeItemImportTree::_select_full_data_type_pressed(int p_data_type) {
  			item_list = &tree_color_scheme_items;
  			break;
  
@@ -375,7 +379,7 @@ index 646d5047b810e9c6606194bde03219c594cdd396..160b61374284ab4ccaa05dd4c3661660
  		case Theme::DATA_TYPE_MAX:
  			return; // Can't happen, but silences warning.
  	}
-@@ -817,6 +852,10 @@ void ThemeItemImportTree::_deselect_all_data_type_pressed(int p_data_type) {
+@@ -866,6 +901,10 @@ void ThemeItemImportTree::_deselect_all_data_type_pressed(int p_data_type) {
  			item_list = &tree_color_scheme_items;
  			break;
  
@@ -386,7 +390,7 @@ index 646d5047b810e9c6606194bde03219c594cdd396..160b61374284ab4ccaa05dd4c3661660
  		case Theme::DATA_TYPE_MAX:
  			return; // Can't happen, but silences warning.
  	}
-@@ -901,6 +940,10 @@ void ThemeItemImportTree::_import_selected() {
+@@ -954,6 +993,10 @@ void ThemeItemImportTree::_import_selected() {
  						item_value = Ref<ColorScheme>();
  						break;
  
@@ -397,7 +401,7 @@ index 646d5047b810e9c6606194bde03219c594cdd396..160b61374284ab4ccaa05dd4c3661660
  					case Theme::DATA_TYPE_MAX:
  						break; // Can't happen, but silences warning.
  				}
-@@ -1018,6 +1061,11 @@ void ThemeItemImportTree::_notification(int p_what) {
+@@ -1076,6 +1119,11 @@ void ThemeItemImportTree::_notification(int p_what) {
  			deselect_all_color_schemes_button->set_button_icon(get_editor_theme_icon(SNAME("ThemeDeselectAll")));
  			select_all_color_schemes_button->set_button_icon(get_editor_theme_icon(SNAME("ThemeSelectAll")));
  			select_full_color_schemes_button->set_button_icon(get_editor_theme_icon(SNAME("ThemeSelectFull")));
@@ -409,7 +413,7 @@ index 646d5047b810e9c6606194bde03219c594cdd396..160b61374284ab4ccaa05dd4c3661660
  		} break;
  	}
  }
-@@ -1129,6 +1177,13 @@ ThemeItemImportTree::ThemeItemImportTree() {
+@@ -1192,6 +1240,13 @@ ThemeItemImportTree::ThemeItemImportTree() {
  	select_full_color_schemes_button = memnew(Button);
  	total_selected_color_schemes_label = memnew(Label);
  
@@ -423,7 +427,7 @@ index 646d5047b810e9c6606194bde03219c594cdd396..160b61374284ab4ccaa05dd4c3661660
  	for (int i = 0; i < Theme::DATA_TYPE_MAX; i++) {
  		Theme::DataType dt = (Theme::DataType)i;
  
-@@ -1257,6 +1312,20 @@ ThemeItemImportTree::ThemeItemImportTree() {
+@@ -1334,6 +1389,20 @@ ThemeItemImportTree::ThemeItemImportTree() {
  				deselect_all_items_tooltip = TTRC("Deselect all visible color scheme items.");
  				break;
  
@@ -444,7 +448,7 @@ index 646d5047b810e9c6606194bde03219c594cdd396..160b61374284ab4ccaa05dd4c3661660
  			case Theme::DATA_TYPE_MAX:
  				continue; // Can't happen, but silences warning.
  		}
-@@ -1832,6 +1901,10 @@ void ThemeItemEditorDialog::_add_theme_item(Theme::DataType p_data_type, const S
+@@ -1938,6 +2007,10 @@ void ThemeItemEditorDialog::_add_theme_item(Theme::DataType p_data_type, const S
  			ur->add_do_method(*edited_theme, "set_color_scheme", p_item_name, p_item_type, Ref<ColorScheme>());
  			ur->add_undo_method(*edited_theme, "clear_color_scheme", p_item_name, p_item_type);
  			break;
@@ -455,7 +459,7 @@ index 646d5047b810e9c6606194bde03219c594cdd396..160b61374284ab4ccaa05dd4c3661660
  		case Theme::DATA_TYPE_MAX:
  			break; // Can't happen, but silences warning.
  	}
-@@ -2024,6 +2097,9 @@ void ThemeItemEditorDialog::_open_add_theme_item_dialog(int p_data_type) {
+@@ -2133,6 +2206,9 @@ void ThemeItemEditorDialog::_open_add_theme_item_dialog(int p_data_type) {
  		case Theme::DATA_TYPE_COLOR_SCHEME:
  			edit_theme_item_dialog->set_title(TTRC("Add Color Scheme Item"));
  			break;
@@ -465,7 +469,7 @@ index 646d5047b810e9c6606194bde03219c594cdd396..160b61374284ab4ccaa05dd4c3661660
  		case Theme::DATA_TYPE_MAX:
  			break; // Can't happen, but silences warning.
  	}
-@@ -2066,6 +2142,9 @@ void ThemeItemEditorDialog::_open_rename_theme_item_dialog(Theme::DataType p_dat
+@@ -2178,6 +2254,9 @@ void ThemeItemEditorDialog::_open_rename_theme_item_dialog(Theme::DataType p_dat
  		case Theme::DATA_TYPE_COLOR_SCHEME:
  			edit_theme_item_dialog->set_title(TTRC("Rename Color Scheme Item"));
  			break;
@@ -475,7 +479,7 @@ index 646d5047b810e9c6606194bde03219c594cdd396..160b61374284ab4ccaa05dd4c3661660
  		case Theme::DATA_TYPE_MAX:
  			break; // Can't happen, but silences warning.
  	}
-@@ -3118,7 +3197,7 @@ void ThemeTypeEditor::_update_type_items() {
+@@ -3275,7 +3354,7 @@ void ThemeTypeEditor::_update_type_items() {
  		}
  	}
  
@@ -484,7 +488,7 @@ index 646d5047b810e9c6606194bde03219c594cdd396..160b61374284ab4ccaa05dd4c3661660
  	{
  		for (int i = color_scheme_items_list->get_child_count() - 1; i >= 0; i--) {
  			Node *node = color_scheme_items_list->get_child(i);
-@@ -3148,9 +3227,37 @@ void ThemeTypeEditor::_update_type_items() {
+@@ -3305,9 +3384,37 @@ void ThemeTypeEditor::_update_type_items() {
  			_add_focusable(item_editor);
  			color_scheme_items_list->add_child(item_control);
  		}
@@ -524,7 +528,7 @@ index 646d5047b810e9c6606194bde03219c594cdd396..160b61374284ab4ccaa05dd4c3661660
  	if (edited_type.is_empty() || ClassDB::class_exists(edited_type)) {
  		type_variation_edit->set_editable(false);
  		type_variation_edit->set_text("");
-@@ -3297,14 +3404,23 @@ void ThemeTypeEditor::_add_default_type_items() {
+@@ -3463,14 +3570,23 @@ void ThemeTypeEditor::_add_default_type_items() {
  			}
  		}
  	}
@@ -551,7 +555,7 @@ index 646d5047b810e9c6606194bde03219c594cdd396..160b61374284ab4ccaa05dd4c3661660
  	}
  
  	updating = false;
-@@ -3376,6 +3492,10 @@ void ThemeTypeEditor::_item_add_cbk(int p_data_type, Control *p_control) {
+@@ -3546,6 +3662,10 @@ void ThemeTypeEditor::_item_add_cbk(int p_data_type, Control *p_control) {
  			ur->add_do_method(*edited_theme, "set_color_scheme", item_name, edited_type, Ref<ColorScheme>());
  			ur->add_undo_method(*edited_theme, "clear_color_scheme", item_name, edited_type);
  		} break;
@@ -562,7 +566,7 @@ index 646d5047b810e9c6606194bde03219c594cdd396..160b61374284ab4ccaa05dd4c3661660
  	}
  
  	ur->commit_action();
-@@ -3435,6 +3555,10 @@ void ThemeTypeEditor::_item_override_cbk(int p_data_type, String p_item_name) {
+@@ -3609,6 +3729,10 @@ void ThemeTypeEditor::_item_override_cbk(int p_data_type, String p_item_name) {
  			ur->add_do_method(*edited_theme, "set_color_scheme", p_item_name, edited_type, ThemeDB::get_singleton()->get_default_theme()->get_color_scheme(p_item_name, edited_type));
  			ur->add_undo_method(*edited_theme, "clear_color_scheme", p_item_name, edited_type);
  		} break;
@@ -573,7 +577,7 @@ index 646d5047b810e9c6606194bde03219c594cdd396..160b61374284ab4ccaa05dd4c3661660
  	}
  
  	ur->commit_action();
-@@ -3501,6 +3625,11 @@ void ThemeTypeEditor::_item_remove_cbk(int p_data_type, String p_item_name) {
+@@ -3683,6 +3807,11 @@ void ThemeTypeEditor::_item_remove_cbk(int p_data_type, String p_item_name) {
  			ur->add_do_method(*edited_theme, "clear_color_scheme", p_item_name, edited_type);
  			ur->add_undo_method(*edited_theme, "set_color_scheme", p_item_name, edited_type, color_scheme);
  		} break;
@@ -585,7 +589,7 @@ index 646d5047b810e9c6606194bde03219c594cdd396..160b61374284ab4ccaa05dd4c3661660
  	}
  
  	ur->commit_action();
-@@ -3573,6 +3702,10 @@ void ThemeTypeEditor::_item_rename_confirmed(int p_data_type, String p_item_name
+@@ -3759,6 +3888,10 @@ void ThemeTypeEditor::_item_rename_confirmed(int p_data_type, String p_item_name
  			ur->add_do_method(*edited_theme, "rename_color_scheme", p_item_name, new_name, edited_type);
  			ur->add_undo_method(*edited_theme, "rename_color_scheme", new_name, p_item_name, edited_type);
  		} break;
@@ -596,7 +600,7 @@ index 646d5047b810e9c6606194bde03219c594cdd396..160b61374284ab4ccaa05dd4c3661660
  	}
  
  	ur->commit_action();
-@@ -3700,6 +3833,14 @@ void ThemeTypeEditor::_color_scheme_item_changed(Ref<ColorScheme> p_value, Strin
+@@ -3903,6 +4036,14 @@ void ThemeTypeEditor::_color_scheme_item_changed(Ref<ColorScheme> p_value, Strin
  	ur->commit_action();
  }
  
@@ -611,38 +615,36 @@ index 646d5047b810e9c6606194bde03219c594cdd396..160b61374284ab4ccaa05dd4c3661660
  void ThemeTypeEditor::_change_pinned_stylebox() {
  	if (leading_stylebox.pinned) {
  		if (leading_stylebox.stylebox.is_valid()) {
-@@ -3879,7 +4020,8 @@ void ThemeTypeEditor::_notification(int p_what) {
+@@ -4082,6 +4223,7 @@ void ThemeTypeEditor::_notification(int p_what) {
  			data_type_tabs->set_tab_icon(5, get_editor_theme_icon(SNAME("StyleBoxFlat")));
- 			data_type_tabs->set_tab_icon(6, get_editor_theme_icon(SNAME("ColorRole")));
- 			data_type_tabs->set_tab_icon(7, get_editor_theme_icon(SNAME("ColorScheme")));
--			data_type_tabs->set_tab_icon(8, get_editor_theme_icon(SNAME("Tools")));
-+			data_type_tabs->set_tab_icon(8, get_editor_theme_icon(SNAME("String")));
-+			data_type_tabs->set_tab_icon(9, get_editor_theme_icon(SNAME("Tools")));
+ 			data_type_tabs->set_tab_icon(Theme::DATA_TYPE_COLOR_ROLE, get_editor_theme_icon(SNAME("ColorRole")));
+ 			data_type_tabs->set_tab_icon(Theme::DATA_TYPE_COLOR_SCHEME, get_editor_theme_icon(SNAME("ColorScheme")));
++			data_type_tabs->set_tab_icon(Theme::DATA_TYPE_STRING, get_editor_theme_icon(SNAME("String")));
+ 			data_type_tabs->set_tab_icon(Theme::DATA_TYPE_SOUND, get_editor_theme_icon(SNAME("AudioStream")));
+ 			data_type_tabs->set_tab_icon(Theme::DATA_TYPE_MAX, get_editor_theme_icon(SNAME("Tools")));
  
- 			type_variation_button->set_button_icon(get_editor_theme_icon(SNAME("Add")));
- 		} break;
-@@ -4031,6 +4173,8 @@ ThemeTypeEditor::ThemeTypeEditor() {
+@@ -4236,6 +4378,8 @@ ThemeTypeEditor::ThemeTypeEditor() {
  	data_type_tabs->set_tab_tooltip(data_type_tabs->get_tab_count() - 1, TTRC("Color Roles"));
  	color_scheme_items_list = _create_item_list(Theme::DATA_TYPE_COLOR_SCHEME);
  	data_type_tabs->set_tab_tooltip(data_type_tabs->get_tab_count() - 1, TTRC("Color Schemes"));
 +	string_items_list = _create_item_list(Theme::DATA_TYPE_STRING);
 +	data_type_tabs->set_tab_tooltip(data_type_tabs->get_tab_count() - 1, TTRC("Strings"));
+ 	sound_items_list = _create_item_list(Theme::DATA_TYPE_SOUND);
+ 	data_type_tabs->set_tab_tooltip(data_type_tabs->get_tab_count() - 1, TTRC("Sounds"));
  
- 	VBoxContainer *type_settings_tab = memnew(VBoxContainer);
- 	type_settings_tab->set_custom_minimum_size(Size2(0, 160) * EDSCALE);
 diff --git a/editor/scene/gui/theme_editor_plugin.h b/editor/scene/gui/theme_editor_plugin.h
-index 02dde689000e16aec37b494b3fa84a8d946621da..080c66555e44a6ed7549ad4d07bb4a4c2b96a458 100644
+index 0366faef0d617ba6bca9e5c8872e39c095cabee7..db5d8436ebbfa7bb6a56885a963b323bc3e3dfb5 100644
 --- a/editor/scene/gui/theme_editor_plugin.h
 +++ b/editor/scene/gui/theme_editor_plugin.h
-@@ -94,6 +94,7 @@ class ThemeItemImportTree : public VBoxContainer {
- 	List<TreeItem *> tree_stylebox_items;
+@@ -95,6 +95,7 @@ class ThemeItemImportTree : public VBoxContainer {
+ 	List<TreeItem *> tree_sound_items;
  	List<TreeItem *> tree_color_role_items;
  	List<TreeItem *> tree_color_scheme_items;
 +	List<TreeItem *> tree_string_items;
  
  	bool updating_tree = false;
  
-@@ -158,6 +159,13 @@ class ThemeItemImportTree : public VBoxContainer {
+@@ -165,6 +166,13 @@ class ThemeItemImportTree : public VBoxContainer {
  	Button *deselect_all_color_schemes_button = nullptr;
  	Label *total_selected_color_schemes_label = nullptr;
  
@@ -656,15 +658,15 @@ index 02dde689000e16aec37b494b3fa84a8d946621da..080c66555e44a6ed7549ad4d07bb4a4c
  	HBoxContainer *select_icons_warning_hb = nullptr;
  	TextureRect *select_icons_warning_icon = nullptr;
  	Label *select_icons_warning = nullptr;
-@@ -383,6 +391,7 @@ class ThemeTypeEditor : public MarginContainer {
- 	VBoxContainer *stylebox_items_list = nullptr;
+@@ -392,6 +400,7 @@ class ThemeTypeEditor : public MarginContainer {
+ 	VBoxContainer *sound_items_list = nullptr;
  	VBoxContainer *color_role_items_list = nullptr;
  	VBoxContainer *color_scheme_items_list = nullptr;
 +	VBoxContainer *string_items_list = nullptr;
  
  	LineEdit *type_variation_edit = nullptr;
  	Button *type_variation_button = nullptr;
-@@ -423,6 +432,7 @@ class ThemeTypeEditor : public MarginContainer {
+@@ -432,6 +441,7 @@ class ThemeTypeEditor : public MarginContainer {
  	void _item_rename_confirmed(int p_data_type, String p_item_name, Control *p_control);
  	void _item_rename_entered(String p_value, int p_data_type, String p_item_name, Control *p_control);
  	void _item_rename_canceled(int p_data_type, String p_item_name, Control *p_control);
@@ -673,10 +675,10 @@ index 02dde689000e16aec37b494b3fa84a8d946621da..080c66555e44a6ed7549ad4d07bb4a4c
  	void _color_item_changed(Color p_value, String p_item_name);
  	void _constant_item_changed(float p_value, String p_item_name);
 diff --git a/scene/gui/control.cpp b/scene/gui/control.cpp
-index 68f906931dc28d686ab5bce3f2464d9570c430a9..08a3cc4c59ca3249f2fb63391202a1934beee3de 100644
+index 5b4050b7f30064994e83ba8fa496296475f61629..27533c8c5fcd0a396d8df1fee9c50dad3396900a 100644
 --- a/scene/gui/control.cpp
 +++ b/scene/gui/control.cpp
-@@ -253,8 +253,10 @@ void Control::get_argument_options(const StringName &p_function, int p_idx, List
+@@ -265,8 +265,10 @@ void Control::get_argument_options(const StringName &p_function, int p_idx, List
  			type = Theme::DATA_TYPE_COLOR;
  		} else if (pf == "add_theme_color_role_override" || pf == "has_theme_color_role" || pf == "has_theme_color_role_override" || pf == "get_theme_color_role" || pf == "remove_theme_color_role_override") {
  			type = Theme::DATA_TYPE_COLOR_ROLE;
@@ -689,50 +691,54 @@ index 68f906931dc28d686ab5bce3f2464d9570c430a9..08a3cc4c59ca3249f2fb63391202a193
  		} else if (pf == "add_theme_constant_override" || pf == "has_theme_constant" || pf == "has_theme_constant_override" || pf == "get_theme_constant" || pf == "remove_theme_constant_override") {
  			type = Theme::DATA_TYPE_CONSTANT;
  		} else if (pf == "add_theme_font_override" || pf == "has_theme_font" || pf == "has_theme_font_override" || pf == "get_theme_font" || pf == "remove_theme_font_override") {
-@@ -402,10 +404,14 @@ bool Control::_set(const StringName &p_name, const Variant &p_value) {
+@@ -416,7 +418,7 @@ bool Control::_set(const StringName &p_name, const Variant &p_value) {
  			}
  			data.theme_color_scheme_override.erase(dname);
  			_notify_theme_override_changed();
 -		} else if (name.begins_with("theme_override_constants/")) {
 +			} else if (name.begins_with("theme_override_constants/")) {
  			String dname = name.get_slicec('/', 1);
--			data.theme_constant_override.erase(dname);
--			_notify_theme_override_changed();
-+				data.theme_constant_override.erase(dname);
-+				_notify_theme_override_changed();
-+			} else if (name.begins_with("theme_override_strings/")) {
-+				String dname = name.get_slicec('/', 1);
-+				data.theme_string_override.erase(dname);
-+				_notify_theme_override_changed();
+ 			data.theme_constant_override.erase(dname);
+ 			_notify_theme_override_changed();
+@@ -427,6 +429,10 @@ bool Control::_set(const StringName &p_name, const Variant &p_value) {
+ 			}
+ 			data.theme_sound_override.erase(dname);
+ 			_notify_theme_override_changed();
++		} else if (name.begins_with("theme_override_strings/")) {
++			String dname = name.get_slicec('/', 1);
++			data.theme_string_override.erase(dname);
++			_notify_theme_override_changed();
  		} else {
  			return false;
  		}
-@@ -431,9 +437,12 @@ bool Control::_set(const StringName &p_name, const Variant &p_value) {
+@@ -452,12 +458,15 @@ bool Control::_set(const StringName &p_name, const Variant &p_value) {
  		} else if (name.begins_with("theme_override_color_schemes/")) {
  			String dname = name.get_slicec('/', 1);
  			add_theme_color_scheme_override(dname, p_value);
 -		} else if (name.begins_with("theme_override_constants/")) {
 +			} else if (name.begins_with("theme_override_constants/")) {
  			String dname = name.get_slicec('/', 1);
--			add_theme_constant_override(dname, p_value);
-+				add_theme_constant_override(dname, p_value);
-+			} else if (name.begins_with("theme_override_strings/")) {
-+				String dname = name.get_slicec('/', 1);
-+				add_theme_string_override(dname, p_value);
+ 			add_theme_constant_override(dname, p_value);
+ 		} else if (name.begins_with("theme_override_sounds/")) {
+ 			String dname = name.get_slicec('/', 1);
+ 			add_theme_sound_override(dname, p_value);
++		} else if (name.begins_with("theme_override_strings/")) {
++			String dname = name.get_slicec('/', 1);
++			add_theme_string_override(dname, p_value);
  		} else {
  			return false;
  		}
-@@ -474,6 +483,9 @@ bool Control::_get(const StringName &p_name, Variant &r_ret) const {
- 	} else if (sname.begins_with("theme_override_constants/")) {
+@@ -501,6 +510,9 @@ bool Control::_get(const StringName &p_name, Variant &r_ret) const {
+ 	} else if (sname.begins_with("theme_override_sounds/")) {
  		String name = sname.get_slicec('/', 1);
- 		r_ret = data.theme_constant_override.has(name) ? Variant(data.theme_constant_override[name]) : Variant();
+ 		r_ret = data.theme_sound_override.has(name) ? Variant(data.theme_sound_override[name]) : Variant();
 +	} else if (sname.begins_with("theme_override_strings/")) {
 +		String name = sname.get_slicec('/', 1);
 +		r_ret = data.theme_string_override.has(name) ? Variant(data.theme_string_override[name]) : Variant();
  	} else {
  		return false;
  	}
-@@ -550,7 +562,14 @@ void Control::_get_property_list(List<PropertyInfo> *p_list) const {
+@@ -577,7 +589,14 @@ void Control::_get_property_list(List<PropertyInfo> *p_list) const {
  					usage |= PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_CHECKED;
  				}
  				p_list->push_back(PropertyInfo(Variant::OBJECT, PNAME("theme_override_styles") + String("/") + E.item_name, PROPERTY_HINT_RESOURCE_TYPE, StyleBox::get_class_static(), usage));
@@ -746,17 +752,17 @@ index 68f906931dc28d686ab5bce3f2464d9570c430a9..08a3cc4c59ca3249f2fb63391202a193
 +					p_list->push_back(PropertyInfo(Variant::STRING, PNAME("theme_override_strings") + String("/") + E.item_name, PROPERTY_HINT_NONE, "", usage));
 +				} break;
  
- 			default: {
- 				// Silences warning.
-@@ -3693,6 +3712,7 @@ void Control::_invalidate_theme_cache() {
- 	data.theme_constant_cache.clear();
+ 			case Theme::DATA_TYPE_SOUND: {
+ 				if (data.theme_sound_override.has(E.item_name)) {
+@@ -3859,6 +3878,7 @@ void Control::_invalidate_theme_cache() {
+ 	data.theme_audio_cache.clear();
  	data.theme_color_role_cache.clear();
  	data.theme_color_scheme_cache.clear();
 +	data.theme_string_cache.clear();
  }
  
  void Control::_update_theme_item_cache() {
-@@ -4024,6 +4044,30 @@ Ref<ColorScheme> Control::get_theme_color_scheme(const StringName &p_name, const
+@@ -4214,6 +4234,30 @@ Ref<ColorScheme> Control::get_theme_color_scheme(const StringName &p_name, const
  	return color_scheme;
  }
  
@@ -787,7 +793,7 @@ index 68f906931dc28d686ab5bce3f2464d9570c430a9..08a3cc4c59ca3249f2fb63391202a193
  Variant Control::get_theme_item(Theme::DataType p_data_type, const StringName &p_name, const StringName &p_theme_type) const {
  	switch (p_data_type) {
  		case Theme::DATA_TYPE_COLOR:
-@@ -4042,6 +4086,8 @@ Variant Control::get_theme_item(Theme::DataType p_data_type, const StringName &p
+@@ -4234,6 +4278,8 @@ Variant Control::get_theme_item(Theme::DataType p_data_type, const StringName &p
  			return get_theme_color_role(p_name, p_theme_type);
  		case Theme::DATA_TYPE_COLOR_SCHEME:
  			return get_theme_color_scheme(p_name, p_theme_type);
@@ -796,9 +802,9 @@ index 68f906931dc28d686ab5bce3f2464d9570c430a9..08a3cc4c59ca3249f2fb63391202a193
  		case Theme::DATA_TYPE_MAX:
  			break; // Can't happen, but silences warning.
  	}
-@@ -4090,6 +4136,11 @@ Variant Control::get_used_theme_item(const String &p_full_name, const StringName
- 		if (has_theme_constant(name)) {
- 			return get_theme_constant(name);
+@@ -4287,6 +4333,11 @@ Variant Control::get_used_theme_item(const String &p_full_name, const StringName
+ 		if (has_theme_sound(name)) {
+ 			return get_theme_sound(name);
  		}
 +	} else if (p_full_name.begins_with("theme_override_strings/")) {
 +		String name = p_full_name.substr(strlen("theme_override_strings/"));
@@ -808,7 +814,7 @@ index 68f906931dc28d686ab5bce3f2464d9570c430a9..08a3cc4c59ca3249f2fb63391202a193
  	} else {
  		ERR_FAIL_V_MSG(Variant(), vformat("The property %s is not a theme item.", p_full_name));
  	}
-@@ -4239,6 +4290,23 @@ bool Control::has_theme_color_scheme(const StringName &p_name, const StringName
+@@ -4453,6 +4504,23 @@ bool Control::has_theme_color_scheme(const StringName &p_name, const StringName
  	return data.theme_owner->has_theme_item_in_types(Theme::DATA_TYPE_COLOR_SCHEME, p_name, theme_types);
  }
  
@@ -832,7 +838,7 @@ index 68f906931dc28d686ab5bce3f2464d9570c430a9..08a3cc4c59ca3249f2fb63391202a193
  /// Local property overrides.
  
  void Control::add_theme_icon_override(const StringName &p_name, RequiredParam<Texture2D> p_icon) {
-@@ -4317,6 +4385,12 @@ void Control::add_theme_color_scheme_override(const StringName &p_name, Required
+@@ -4544,6 +4612,12 @@ void Control::add_theme_color_scheme_override(const StringName &p_name, Required
  	_notify_theme_override_changed();
  }
  
@@ -845,7 +851,7 @@ index 68f906931dc28d686ab5bce3f2464d9570c430a9..08a3cc4c59ca3249f2fb63391202a193
  void Control::remove_theme_icon_override(const StringName &p_name) {
  	ERR_MAIN_THREAD_GUARD;
  	if (data.theme_icon_override.has(p_name)) {
-@@ -4381,6 +4455,12 @@ void Control::remove_theme_color_scheme_override(const StringName &p_name) {
+@@ -4614,6 +4688,12 @@ void Control::remove_theme_color_scheme_override(const StringName &p_name) {
  	_notify_theme_override_changed();
  }
  
@@ -858,7 +864,7 @@ index 68f906931dc28d686ab5bce3f2464d9570c430a9..08a3cc4c59ca3249f2fb63391202a193
  bool Control::has_theme_icon_override(const StringName &p_name) const {
  	ERR_READ_THREAD_GUARD_V(false);
  	const Ref<Texture2D> *tex = data.theme_icon_override.getptr(p_name);
-@@ -4429,6 +4509,11 @@ bool Control::has_theme_color_scheme_override(const StringName &p_name) const {
+@@ -4668,6 +4748,11 @@ bool Control::has_theme_color_scheme_override(const StringName &p_name) const {
  	return color_scheme != nullptr;
  }
  
@@ -870,106 +876,106 @@ index 68f906931dc28d686ab5bce3f2464d9570c430a9..08a3cc4c59ca3249f2fb63391202a193
  /// Default theme properties.
  
  float Control::get_theme_default_base_scale() const {
-@@ -5088,6 +5173,7 @@ void Control::_bind_methods() {
- 	ClassDB::bind_method(D_METHOD("add_theme_constant_override", "name", "constant"), &Control::add_theme_constant_override);
+@@ -5330,6 +5415,7 @@ void Control::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("add_theme_sound_override", "name", "audio"), &Control::add_theme_sound_override);
  	ClassDB::bind_method(D_METHOD("add_theme_color_role_override", "name", "color_role"), &Control::add_theme_color_role_override);
  	ClassDB::bind_method(D_METHOD("add_theme_color_scheme_override", "name", "color_scheme"), &Control::add_theme_color_scheme_override);
 +	ClassDB::bind_method(D_METHOD("add_theme_string_override", "name", "value"), &Control::add_theme_string_override);
  
  	ClassDB::bind_method(D_METHOD("remove_theme_icon_override", "name"), &Control::remove_theme_icon_override);
  	ClassDB::bind_method(D_METHOD("remove_theme_stylebox_override", "name"), &Control::remove_theme_style_override);
-@@ -5097,6 +5183,7 @@ void Control::_bind_methods() {
- 	ClassDB::bind_method(D_METHOD("remove_theme_constant_override", "name"), &Control::remove_theme_constant_override);
+@@ -5340,6 +5426,7 @@ void Control::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("remove_theme_sound_override", "name"), &Control::remove_theme_sound_override);
  	ClassDB::bind_method(D_METHOD("remove_theme_color_role_override", "name"), &Control::remove_theme_color_role_override);
  	ClassDB::bind_method(D_METHOD("remove_theme_color_scheme_override", "name"), &Control::remove_theme_color_scheme_override);
 +	ClassDB::bind_method(D_METHOD("remove_theme_string_override", "name"), &Control::remove_theme_string_override);
  
  	ClassDB::bind_method(D_METHOD("get_theme_icon", "name", "theme_type"), &Control::get_theme_icon, DEFVAL(StringName()));
  	ClassDB::bind_method(D_METHOD("get_theme_stylebox", "name", "theme_type"), &Control::get_theme_stylebox, DEFVAL(StringName()));
-@@ -5106,6 +5193,7 @@ void Control::_bind_methods() {
- 	ClassDB::bind_method(D_METHOD("get_theme_constant", "name", "theme_type"), &Control::get_theme_constant, DEFVAL(StringName()));
+@@ -5350,6 +5437,7 @@ void Control::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("get_theme_sound", "name", "theme_type"), &Control::get_theme_sound, DEFVAL(StringName()));
  	ClassDB::bind_method(D_METHOD("get_theme_color_role", "name", "theme_type"), &Control::get_theme_color_role, DEFVAL(StringName()));
  	ClassDB::bind_method(D_METHOD("get_theme_color_scheme", "name", "theme_type"), &Control::get_theme_color_scheme, DEFVAL(StringName()));
 +	ClassDB::bind_method(D_METHOD("get_theme_string", "name", "theme_type"), &Control::get_theme_string, DEFVAL(StringName()));
  
  	ClassDB::bind_method(D_METHOD("has_theme_icon_override", "name"), &Control::has_theme_icon_override);
  	ClassDB::bind_method(D_METHOD("has_theme_stylebox_override", "name"), &Control::has_theme_stylebox_override);
-@@ -5115,6 +5203,7 @@ void Control::_bind_methods() {
- 	ClassDB::bind_method(D_METHOD("has_theme_constant_override", "name"), &Control::has_theme_constant_override);
+@@ -5360,6 +5448,7 @@ void Control::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("has_theme_sound_override", "name"), &Control::has_theme_sound_override);
  	ClassDB::bind_method(D_METHOD("has_theme_color_role_override", "name"), &Control::has_theme_color_role_override);
  	ClassDB::bind_method(D_METHOD("has_theme_color_scheme_override", "name"), &Control::has_theme_color_scheme_override);
 +	ClassDB::bind_method(D_METHOD("has_theme_string_override", "name"), &Control::has_theme_string_override);
  
  	ClassDB::bind_method(D_METHOD("has_theme_icon", "name", "theme_type"), &Control::has_theme_icon, DEFVAL(StringName()));
  	ClassDB::bind_method(D_METHOD("has_theme_stylebox", "name", "theme_type"), &Control::has_theme_stylebox, DEFVAL(StringName()));
-@@ -5124,6 +5213,7 @@ void Control::_bind_methods() {
- 	ClassDB::bind_method(D_METHOD("has_theme_constant", "name", "theme_type"), &Control::has_theme_constant, DEFVAL(StringName()));
+@@ -5370,6 +5459,7 @@ void Control::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("has_theme_sound", "name", "theme_type"), &Control::has_theme_sound, DEFVAL(StringName()));
  	ClassDB::bind_method(D_METHOD("has_theme_color_role", "name", "theme_type"), &Control::has_theme_color_role, DEFVAL(StringName()));
  	ClassDB::bind_method(D_METHOD("has_theme_color_scheme", "name", "theme_type"), &Control::has_theme_color_scheme, DEFVAL(StringName()));
 +	ClassDB::bind_method(D_METHOD("has_theme_string", "name", "theme_type"), &Control::has_theme_string, DEFVAL(StringName()));
  
  	ClassDB::bind_method(D_METHOD("get_theme_default_base_scale"), &Control::get_theme_default_base_scale);
  	ClassDB::bind_method(D_METHOD("get_theme_default_font"), &Control::get_theme_default_font);
-@@ -5517,4 +5607,5 @@ Control::~Control() {
- 	data.theme_constant_override.clear();
+@@ -5768,4 +5858,5 @@ Control::~Control() {
+ 	data.theme_sound_override.clear();
  	data.theme_color_role_override.clear();
  	data.theme_color_scheme_override.clear();
 +	data.theme_string_override.clear();
  }
 diff --git a/scene/gui/control.h b/scene/gui/control.h
-index 1e479a4e365befe0d4cd36c679a20d6d97214137..9799ae5776fadc086ae86006e72fbac6ba6c297a 100644
+index da9f3da55866aa4e9b0e9ee2e102e246f33528ef..2f54f07843d976e4550122e996d44e9ee1be8e77 100644
 --- a/scene/gui/control.h
 +++ b/scene/gui/control.h
-@@ -325,6 +325,7 @@ private:
- 		Theme::ThemeConstantMap theme_constant_override;
+@@ -331,6 +331,7 @@ private:
+ 		Theme::ThemeSoundMap theme_sound_override;
  		Theme::ThemeColorRoleMap theme_color_role_override;
  		Theme::ThemeColorSchemeMap theme_color_scheme_override;
 +		Theme::ThemeStringMap theme_string_override;
  
  		mutable HashMap<StringName, Theme::ThemeIconMap> theme_icon_cache;
  		mutable HashMap<StringName, Theme::ThemeStyleMap> theme_style_cache;
-@@ -334,6 +335,7 @@ private:
- 		mutable HashMap<StringName, Theme::ThemeConstantMap> theme_constant_cache;
+@@ -341,6 +342,7 @@ private:
+ 		mutable HashMap<StringName, Theme::ThemeSoundMap> theme_audio_cache;
  		mutable HashMap<StringName, Theme::ThemeColorRoleMap> theme_color_role_cache;
  		mutable HashMap<StringName, Theme::ThemeColorSchemeMap> theme_color_scheme_cache;
 +		mutable HashMap<StringName, Theme::ThemeStringMap> theme_string_cache;
  
  		// Internationalization.
  
-@@ -809,6 +811,7 @@ public:
- 	void add_theme_constant_override(const StringName &p_name, int p_constant);
+@@ -823,6 +825,7 @@ public:
+ 	void add_theme_sound_override(const StringName &p_name, const Ref<AudioStream> &p_sound);
  	void add_theme_color_role_override(const StringName &p_name, ColorRole p_color_role);
  	void add_theme_color_scheme_override(const StringName &p_name, RequiredParam<ColorScheme> p_color_scheme);
 +	void add_theme_string_override(const StringName &p_name, const String &p_string);
  
  	void remove_theme_icon_override(const StringName &p_name);
  	void remove_theme_style_override(const StringName &p_name);
-@@ -818,6 +821,7 @@ public:
- 	void remove_theme_constant_override(const StringName &p_name);
+@@ -833,6 +836,7 @@ public:
+ 	void remove_theme_sound_override(const StringName &p_name);
  	void remove_theme_color_role_override(const StringName &p_name);
  	void remove_theme_color_scheme_override(const StringName &p_name);
 +	void remove_theme_string_override(const StringName &p_name);
  
  	Ref<Texture2D> get_theme_icon(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
  	Ref<StyleBox> get_theme_stylebox(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
-@@ -827,6 +831,7 @@ public:
- 	int get_theme_constant(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+@@ -843,6 +847,7 @@ public:
+ 	Ref<AudioStream> get_theme_sound(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
  	ColorRole get_theme_color_role(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
  	Ref<ColorScheme> get_theme_color_scheme(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
 +	String get_theme_string(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
  	Variant get_theme_item(Theme::DataType p_data_type, const StringName &p_name, const StringName &p_theme_type = StringName()) const;
  	Variant get_used_theme_item(const String &p_full_name, const StringName &p_theme_type = StringName()) const;
  #ifdef TOOLS_ENABLED
-@@ -841,6 +846,7 @@ public:
- 	bool has_theme_constant_override(const StringName &p_name) const;
+@@ -858,6 +863,7 @@ public:
+ 	bool has_theme_sound_override(const StringName &p_name) const;
  	bool has_theme_color_role_override(const StringName &p_name) const;
  	bool has_theme_color_scheme_override(const StringName &p_name) const;
 +	bool has_theme_string_override(const StringName &p_name) const;
  
  	bool has_theme_icon(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
  	bool has_theme_stylebox(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
-@@ -850,6 +856,7 @@ public:
- 	bool has_theme_constant(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+@@ -868,6 +874,7 @@ public:
+ 	bool has_theme_sound(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
  	bool has_theme_color_role(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
  	bool has_theme_color_scheme(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
 +	bool has_theme_string(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
@@ -977,53 +983,57 @@ index 1e479a4e365befe0d4cd36c679a20d6d97214137..9799ae5776fadc086ae86006e72fbac6
  	float get_theme_default_base_scale() const;
  	Ref<Font> get_theme_default_font() const;
 diff --git a/scene/main/window.cpp b/scene/main/window.cpp
-index ca7bce34deaa54214273f4f8a1e2fa933fa5780e..0b62a78e3eb728a1e0be6d35d1f56b84833f44b4 100644
+index de019019765a74799727de02dc3a394690a3e721..bfb765d5b4fc51d2fb7e6a9b4d831f99ce053411 100644
 --- a/scene/main/window.cpp
 +++ b/scene/main/window.cpp
-@@ -111,10 +111,14 @@ bool Window::_set(const StringName &p_name, const Variant &p_value) {
+@@ -111,7 +111,7 @@ bool Window::_set(const StringName &p_name, const Variant &p_value) {
  			}
  			theme_color_scheme_override.erase(dname);
  			_notify_theme_override_changed();
 -		} else if (name.begins_with("theme_override_constants/")) {
 +			} else if (name.begins_with("theme_override_constants/")) {
  			String dname = name.get_slicec('/', 1);
--			theme_constant_override.erase(dname);
--			_notify_theme_override_changed();
-+				theme_constant_override.erase(dname);
-+				_notify_theme_override_changed();
-+			} else if (name.begins_with("theme_override_strings/")) {
-+				String dname = name.get_slicec('/', 1);
-+				theme_string_override.erase(dname);
-+				_notify_theme_override_changed();
+ 			theme_constant_override.erase(dname);
+ 			_notify_theme_override_changed();
+@@ -122,6 +122,10 @@ bool Window::_set(const StringName &p_name, const Variant &p_value) {
+ 			}
+ 			theme_sound_override.erase(dname);
+ 			_notify_theme_override_changed();
++		} else if (name.begins_with("theme_override_strings/")) {
++			String dname = name.get_slicec('/', 1);
++			theme_string_override.erase(dname);
++			_notify_theme_override_changed();
  		} else {
  			return false;
  		}
-@@ -140,9 +144,12 @@ bool Window::_set(const StringName &p_name, const Variant &p_value) {
+@@ -147,12 +151,15 @@ bool Window::_set(const StringName &p_name, const Variant &p_value) {
  		} else if (name.begins_with("theme_override_color_schemes/")) {
  			String dname = name.get_slicec('/', 1);
  			add_theme_color_scheme_override(dname, p_value);
 -		} else if (name.begins_with("theme_override_constants/")) {
 +			} else if (name.begins_with("theme_override_constants/")) {
  			String dname = name.get_slicec('/', 1);
--			add_theme_constant_override(dname, p_value);
-+				add_theme_constant_override(dname, p_value);
-+			} else if (name.begins_with("theme_override_strings/")) {
-+				String dname = name.get_slicec('/', 1);
-+				add_theme_string_override(dname, p_value);
+ 			add_theme_constant_override(dname, p_value);
+ 		} else if (name.begins_with("theme_override_sounds/")) {
+ 			String dname = name.get_slicec('/', 1);
+ 			add_theme_sound_override(dname, p_value);
++		} else if (name.begins_with("theme_override_strings/")) {
++			String dname = name.get_slicec('/', 1);
++			add_theme_string_override(dname, p_value);
  		} else {
  			return false;
  		}
-@@ -182,6 +189,9 @@ bool Window::_get(const StringName &p_name, Variant &r_ret) const {
- 	} else if (sname.begins_with("theme_override_constants/")) {
+@@ -195,6 +202,9 @@ bool Window::_get(const StringName &p_name, Variant &r_ret) const {
+ 	} else if (sname.begins_with("theme_override_sounds/")) {
  		String name = sname.get_slicec('/', 1);
- 		r_ret = theme_constant_override.has(name) ? Variant(theme_constant_override[name]) : Variant();
+ 		r_ret = theme_sound_override.has(name) ? Variant(theme_sound_override[name]) : Variant();
 +	} else if (sname.begins_with("theme_override_strings/")) {
 +		String name = sname.get_slicec('/', 1);
 +		r_ret = theme_string_override.has(name) ? Variant(theme_string_override[name]) : Variant();
  	} else {
  		return false;
  	}
-@@ -292,6 +302,18 @@ void Window::_get_property_list(List<PropertyInfo> *p_list) const {
+@@ -317,6 +327,18 @@ void Window::_get_property_list(List<PropertyInfo> *p_list) const {
  			p_list->push_back(PropertyInfo(Variant::OBJECT, PNAME("theme_override_color_schemes") + String("/") + E, PROPERTY_HINT_RESOURCE_TYPE, ColorScheme::get_class_static(), usage));
  		}
  	}
@@ -1042,7 +1052,7 @@ index ca7bce34deaa54214273f4f8a1e2fa933fa5780e..0b62a78e3eb728a1e0be6d35d1f56b84
  }
  
  void Window::_validate_property(PropertyInfo &p_property) const {
-@@ -327,7 +349,7 @@ void Window::_validate_property(PropertyInfo &p_property) const {
+@@ -352,7 +374,7 @@ void Window::_validate_property(PropertyInfo &p_property) const {
  				tmp_window = Object::cast_to<Window>(tmp_window->get_parent());
  			}
  		}
@@ -1051,15 +1061,15 @@ index ca7bce34deaa54214273f4f8a1e2fa933fa5780e..0b62a78e3eb728a1e0be6d35d1f56b84
  			get_theme()->get_type_variation_list(get_class_name(), &names);
  		}
  		if (ThemeDB::get_singleton()->get_project_theme().is_valid()) {
-@@ -2654,6 +2676,7 @@ void Window::_invalidate_theme_cache() {
- 	theme_constant_cache.clear();
+@@ -2705,6 +2727,7 @@ void Window::_invalidate_theme_cache() {
+ 	theme_audio_cache.clear();
  	theme_color_role_cache.clear();
  	theme_color_scheme_cache.clear();
 +	theme_string_cache.clear();
  }
  
  void Window::_update_theme_item_cache() {
-@@ -2946,6 +2969,30 @@ Ref<ColorScheme> Window::get_theme_color_scheme(const StringName &p_name, const
+@@ -3021,6 +3044,30 @@ Ref<ColorScheme> Window::get_theme_color_scheme(const StringName &p_name, const
  	return color_scheme;
  }
  
@@ -1090,8 +1100,8 @@ index ca7bce34deaa54214273f4f8a1e2fa933fa5780e..0b62a78e3eb728a1e0be6d35d1f56b84
  Variant Window::get_theme_item(Theme::DataType p_data_type, const StringName &p_name, const StringName &p_theme_type) const {
  	switch (p_data_type) {
  		case Theme::DATA_TYPE_COLOR:
-@@ -2962,8 +3009,10 @@ Variant Window::get_theme_item(Theme::DataType p_data_type, const StringName &p_
- 			return get_theme_stylebox(p_name, p_theme_type);
+@@ -3039,8 +3086,10 @@ Variant Window::get_theme_item(Theme::DataType p_data_type, const StringName &p_
+ 			return get_theme_sound(p_name, p_theme_type);
  		case Theme::DATA_TYPE_COLOR_ROLE:
  			return get_theme_color_role(p_name, p_theme_type);
 -		case Theme::DATA_TYPE_COLOR_SCHEME:
@@ -1103,7 +1113,7 @@ index ca7bce34deaa54214273f4f8a1e2fa933fa5780e..0b62a78e3eb728a1e0be6d35d1f56b84
  		case Theme::DATA_TYPE_MAX:
  			break; // Can't happen, but silences warning.
  	}
-@@ -3113,6 +3162,23 @@ bool Window::has_theme_color_scheme(const StringName &p_name, const StringName &
+@@ -3207,6 +3256,23 @@ bool Window::has_theme_color_scheme(const StringName &p_name, const StringName &
  	return theme_owner->has_theme_item_in_types(Theme::DATA_TYPE_COLOR_SCHEME, p_name, theme_types);
  }
  
@@ -1127,7 +1137,7 @@ index ca7bce34deaa54214273f4f8a1e2fa933fa5780e..0b62a78e3eb728a1e0be6d35d1f56b84
  /// Local property overrides.
  
  void Window::add_theme_icon_override(const StringName &p_name, const Ref<Texture2D> &p_icon) {
-@@ -3191,6 +3257,12 @@ void Window::add_theme_color_scheme_override(const StringName &p_name, const Ref
+@@ -3291,6 +3357,12 @@ void Window::add_theme_color_scheme_override(const StringName &p_name, const Ref
  	_notify_theme_override_changed();
  }
  
@@ -1140,7 +1150,7 @@ index ca7bce34deaa54214273f4f8a1e2fa933fa5780e..0b62a78e3eb728a1e0be6d35d1f56b84
  void Window::remove_theme_icon_override(const StringName &p_name) {
  	ERR_MAIN_THREAD_GUARD;
  	if (theme_icon_override.has(p_name)) {
-@@ -3255,6 +3327,12 @@ void Window::remove_theme_color_scheme_override(const StringName &p_name) {
+@@ -3361,6 +3433,12 @@ void Window::remove_theme_color_scheme_override(const StringName &p_name) {
  	_notify_theme_override_changed();
  }
  
@@ -1153,7 +1163,7 @@ index ca7bce34deaa54214273f4f8a1e2fa933fa5780e..0b62a78e3eb728a1e0be6d35d1f56b84
  bool Window::has_theme_icon_override(const StringName &p_name) const {
  	ERR_READ_THREAD_GUARD_V(false);
  	const Ref<Texture2D> *tex = theme_icon_override.getptr(p_name);
-@@ -3303,6 +3381,11 @@ bool Window::has_theme_color_scheme_override(const StringName &p_name) const {
+@@ -3415,6 +3493,11 @@ bool Window::has_theme_color_scheme_override(const StringName &p_name) const {
  	return color_scheme != nullptr;
  }
  
@@ -1165,106 +1175,106 @@ index ca7bce34deaa54214273f4f8a1e2fa933fa5780e..0b62a78e3eb728a1e0be6d35d1f56b84
  /// Default theme properties.
  
  float Window::get_theme_default_base_scale() const {
-@@ -3754,6 +3837,7 @@ void Window::_bind_methods() {
- 	ClassDB::bind_method(D_METHOD("add_theme_constant_override", "name", "constant"), &Window::add_theme_constant_override);
+@@ -3872,6 +3955,7 @@ void Window::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("add_theme_sound_override", "name", "sound"), &Window::add_theme_sound_override);
  	ClassDB::bind_method(D_METHOD("add_theme_color_role_override", "name", "color_role"), &Window::add_theme_color_role_override);
  	ClassDB::bind_method(D_METHOD("add_theme_color_scheme_override", "name", "color_scheme"), &Window::add_theme_color_scheme_override);
 +	ClassDB::bind_method(D_METHOD("add_theme_string_override", "name", "value"), &Window::add_theme_string_override);
  
  	ClassDB::bind_method(D_METHOD("remove_theme_icon_override", "name"), &Window::remove_theme_icon_override);
  	ClassDB::bind_method(D_METHOD("remove_theme_stylebox_override", "name"), &Window::remove_theme_style_override);
-@@ -3763,6 +3847,7 @@ void Window::_bind_methods() {
- 	ClassDB::bind_method(D_METHOD("remove_theme_constant_override", "name"), &Window::remove_theme_constant_override);
+@@ -3882,6 +3966,7 @@ void Window::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("remove_theme_sound_override", "name"), &Window::remove_theme_sound_override);
  	ClassDB::bind_method(D_METHOD("remove_theme_color_role_override", "name"), &Window::remove_theme_color_role_override);
  	ClassDB::bind_method(D_METHOD("remove_theme_color_scheme_override", "name"), &Window::remove_theme_color_scheme_override);
 +	ClassDB::bind_method(D_METHOD("remove_theme_string_override", "name"), &Window::remove_theme_string_override);
  
  	ClassDB::bind_method(D_METHOD("get_theme_icon", "name", "theme_type"), &Window::get_theme_icon, DEFVAL(StringName()));
  	ClassDB::bind_method(D_METHOD("get_theme_stylebox", "name", "theme_type"), &Window::get_theme_stylebox, DEFVAL(StringName()));
-@@ -3772,6 +3857,7 @@ void Window::_bind_methods() {
- 	ClassDB::bind_method(D_METHOD("get_theme_constant", "name", "theme_type"), &Window::get_theme_constant, DEFVAL(StringName()));
+@@ -3892,6 +3977,7 @@ void Window::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("get_theme_sound", "name", "theme_type"), &Window::get_theme_sound, DEFVAL(StringName()));
  	ClassDB::bind_method(D_METHOD("get_theme_color_role", "name", "theme_type"), &Window::get_theme_color_role, DEFVAL(StringName()));
  	ClassDB::bind_method(D_METHOD("get_theme_color_scheme", "name", "theme_type"), &Window::get_theme_color_scheme, DEFVAL(StringName()));
 +	ClassDB::bind_method(D_METHOD("get_theme_string", "name", "theme_type"), &Window::get_theme_string, DEFVAL(StringName()));
  
  	ClassDB::bind_method(D_METHOD("has_theme_icon_override", "name"), &Window::has_theme_icon_override);
  	ClassDB::bind_method(D_METHOD("has_theme_stylebox_override", "name"), &Window::has_theme_stylebox_override);
-@@ -3781,6 +3867,7 @@ void Window::_bind_methods() {
- 	ClassDB::bind_method(D_METHOD("has_theme_constant_override", "name"), &Window::has_theme_constant_override);
+@@ -3902,6 +3988,7 @@ void Window::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("has_theme_sound_override", "name"), &Window::has_theme_sound_override);
  	ClassDB::bind_method(D_METHOD("has_theme_color_role_override", "name"), &Window::has_theme_color_role_override);
  	ClassDB::bind_method(D_METHOD("has_theme_color_scheme_override", "name"), &Window::has_theme_color_scheme_override);
 +	ClassDB::bind_method(D_METHOD("has_theme_string_override", "name"), &Window::has_theme_string_override);
  
  	ClassDB::bind_method(D_METHOD("has_theme_icon", "name", "theme_type"), &Window::has_theme_icon, DEFVAL(StringName()));
  	ClassDB::bind_method(D_METHOD("has_theme_stylebox", "name", "theme_type"), &Window::has_theme_stylebox, DEFVAL(StringName()));
-@@ -3790,6 +3877,7 @@ void Window::_bind_methods() {
- 	ClassDB::bind_method(D_METHOD("has_theme_constant", "name", "theme_type"), &Window::has_theme_constant, DEFVAL(StringName()));
+@@ -3912,6 +3999,7 @@ void Window::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("has_theme_sound", "name", "theme_type"), &Window::has_theme_sound, DEFVAL(StringName()));
  	ClassDB::bind_method(D_METHOD("has_theme_color_role", "name", "theme_type"), &Window::has_theme_color_role, DEFVAL(StringName()));
  	ClassDB::bind_method(D_METHOD("has_theme_color_scheme", "name", "theme_type"), &Window::has_theme_color_scheme, DEFVAL(StringName()));
 +	ClassDB::bind_method(D_METHOD("has_theme_string", "name", "theme_type"), &Window::has_theme_string, DEFVAL(StringName()));
  
  	ClassDB::bind_method(D_METHOD("get_theme_default_base_scale"), &Window::get_theme_default_base_scale);
  	ClassDB::bind_method(D_METHOD("get_theme_default_font"), &Window::get_theme_default_font);
-@@ -4023,4 +4111,5 @@ Window::~Window() {
- 	theme_constant_override.clear();
+@@ -4146,4 +4234,5 @@ Window::~Window() {
+ 	theme_sound_override.clear();
  	theme_color_role_override.clear();
  	theme_color_scheme_override.clear();
 +	theme_string_override.clear();
  }
 diff --git a/scene/main/window.h b/scene/main/window.h
-index db7213a59b366802365f12a47d859d6f48c5f80e..ef01e60a534cb824ab98136adc69275e43381496 100644
+index 1e979238311509b66082d9715ea0b47856168634..9615d7e23e7a4ef04b24b9f2e555eef0e2a76d02 100644
 --- a/scene/main/window.h
 +++ b/scene/main/window.h
-@@ -214,6 +214,7 @@ private:
- 	Theme::ThemeConstantMap theme_constant_override;
+@@ -217,6 +217,7 @@ private:
+ 	Theme::ThemeSoundMap theme_sound_override;
  	Theme::ThemeColorRoleMap theme_color_role_override;
  	Theme::ThemeColorSchemeMap theme_color_scheme_override;
 +	Theme::ThemeStringMap theme_string_override;
  
  	mutable HashMap<StringName, Theme::ThemeIconMap> theme_icon_cache;
  	mutable HashMap<StringName, Theme::ThemeStyleMap> theme_style_cache;
-@@ -223,6 +224,7 @@ private:
- 	mutable HashMap<StringName, Theme::ThemeConstantMap> theme_constant_cache;
+@@ -227,6 +228,7 @@ private:
+ 	mutable HashMap<StringName, Theme::ThemeSoundMap> theme_audio_cache;
  	mutable HashMap<StringName, Theme::ThemeColorRoleMap> theme_color_role_cache;
  	mutable HashMap<StringName, Theme::ThemeColorSchemeMap> theme_color_scheme_cache;
 +	mutable HashMap<StringName, Theme::ThemeStringMap> theme_string_cache;
  
  	void _theme_changed();
  	void _notify_theme_override_changed();
-@@ -507,6 +509,7 @@ public:
- 	void add_theme_constant_override(const StringName &p_name, int p_constant);
+@@ -514,6 +516,7 @@ public:
+ 	void add_theme_sound_override(const StringName &p_name, const Ref<AudioStream> &p_sound);
  	void add_theme_color_role_override(const StringName &p_name, ColorRole p_color_role);
  	void add_theme_color_scheme_override(const StringName &p_name, const Ref<ColorScheme> &p_color_scheme);
 +	void add_theme_string_override(const StringName &p_name, const String &p_string);
  
  	void remove_theme_icon_override(const StringName &p_name);
  	void remove_theme_style_override(const StringName &p_name);
-@@ -516,6 +519,7 @@ public:
- 	void remove_theme_constant_override(const StringName &p_name);
+@@ -524,6 +527,7 @@ public:
+ 	void remove_theme_sound_override(const StringName &p_name);
  	void remove_theme_color_role_override(const StringName &p_name);
  	void remove_theme_color_scheme_override(const StringName &p_name);
 +	void remove_theme_string_override(const StringName &p_name);
  
  	Ref<Texture2D> get_theme_icon(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
  	Ref<StyleBox> get_theme_stylebox(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
-@@ -525,6 +529,7 @@ public:
- 	int get_theme_constant(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+@@ -534,6 +538,7 @@ public:
+ 	Ref<AudioStream> get_theme_sound(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
  	ColorRole get_theme_color_role(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
  	Ref<ColorScheme> get_theme_color_scheme(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
 +	String get_theme_string(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
  	Variant get_theme_item(Theme::DataType p_data_type, const StringName &p_name, const StringName &p_theme_type = StringName()) const;
  #ifdef TOOLS_ENABLED
  	Ref<Texture2D> get_editor_theme_icon(const StringName &p_name) const;
-@@ -538,6 +543,7 @@ public:
- 	bool has_theme_constant_override(const StringName &p_name) const;
+@@ -548,6 +553,7 @@ public:
+ 	bool has_theme_sound_override(const StringName &p_name) const;
  	bool has_theme_color_role_override(const StringName &p_name) const;
  	bool has_theme_color_scheme_override(const StringName &p_name) const;
 +	bool has_theme_string_override(const StringName &p_name) const;
  
  	bool has_theme_icon(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
  	bool has_theme_stylebox(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
-@@ -547,6 +553,7 @@ public:
- 	bool has_theme_constant(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
+@@ -558,6 +564,7 @@ public:
+ 	bool has_theme_sound(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
  	bool has_theme_color_role(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
  	bool has_theme_color_scheme(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
 +	bool has_theme_string(const StringName &p_name, const StringName &p_theme_type = StringName()) const;
@@ -1272,10 +1282,10 @@ index db7213a59b366802365f12a47d859d6f48c5f80e..ef01e60a534cb824ab98136adc69275e
  	float get_theme_default_base_scale() const;
  	Ref<Font> get_theme_default_font() const;
 diff --git a/scene/resources/theme.cpp b/scene/resources/theme.cpp
-index afe0baa9b3da3e7e6389e2d40b2a5b42ec03d39d..2be7af6dde74c7fb13901643618c78aa669b6e6b 100644
+index a965514f4e73b2bcd9c9cefa816bd3cf6e8139bc..c46c2dc8296bfce7c2817a6b7a83f9309a3dca3c 100644
 --- a/scene/resources/theme.cpp
 +++ b/scene/resources/theme.cpp
-@@ -59,6 +59,8 @@ bool Theme::_set(const StringName &p_name, const Variant &p_value) {
+@@ -61,6 +61,8 @@ bool Theme::_set(const StringName &p_name, const Variant &p_value) {
  			set_color_role(prop_name, theme_type, p_value);
  		} else if (type == "color_schemes") {
  			set_color_scheme(prop_name, theme_type, p_value);
@@ -1284,7 +1294,7 @@ index afe0baa9b3da3e7e6389e2d40b2a5b42ec03d39d..2be7af6dde74c7fb13901643618c78aa
  		} else if (type == "base_type") {
  			set_type_variation(theme_type, p_value);
  		} else {
-@@ -111,6 +113,8 @@ bool Theme::_get(const StringName &p_name, Variant &r_ret) const {
+@@ -119,6 +121,8 @@ bool Theme::_get(const StringName &p_name, Variant &r_ret) const {
  			} else {
  				r_ret = color_scheme_map[theme_type][prop_name];
  			}
@@ -1293,7 +1303,7 @@ index afe0baa9b3da3e7e6389e2d40b2a5b42ec03d39d..2be7af6dde74c7fb13901643618c78aa
  		} else if (type == "base_type") {
  			r_ret = get_type_variation_base(theme_type);
  		} else {
-@@ -187,6 +191,13 @@ void Theme::_get_property_list(List<PropertyInfo> *p_list) const {
+@@ -202,6 +206,13 @@ void Theme::_get_property_list(List<PropertyInfo> *p_list) const {
  		}
  	}
  
@@ -1307,7 +1317,7 @@ index afe0baa9b3da3e7e6389e2d40b2a5b42ec03d39d..2be7af6dde74c7fb13901643618c78aa
  	// Sort and store properties.
  	list.sort();
  	String prev_type;
-@@ -1200,6 +1211,91 @@ void Theme::get_color_scheme_type_list(List<StringName> *p_list) const {
+@@ -1335,6 +1346,91 @@ void Theme::get_color_scheme_type_list(List<StringName> *p_list) const {
  	}
  }
  
@@ -1399,7 +1409,7 @@ index afe0baa9b3da3e7e6389e2d40b2a5b42ec03d39d..2be7af6dde74c7fb13901643618c78aa
  // Generic methods for managing theme items.
  void Theme::set_theme_item(DataType p_data_type, const StringName &p_name, const StringName &p_theme_type, const Variant &p_value) {
  	switch (p_data_type) {
-@@ -1250,6 +1346,11 @@ void Theme::set_theme_item(DataType p_data_type, const StringName &p_name, const
+@@ -1391,6 +1487,11 @@ void Theme::set_theme_item(DataType p_data_type, const StringName &p_name, const
  			Ref<ColorScheme> color_scheme_value = Object::cast_to<ColorScheme>(p_value.get_validated_object());
  			set_color_scheme(p_name, p_theme_type, color_scheme_value);
  		} break;
@@ -1411,7 +1421,7 @@ index afe0baa9b3da3e7e6389e2d40b2a5b42ec03d39d..2be7af6dde74c7fb13901643618c78aa
  		case DATA_TYPE_MAX:
  			break; // Can't happen, but silences warning.
  	}
-@@ -1273,6 +1374,8 @@ Variant Theme::get_theme_item(DataType p_data_type, const StringName &p_name, co
+@@ -1416,6 +1517,8 @@ Variant Theme::get_theme_item(DataType p_data_type, const StringName &p_name, co
  			return get_color_role(p_name, p_theme_type);
  		case DATA_TYPE_COLOR_SCHEME:
  			return get_color_scheme(p_name, p_theme_type);
@@ -1420,7 +1430,7 @@ index afe0baa9b3da3e7e6389e2d40b2a5b42ec03d39d..2be7af6dde74c7fb13901643618c78aa
  		case DATA_TYPE_MAX:
  			break; // Can't happen, but silences warning.
  	}
-@@ -1306,6 +1409,8 @@ bool Theme::has_theme_item(DataType p_data_type, const StringName &p_name, const
+@@ -1451,6 +1554,8 @@ bool Theme::has_theme_item(DataType p_data_type, const StringName &p_name, const
  			return has_color_role(p_name, p_theme_type);
  		case DATA_TYPE_COLOR_SCHEME:
  			return has_color_scheme(p_name, p_theme_type);
@@ -1429,7 +1439,7 @@ index afe0baa9b3da3e7e6389e2d40b2a5b42ec03d39d..2be7af6dde74c7fb13901643618c78aa
  		case DATA_TYPE_MAX:
  			break; // Can't happen, but silences warning.
  	}
-@@ -1331,6 +1436,8 @@ bool Theme::has_theme_item_nocheck(DataType p_data_type, const StringName &p_nam
+@@ -1478,6 +1583,8 @@ bool Theme::has_theme_item_nocheck(DataType p_data_type, const StringName &p_nam
  			return has_color_role_nocheck(p_name, p_theme_type);
  		case DATA_TYPE_COLOR_SCHEME:
  			return has_color_scheme_nocheck(p_name, p_theme_type);
@@ -1438,7 +1448,7 @@ index afe0baa9b3da3e7e6389e2d40b2a5b42ec03d39d..2be7af6dde74c7fb13901643618c78aa
  		case DATA_TYPE_MAX:
  			break; // Can't happen, but silences warning.
  	}
-@@ -1364,6 +1471,9 @@ void Theme::rename_theme_item(DataType p_data_type, const StringName &p_old_name
+@@ -1514,6 +1621,9 @@ void Theme::rename_theme_item(DataType p_data_type, const StringName &p_old_name
  		case DATA_TYPE_COLOR_SCHEME:
  			rename_color_scheme(p_old_name, p_name, p_theme_type);
  			break;
@@ -1448,7 +1458,7 @@ index afe0baa9b3da3e7e6389e2d40b2a5b42ec03d39d..2be7af6dde74c7fb13901643618c78aa
  		case DATA_TYPE_MAX:
  			break; // Can't happen, but silences warning.
  	}
-@@ -1395,6 +1505,9 @@ void Theme::clear_theme_item(DataType p_data_type, const StringName &p_name, con
+@@ -1548,6 +1658,9 @@ void Theme::clear_theme_item(DataType p_data_type, const StringName &p_name, con
  		case DATA_TYPE_COLOR_SCHEME:
  			clear_color_scheme(p_name, p_theme_type);
  			break;
@@ -1458,7 +1468,7 @@ index afe0baa9b3da3e7e6389e2d40b2a5b42ec03d39d..2be7af6dde74c7fb13901643618c78aa
  		case DATA_TYPE_MAX:
  			break; // Can't happen, but silences warning.
  	}
-@@ -1426,6 +1539,9 @@ void Theme::get_theme_item_list(DataType p_data_type, const StringName &p_theme_
+@@ -1582,6 +1695,9 @@ void Theme::get_theme_item_list(DataType p_data_type, const StringName &p_theme_
  		case DATA_TYPE_COLOR_SCHEME:
  			get_color_scheme_list(p_theme_type, p_list);
  			break;
@@ -1468,7 +1478,7 @@ index afe0baa9b3da3e7e6389e2d40b2a5b42ec03d39d..2be7af6dde74c7fb13901643618c78aa
  		case DATA_TYPE_MAX:
  			break; // Can't happen, but silences warning.
  	}
-@@ -1457,6 +1573,9 @@ void Theme::add_theme_item_type(DataType p_data_type, const StringName &p_theme_
+@@ -1616,6 +1732,9 @@ void Theme::add_theme_item_type(DataType p_data_type, const StringName &p_theme_
  		case DATA_TYPE_COLOR_SCHEME:
  			add_color_scheme_type(p_theme_type);
  			break;
@@ -1478,7 +1488,7 @@ index afe0baa9b3da3e7e6389e2d40b2a5b42ec03d39d..2be7af6dde74c7fb13901643618c78aa
  		case DATA_TYPE_MAX:
  			break; // Can't happen, but silences warning.
  	}
-@@ -1488,6 +1607,9 @@ void Theme::remove_theme_item_type(DataType p_data_type, const StringName &p_the
+@@ -1650,6 +1769,9 @@ void Theme::remove_theme_item_type(DataType p_data_type, const StringName &p_the
  		case DATA_TYPE_COLOR_SCHEME:
  			remove_color_scheme_type(p_theme_type);
  			break;
@@ -1488,7 +1498,7 @@ index afe0baa9b3da3e7e6389e2d40b2a5b42ec03d39d..2be7af6dde74c7fb13901643618c78aa
  		case DATA_TYPE_MAX:
  			break; // Can't happen, but silences warning.
  	}
-@@ -1519,6 +1641,9 @@ void Theme::rename_theme_item_type(DataType p_data_type, const StringName &p_old
+@@ -1684,6 +1806,9 @@ void Theme::rename_theme_item_type(DataType p_data_type, const StringName &p_old
  		case DATA_TYPE_COLOR_SCHEME:
  			rename_color_scheme_type(p_old_theme_type, p_theme_type);
  			break;
@@ -1498,7 +1508,7 @@ index afe0baa9b3da3e7e6389e2d40b2a5b42ec03d39d..2be7af6dde74c7fb13901643618c78aa
  		case DATA_TYPE_MAX:
  			break; // Can't happen, but silences warning.
  	}
-@@ -1550,6 +1675,9 @@ void Theme::get_theme_item_type_list(DataType p_data_type, List<StringName> *p_l
+@@ -1718,6 +1843,9 @@ void Theme::get_theme_item_type_list(DataType p_data_type, List<StringName> *p_l
  		case DATA_TYPE_COLOR_SCHEME:
  			get_color_scheme_type_list(p_list);
  			break;
@@ -1508,7 +1518,7 @@ index afe0baa9b3da3e7e6389e2d40b2a5b42ec03d39d..2be7af6dde74c7fb13901643618c78aa
  		case DATA_TYPE_MAX:
  			break; // Can't happen, but silences warning.
  	}
-@@ -1725,6 +1853,11 @@ void Theme::get_type_list(List<StringName> *p_list) const {
+@@ -1898,6 +2026,11 @@ void Theme::get_type_list(List<StringName> *p_list) const {
  		types.insert(E.key);
  	}
  
@@ -1520,7 +1530,7 @@ index afe0baa9b3da3e7e6389e2d40b2a5b42ec03d39d..2be7af6dde74c7fb13901643618c78aa
  	// Variations.
  	for (const KeyValue<StringName, StringName> &E : variation_map) {
  		types.insert(E.key);
-@@ -1991,6 +2124,34 @@ Vector<String> Theme::_get_color_scheme_type_list() const {
+@@ -2199,6 +2332,34 @@ Vector<String> Theme::_get_color_scheme_type_list() const {
  	return ret;
  }
  
@@ -1555,7 +1565,7 @@ index afe0baa9b3da3e7e6389e2d40b2a5b42ec03d39d..2be7af6dde74c7fb13901643618c78aa
  Vector<String> Theme::_get_theme_item_list(DataType p_data_type, const String &p_theme_type) const {
  	switch (p_data_type) {
  		case DATA_TYPE_COLOR:
-@@ -2009,6 +2170,8 @@ Vector<String> Theme::_get_theme_item_list(DataType p_data_type, const String &p
+@@ -2219,6 +2380,8 @@ Vector<String> Theme::_get_theme_item_list(DataType p_data_type, const String &p
  			return _get_color_role_list(p_theme_type);
  		case DATA_TYPE_COLOR_SCHEME:
  			return _get_color_scheme_list(p_theme_type);
@@ -1564,7 +1574,7 @@ index afe0baa9b3da3e7e6389e2d40b2a5b42ec03d39d..2be7af6dde74c7fb13901643618c78aa
  		case DATA_TYPE_MAX:
  			break; // Can't happen, but silences warning.
  	}
-@@ -2034,6 +2197,8 @@ Vector<String> Theme::_get_theme_item_type_list(DataType p_data_type) const {
+@@ -2246,6 +2409,8 @@ Vector<String> Theme::_get_theme_item_type_list(DataType p_data_type) const {
  			return _get_color_role_type_list();
  		case DATA_TYPE_COLOR_SCHEME:
  			return _get_color_scheme_type_list();
@@ -1573,7 +1583,7 @@ index afe0baa9b3da3e7e6389e2d40b2a5b42ec03d39d..2be7af6dde74c7fb13901643618c78aa
  		case DATA_TYPE_MAX:
  			break; // Can't happen, but silences warning.
  	}
-@@ -2171,6 +2336,15 @@ void Theme::merge_with(const Ref<Theme> &p_other) {
+@@ -2392,6 +2557,15 @@ void Theme::merge_with(const Ref<Theme> &p_other) {
  		}
  	}
  
@@ -1589,15 +1599,15 @@ index afe0baa9b3da3e7e6389e2d40b2a5b42ec03d39d..2be7af6dde74c7fb13901643618c78aa
  	// Type variations.
  	{
  		for (const KeyValue<StringName, StringName> &E : p_other->variation_map) {
-@@ -2248,6 +2422,7 @@ void Theme::clear() {
- 	constant_map.clear();
+@@ -2481,6 +2655,7 @@ void Theme::clear() {
+ 	sound_map.clear();
  	color_role_map.clear();
  	color_scheme_map.clear();
 +	string_map.clear();
  
  	variation_map.clear();
  	variation_base_map.clear();
-@@ -2324,6 +2499,14 @@ void Theme::_bind_methods() {
+@@ -2564,6 +2739,14 @@ void Theme::_bind_methods() {
  	ClassDB::bind_method(D_METHOD("get_color_scheme_list", "theme_type"), &Theme::_get_color_scheme_list);
  	ClassDB::bind_method(D_METHOD("get_color_scheme_type_list"), &Theme::_get_color_scheme_type_list);
  
@@ -1612,8 +1622,8 @@ index afe0baa9b3da3e7e6389e2d40b2a5b42ec03d39d..2be7af6dde74c7fb13901643618c78aa
  	ClassDB::bind_method(D_METHOD("set_default_base_scale", "base_scale"), &Theme::set_default_base_scale);
  	ClassDB::bind_method(D_METHOD("get_default_base_scale"), &Theme::get_default_base_scale);
  	ClassDB::bind_method(D_METHOD("has_default_base_scale"), &Theme::has_default_base_scale);
-@@ -2375,6 +2558,7 @@ void Theme::_bind_methods() {
- 	BIND_ENUM_CONSTANT(DATA_TYPE_STYLEBOX);
+@@ -2616,6 +2799,7 @@ void Theme::_bind_methods() {
+ 	BIND_ENUM_CONSTANT(DATA_TYPE_SOUND);
  	BIND_ENUM_CONSTANT(DATA_TYPE_COLOR_ROLE);
  	BIND_ENUM_CONSTANT(DATA_TYPE_COLOR_SCHEME);
 +	BIND_ENUM_CONSTANT(DATA_TYPE_STRING);
@@ -1621,26 +1631,26 @@ index afe0baa9b3da3e7e6389e2d40b2a5b42ec03d39d..2be7af6dde74c7fb13901643618c78aa
  }
  
 diff --git a/scene/resources/theme.h b/scene/resources/theme.h
-index 9b1d9c579c40758f92bf66e46c9fb0b26f33a466..fc0b351fec25edc010cbd128ab879dcbee5b88c6 100644
+index 4179fc96656fb82a2b4a7c270c3b0a1e7c6134a7..a734e12d232e15dd8e23b3ec4b700421d9792225 100644
 --- a/scene/resources/theme.h
 +++ b/scene/resources/theme.h
-@@ -56,6 +56,7 @@ public:
- 	using ThemeConstantMap = HashMap<StringName, int>;
+@@ -58,6 +58,7 @@ public:
+ 	using ThemeSoundMap = HashMap<StringName, Ref<AudioStream>>;
  	using ThemeColorRoleMap = HashMap<StringName, ColorRole>;
  	using ThemeColorSchemeMap = HashMap<StringName, Ref<ColorScheme>>;
 +	using ThemeStringMap = HashMap<StringName, String>;
  
  	enum DataType {
  		DATA_TYPE_COLOR,
-@@ -66,6 +67,7 @@ public:
+@@ -68,6 +69,7 @@ public:
  		DATA_TYPE_STYLEBOX,
  		DATA_TYPE_COLOR_ROLE,
  		DATA_TYPE_COLOR_SCHEME,
 +		DATA_TYPE_STRING,
+ 		DATA_TYPE_SOUND,
  		DATA_TYPE_MAX
  	};
- 
-@@ -90,6 +92,8 @@ private:
+@@ -95,6 +97,8 @@ private:
  	Vector<String> _get_color_role_type_list() const;
  	Vector<String> _get_color_scheme_list(const String &p_theme_type) const;
  	Vector<String> _get_color_scheme_type_list() const;
@@ -1649,15 +1659,15 @@ index 9b1d9c579c40758f92bf66e46c9fb0b26f33a466..fc0b351fec25edc010cbd128ab879dcb
  
  	Vector<String> _get_theme_item_list(DataType p_data_type, const String &p_theme_type) const;
  	Vector<String> _get_theme_item_type_list(DataType p_data_type) const;
-@@ -116,6 +120,7 @@ protected:
- 	HashMap<StringName, ThemeConstantMap> constant_map;
+@@ -122,6 +126,7 @@ protected:
+ 	HashMap<StringName, ThemeSoundMap> sound_map;
  	HashMap<StringName, ThemeColorRoleMap> color_role_map;
  	HashMap<StringName, ThemeColorSchemeMap> color_scheme_map;
 +	HashMap<StringName, ThemeStringMap> string_map;
  	HashMap<StringName, StringName> variation_map;
  	HashMap<StringName, List<StringName>> variation_base_map;
  
-@@ -245,6 +250,18 @@ public:
+@@ -263,6 +268,18 @@ public:
  	void rename_color_scheme_type(const StringName &p_old_theme_type, const StringName &p_theme_type);
  	void get_color_scheme_type_list(List<StringName> *p_list) const;
  
@@ -1712,18 +1722,18 @@ index a4e1efaa26e6269f5e43c164f3c79e28143f18ad..c2bef0b1c531e198451788deb12693dd
  	SUBCASE("[Control][Global Transform] Global Transform should be accessible while not in SceneTree.") { // GH-79453
  		Control *test_node = memnew(Control);
 diff --git a/tests/scene/test_theme.cpp b/tests/scene/test_theme.cpp
-index 9614689a02f502105e375e3a91f5877ce1b1d390..8cf19e3df81cd5acac9cfec0caf8f622bf87a1d8 100644
+index eb06f41d3274afa8946c7f24f29d27cb1a8accd2..9d732ae7ea28b087042ec0ca7babbecfc6cecce7 100644
 --- a/tests/scene/test_theme.cpp
 +++ b/tests/scene/test_theme.cpp
-@@ -59,6 +59,7 @@ public:
- 		{ Theme::DATA_TYPE_STYLEBOX, Ref<StyleBox>(memnew(StyleBoxFlat)) },
+@@ -60,6 +60,7 @@ public:
+ 		{ Theme::DATA_TYPE_SOUND, Ref<AudioStream>(memnew(AudioStream)) },
  		{ Theme::DATA_TYPE_COLOR_ROLE, static_cast<int64_t>(ColorRole::PRIMARY) },
  		{ Theme::DATA_TYPE_COLOR_SCHEME, Ref<ColorScheme>(memnew(ColorScheme)) },
 +		{ Theme::DATA_TYPE_STRING, String("theme string") },
  	};
  
  	const StringName valid_item_name = "valid_item_name";
-@@ -90,6 +91,31 @@ TEST_CASE("[Theme] Color role and color scheme theme items") {
+@@ -91,6 +92,31 @@ TEST_CASE("[Theme] Color role and color scheme theme items") {
  	CHECK_FALSE(theme->has_theme_item_nocheck(Theme::DATA_TYPE_COLOR_SCHEME, "font_color_scheme", "Button"));
  }
  
@@ -1791,13 +1801,13 @@ index 0a6b71bf2e4ae2bcc637c23a48361d598d83a37c..b10cb1e6af745c076798f0991e37b989
  	Window *root = SceneTree::get_singleton()->get_root();
  
 
-base-commit: 5ec4857b340b6284a18b49b2eda462bd250f219a
+base-commit: 5d1cd20f9117e4721fce626454e2323eb9462d0a
 prerequisite-patch-id: b38459b409a3326aed65d2433e1341638171f884
-prerequisite-patch-id: bdb0fe8d6ba7fff1b900ae33d9bec552ea61724c
+prerequisite-patch-id: b205f59ead6c0d8f2c43e71c9f74d4c0d997491c
 prerequisite-patch-id: 4dcdddc73066f768cb97c56444abacb21bda061c
-prerequisite-patch-id: 1f2fbc55f35da3e943dcbaeeb3c9a6d798621bf3
+prerequisite-patch-id: 34eb3988424d10f34043f09ec0c44ce34db72683
 prerequisite-patch-id: 4dd1cec6888d5160c85be2072b9e5dd05411d007
-prerequisite-patch-id: 60110ae09a2d09796ad65e339ee0b5abc2ce541a
+prerequisite-patch-id: 73c65ea8aa25ee3915ec20f693bd27deebfd512e
 prerequisite-patch-id: bdb0025d4207a7cf0e1466ca96b2824d238b3caf
 prerequisite-patch-id: 8c55a8201fec417bc2629b903ea2d630aedab1d8
 prerequisite-patch-id: 9dfaaac9d4a47edf9d1eccce8fa66b69e674a911

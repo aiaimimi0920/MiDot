@@ -1,4 +1,4 @@
-From 11ae6bfcc714c375e399156a93e8fc4b466501aa Mon Sep 17 00:00:00 2001
+From c83153f9614bfdaf5a056892d7b66c39a6799901 Mon Sep 17 00:00:00 2001
 From: aiaimimi0920 <153103332+aiaimimi0920@users.noreply.github.com>
 Date: Sun, 30 Aug 2026 10:43:48 +0800
 Subject: [PATCH] Windows: use personal executable icons
@@ -7238,10 +7238,10 @@ z=nWkQg=`A*g<}(=h|=bN!PR`XRfI;Y0HYE~v-nR3^Z)lvB;0*L3O;>{8z!)TIJ5=;
 NR1`Gj%VjNt{|~b%y_5g|
 
 
-base-commit: 5ec4857b340b6284a18b49b2eda462bd250f219a
+base-commit: 5d1cd20f9117e4721fce626454e2323eb9462d0a
 prerequisite-patch-id: b38459b409a3326aed65d2433e1341638171f884
-prerequisite-patch-id: bdb0fe8d6ba7fff1b900ae33d9bec552ea61724c
+prerequisite-patch-id: b205f59ead6c0d8f2c43e71c9f74d4c0d997491c
 prerequisite-patch-id: 4dcdddc73066f768cb97c56444abacb21bda061c
-prerequisite-patch-id: 1f2fbc55f35da3e943dcbaeeb3c9a6d798621bf3
+prerequisite-patch-id: 34eb3988424d10f34043f09ec0c44ce34db72683
 prerequisite-patch-id: 4dd1cec6888d5160c85be2072b9e5dd05411d007
-prerequisite-patch-id: 60110ae09a2d09796ad65e339ee0b5abc2ce541a
+prerequisite-patch-id: 73c65ea8aa25ee3915ec20f693bd27deebfd512e

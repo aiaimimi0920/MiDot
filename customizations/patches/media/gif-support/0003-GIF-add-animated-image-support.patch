@@ -1,4 +1,4 @@
-From 7b94a4dde1f74c946acc0249b9fedfc32a980ab7 Mon Sep 17 00:00:00 2001
+From fc3bb43bc05e49c28a9fc1a2b3fc244ba3f9b88a Mon Sep 17 00:00:00 2001
 From: aiaimimi0920 <153103332+aiaimimi0920@users.noreply.github.com>
 Date: Sun, 30 Aug 2026 02:53:06 +0800
 Subject: [PATCH] GIF: add animated image support
@@ -5435,6 +5435,6 @@ index 0000000000000000000000000000000000000000..5f5367c7b877f5d27d26c1a4c505c2aa
 +	return realloc(optr, size * nmemb);
 +}
 
-base-commit: 5ec4857b340b6284a18b49b2eda462bd250f219a
+base-commit: 5d1cd20f9117e4721fce626454e2323eb9462d0a
 prerequisite-patch-id: b38459b409a3326aed65d2433e1341638171f884
-prerequisite-patch-id: bdb0fe8d6ba7fff1b900ae33d9bec552ea61724c
+prerequisite-patch-id: b205f59ead6c0d8f2c43e71c9f74d4c0d997491c

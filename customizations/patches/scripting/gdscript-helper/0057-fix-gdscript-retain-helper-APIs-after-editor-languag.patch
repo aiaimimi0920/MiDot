@@ -1,0 +1,324 @@
+From c2b50b21a6594cde1338f4cf4c1478da8a6f2a9f Mon Sep 17 00:00:00 2001
+From: aiaimimi0920 <153103332+aiaimimi0920@users.noreply.github.com>
+Date: Thu, 22 Oct 2026 23:44:12 +0800
+Subject: [PATCH] fix(gdscript): retain helper APIs after editor language split
+
+Keep the public helper available to headless tools while using the upstream EditorLanguage API and scoped editor-language lifetime. Cover typed runtime defaults, validation, completion and symbol lookup.
+
+Godot-Patch-Topic: scripting.gdscript-helper
+---
+ modules/gdscript/gdscript_editor.cpp          |   2 +-
+ modules/gdscript/gdscript_helper.cpp          |  39 ++++-
+ .../modules/gdscript/test_gdscript_helper.cpp | 161 ++++++++++++++++++
+ 3 files changed, 194 insertions(+), 8 deletions(-)
+ create mode 100644 tests/modules/gdscript/test_gdscript_helper.cpp
+
+diff --git a/modules/gdscript/gdscript_editor.cpp b/modules/gdscript/gdscript_editor.cpp
+index b7dc9768988d4f7c5e20cb8edc1610c072396d32..6c914e5f7a215e0357f1aa2037ce56a04db496bb 100644
+--- a/modules/gdscript/gdscript_editor.cpp
++++ b/modules/gdscript/gdscript_editor.cpp
+@@ -3847,7 +3847,7 @@ static void _find_call_arguments(GDScriptParser::CompletionContext &p_context, c
+ 				break;
+ 			}
+ 
+-			const bool type_hints = EditorSettings::get_singleton()->get_setting("text_editor/completion/add_type_hints");
++			const bool type_hints = EditorSettings::get_singleton() == nullptr || bool(EDITOR_GET("text_editor/completion/add_type_hints"));
+ 
+ 			List<MethodInfo> virtual_methods;
+ 			if (is_static) {
+diff --git a/modules/gdscript/gdscript_helper.cpp b/modules/gdscript/gdscript_helper.cpp
+index f8f5bbbdbf75c18cffb9e295e50246874d180a46..6070b8307978d969a37d723855500695a3e51e69 100644
+--- a/modules/gdscript/gdscript_helper.cpp
++++ b/modules/gdscript/gdscript_helper.cpp
+@@ -75,7 +75,35 @@ Variant construct_empty_value_for_data_type(const GDScriptDataType &p_data_type)
+ 
+ #include "core/io/resource_loader.h"
+ #include "core/object/class_db.h"
+-#include "gdscript_editor.h"
++#include "core/os/mutex.h"
++#include "editor/gdscript_editor_language.h"
++
++namespace {
++
++Mutex analysis_language_mutex;
++
++// EditorLanguage is normally initialized only for the editor. Keep the helper
++// available to headless tools without retaining a singleton across editor startup.
++class ScopedGDScriptEditorLanguage {
++	MutexLock<Mutex> language_lock{ analysis_language_mutex };
++	GDScriptEditorLanguage *language = GDScriptEditorLanguage::get_singleton();
++	bool owns_language = language == nullptr;
++
++public:
++	ScopedGDScriptEditorLanguage() {
++		if (owns_language) {
++			language = memnew(GDScriptEditorLanguage);
++		}
++	}
++	~ScopedGDScriptEditorLanguage() {
++		if (owns_language) {
++			memdelete(language);
++		}
++	}
++	GDScriptEditorLanguage *operator->() const { return language; }
++};
++
++} // namespace
+ 
+ void GDScriptHelper::_bind_methods() {
+ 	ClassDB::bind_method(D_METHOD("set_validate_code", "code", "script_path"), &GDScriptHelper::set_validate_code, DEFVAL(String()));
+@@ -138,8 +166,7 @@ int GDScriptHelper::_get_completion_kind_priority(EditorLanguage::CompletionKind
+ bool GDScriptHelper::set_validate_code(const String &p_code, const String &p_path) {
+ 	functions.clear();
+ 	errors.clear();
+-	GDScriptEditorLanguage *language = GDScriptEditorLanguage::get_singleton();
+-	ERR_FAIL_NULL_V(language, false);
++	ScopedGDScriptEditorLanguage language;
+ 	return language->validate(p_code, p_path, &errors, nullptr, &functions, nullptr);
+ }
+ 
+@@ -176,8 +203,7 @@ Error GDScriptHelper::set_completion_code(const String &p_code, const String &p_
+ 	completion_forced = false;
+ 	completion_hint.clear();
+ 
+-	GDScriptEditorLanguage *language = GDScriptEditorLanguage::get_singleton();
+-	ERR_FAIL_NULL_V(language, ERR_UNAVAILABLE);
++	ScopedGDScriptEditorLanguage language;
+ 	const Error error = language->complete_code(p_code, p_path, p_owner, &completion_options, completion_forced, completion_hint);
+ 	completion_options.sort_custom<CompletionOptionComparator>();
+ 	return error;
+@@ -214,8 +240,7 @@ bool GDScriptHelper::is_completion_forced() const {
+ 
+ Dictionary GDScriptHelper::lookup_code(const String &p_code, const String &p_symbol, const String &p_path, Object *p_owner) {
+ 	Dictionary result;
+-	GDScriptEditorLanguage *language = GDScriptEditorLanguage::get_singleton();
+-	ERR_FAIL_NULL_V(language, result);
++	ScopedGDScriptEditorLanguage language;
+ 
+ 	EditorLanguage::LookupResult lookup_result;
+ 	if (language->lookup_code(p_code, p_symbol, p_path, p_owner, lookup_result) != OK) {
+diff --git a/tests/modules/gdscript/test_gdscript_helper.cpp b/tests/modules/gdscript/test_gdscript_helper.cpp
+new file mode 100644
+index 0000000000000000000000000000000000000000..d71745a1808dbf1dfc3d7da2b70bb31e2d2fd242
+--- /dev/null
++++ b/tests/modules/gdscript/test_gdscript_helper.cpp
+@@ -0,0 +1,161 @@
++/**************************************************************************/
++/*  test_gdscript_helper.cpp                                               */
++/**************************************************************************/
++/*                         This file is part of:                          */
++/*                             GODOT ENGINE                               */
++/*                        https://godotengine.org                         */
++/**************************************************************************/
++/* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
++/* Copyright (c) 2007-2014 Juan Linietsky, Ariel Manzur.                  */
++/*                                                                        */
++/* Permission is hereby granted, free of charge, to any person obtaining  */
++/* a copy of this software and associated documentation files (the        */
++/* "Software"), to deal in the Software without restriction, including    */
++/* without limitation the rights to use, copy, modify, merge, publish,    */
++/* distribute, sublicense, and/or sell copies of the Software, and to     */
++/* permit persons to whom the Software is furnished to do so, subject to  */
++/* the following conditions:                                              */
++/*                                                                        */
++/* The above copyright notice and this permission notice shall be         */
++/* included in all copies or substantial portions of the Software.        */
++/*                                                                        */
++/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,        */
++/* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF     */
++/* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. */
++/* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY   */
++/* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,   */
++/* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE      */
++/* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
++/**************************************************************************/
++
++#include "tests/test_macros.h"
++
++TEST_FORCE_LINK(test_gdscript_helper)
++
++#include "modules/modules_enabled.gen.h"
++
++#ifdef MODULE_GDSCRIPT_ENABLED
++
++#include "modules/gdscript/gdscript.h"
++#include "modules/gdscript/gdscript_helper.h"
++
++#ifdef TOOLS_ENABLED
++#include "editor/settings/editor_settings.h"
++
++#include "modules/gdscript/editor/gdscript_editor_language.h"
++#endif
++
++namespace TestGDScriptHelper {
++
++TEST_CASE("[GDScriptHelper] Runtime typed defaults coexist with the public helper") {
++	GDScriptDataType element_type;
++	element_type.kind = GDScriptDataType::BUILTIN;
++	element_type.builtin_type = Variant::INT;
++	GDScriptDataType array_type;
++	array_type.kind = GDScriptDataType::BUILTIN;
++	array_type.builtin_type = Variant::ARRAY;
++	array_type.set_container_element_type(0, element_type);
++	const Array array = GDScriptRuntimeHelper::construct_empty_value_for_data_type(array_type);
++	CHECK(array.is_empty());
++	CHECK(array.get_typed_builtin() == Variant::INT);
++	CHECK(GDScriptRuntimeHelper::construct_empty_value_for_data_type(element_type) == Variant(0));
++
++	GDScriptDataType key_type;
++	key_type.kind = GDScriptDataType::BUILTIN;
++	key_type.builtin_type = Variant::STRING;
++	GDScriptDataType dictionary_type;
++	dictionary_type.kind = GDScriptDataType::BUILTIN;
++	dictionary_type.builtin_type = Variant::DICTIONARY;
++	dictionary_type.set_container_element_type(0, key_type);
++	dictionary_type.set_container_element_type(1, element_type);
++	const Dictionary dictionary = GDScriptRuntimeHelper::construct_empty_value_for_data_type(dictionary_type);
++	CHECK(dictionary.is_empty());
++	CHECK(dictionary.get_typed_key_builtin() == Variant::STRING);
++	CHECK(dictionary.get_typed_value_builtin() == Variant::INT);
++}
++
++#ifdef TOOLS_ENABLED
++
++TEST_CASE("[GDScriptHelper] Headless validation completion and lookup preserve the API") {
++	GDScriptLanguage::get_singleton()->init();
++	GDScriptEditorLanguage *original_language = GDScriptEditorLanguage::get_singleton();
++	REQUIRE(original_language == nullptr);
++	REQUIRE(EditorSettings::get_singleton() == nullptr);
++	Ref<GDScriptHelper> helper = memnew(GDScriptHelper);
++	CHECK(helper->set_validate_code("extends RefCounted\nfunc sample():\n\tpass\n"));
++	CHECK_FALSE(helper->has_errors());
++	CHECK(helper->has_functions());
++	CHECK(helper->get_functions().has("sample"));
++	CHECK(GDScriptEditorLanguage::get_singleton() == original_language);
++
++	CHECK_FALSE(helper->set_validate_code("func broken(:\n"));
++	REQUIRE(helper->has_errors());
++	const Dictionary error = helper->get_errors()[0];
++	CHECK(error.has("line"));
++	CHECK(error.has("column"));
++	CHECK(error.has("message"));
++	CHECK(int(error["line"]) == 0);
++
++	const String code = "extends RefCounted\nfunc sample():\n\tvar local_value: int = 1\n\tloc" + String::chr(0xFFFF) + "\n";
++	REQUIRE(helper->set_completion_code(code) == OK);
++	REQUIRE(helper->has_completion_options());
++	bool found_local = false;
++	for (const Dictionary &option : helper->get_completion_options()) {
++		CHECK(option.has("type"));
++		CHECK(option.has("display_text"));
++		CHECK(option.has("insert_text"));
++		CHECK(option.has("default_value"));
++		if (option["display_text"] == String("local_value")) {
++			found_local = true;
++			CHECK(int(option["type"]) == 3); // Existing CodeEdit variable kind.
++		}
++	}
++	CHECK(found_local);
++	CHECK(GDScriptEditorLanguage::get_singleton() == original_language);
++
++	const Dictionary lookup = helper->lookup_code("extends " + String::chr(0xFFFF) + "RefCounted\n", "RefCounted");
++	REQUIRE(lookup.has("type"));
++	CHECK(int(lookup["type"]) == GDScriptHelper::LOOKUP_RESULT_CLASS);
++	CHECK(lookup["class_name"] == String("RefCounted"));
++	CHECK(lookup.has("script"));
++	CHECK(lookup.has("class_member"));
++	CHECK(lookup.has("class_path"));
++	CHECK(lookup.has("location"));
++	CHECK(GDScriptEditorLanguage::get_singleton() == original_language);
++	const Dictionary local_lookup = helper->lookup_code("extends RefCounted\nfunc sample():\n\tvar local_value: int = 1\n\t" + String::chr(0xFFFF) + "local_value\n", "local_value");
++	REQUIRE(local_lookup.has("type"));
++	CHECK(int(local_lookup["type"]) == GDScriptHelper::LOOKUP_RESULT_LOCAL_VARIABLE);
++	CHECK(int(local_lookup["location"]) == 3);
++
++	REQUIRE(helper->set_completion_code("extends Node\nfunc _rea" + String::chr(0xFFFF) + "\n") == OK);
++	bool found_ready = false;
++	for (const Dictionary &option : helper->get_completion_options()) {
++		if (String(option["display_text"]).begins_with("_ready(")) {
++			found_ready = true;
++		}
++	}
++	CHECK(found_ready);
++	CHECK(GDScriptEditorLanguage::get_singleton() == original_language);
++}
++
++TEST_CASE("[GDScriptHelper] Existing editor language is borrowed without replacement") {
++	REQUIRE(GDScriptEditorLanguage::get_singleton() == nullptr);
++	GDScriptLanguage::get_singleton()->init();
++	{
++		GDScriptEditorLanguage editor_language;
++		Ref<GDScriptHelper> helper = memnew(GDScriptHelper);
++		CHECK(helper->set_validate_code("extends RefCounted\nfunc sample():\n\tpass\n"));
++		CHECK(GDScriptEditorLanguage::get_singleton() == &editor_language);
++		CHECK(helper->set_completion_code("extends Node\nfunc _rea" + String::chr(0xFFFF) + "\n") == OK);
++		CHECK(GDScriptEditorLanguage::get_singleton() == &editor_language);
++		CHECK(helper->lookup_code("", "Node").has("type"));
++		CHECK(GDScriptEditorLanguage::get_singleton() == &editor_language);
++	}
++	CHECK(GDScriptEditorLanguage::get_singleton() == nullptr);
++}
++
++#endif // TOOLS_ENABLED
++
++} // namespace TestGDScriptHelper
++
++#endif // MODULE_GDSCRIPT_ENABLED
+
+base-commit: 5d1cd20f9117e4721fce626454e2323eb9462d0a
+prerequisite-patch-id: b38459b409a3326aed65d2433e1341638171f884
+prerequisite-patch-id: b205f59ead6c0d8f2c43e71c9f74d4c0d997491c
+prerequisite-patch-id: 4dcdddc73066f768cb97c56444abacb21bda061c
+prerequisite-patch-id: 34eb3988424d10f34043f09ec0c44ce34db72683
+prerequisite-patch-id: 4dd1cec6888d5160c85be2072b9e5dd05411d007
+prerequisite-patch-id: 73c65ea8aa25ee3915ec20f693bd27deebfd512e
+prerequisite-patch-id: bdb0025d4207a7cf0e1466ca96b2824d238b3caf
+prerequisite-patch-id: 8c55a8201fec417bc2629b903ea2d630aedab1d8
+prerequisite-patch-id: 9dfaaac9d4a47edf9d1eccce8fa66b69e674a911
+prerequisite-patch-id: 17fa223ec74d20c7792e45826a4f0d8ecd7f85d7
+prerequisite-patch-id: 0fb9ef780b3f10a7e82968e44defda508734fa91
+prerequisite-patch-id: 2af824bf187ff13746bd620b1032f57d166c0114
+prerequisite-patch-id: dc8aa901272b27086c9045fc0b9335986d3a8128
+prerequisite-patch-id: 0ce30d5045f596dbc6bf72cbcd9bb16472513013
+prerequisite-patch-id: 50d820c0fb3ac27ddef8f76b133637558f8bcc8e
+prerequisite-patch-id: 69b2baab747aed9362c0ca4c161fc02e5970db44
+prerequisite-patch-id: 41b4bd5af73a2a33c2e64048b72e0d4f3c664f19
+prerequisite-patch-id: 44c3271900a02cc9b76bea0eeab8318468df3773
+prerequisite-patch-id: 14ad80fb2ee81b00b9194186196bba9d350bc28e
+prerequisite-patch-id: 67692c41af9b4e8c91298594cc3db77e981863de
+prerequisite-patch-id: d5e37dc01427a0639bba6123e6afee995d62ef4a
+prerequisite-patch-id: 5b14b52ed17c4439ab6471388936f7b5d8fb4b4a
+prerequisite-patch-id: 2e5d11daca8780d00fe2d10677ac0c26098fae5c
+prerequisite-patch-id: 06b6906be778d545881f82f2431b2204eb052a6c
+prerequisite-patch-id: 6f98206b25188cf56bc55e3fbad4fff5da6d6d4e
+prerequisite-patch-id: 9c598b9a701c8d9fb585255c239a2f64c998f3a0
+prerequisite-patch-id: 148113e476c059293ce209839c317a4945cc1899
+prerequisite-patch-id: 68f8ac60d0f60d3ac0bb1fe23aa79abd660c2009
+prerequisite-patch-id: c4af5500ee3eeb05e7e3556ae941b4890b6bc0c2
+prerequisite-patch-id: 075c9922d2a9fadb91e8c3402b4e7d2f7bf7f8a1
+prerequisite-patch-id: 3b6bc3f484f1654f8bca99626ff2507a0e17a3ca
+prerequisite-patch-id: d4fed2df8ba748ad28488271c1b2c42cc88f8c17
+prerequisite-patch-id: 6a2c61a480ce572ae1c3692257cf60463d4d3cf9
+prerequisite-patch-id: a3cb1ca4de756f71a6ec53eeb037b5ff643baa73
+prerequisite-patch-id: 02e0656ba365a7fb2cad0c69ca9ecbcf05ea35f1
+prerequisite-patch-id: 6b9471813c5552c60fce6f086172833038fed2ae
+prerequisite-patch-id: 9a80815a3f443dabb008cef85de0783e1530a9c9
+prerequisite-patch-id: 6cbac35a7fd4756f09c6b54a683203752361d1b8
+prerequisite-patch-id: d1179ee94009db93d0dbde68386f42b028303eeb
+prerequisite-patch-id: 7fa76bc0dcf10c37ddce6dfe863cf8a15db1a4e3
+prerequisite-patch-id: 59285ed00363fbf066365f96211e649c4e9e8707
+prerequisite-patch-id: 7fef71675ff2ac560045ba78cb2e69d3d05bf3da
+prerequisite-patch-id: cb3f5d7d6c2d28699fd25638d57711baff02bf35
+prerequisite-patch-id: 77196bacb24fd150ffc6b82969c4d274c01d6f9a
+prerequisite-patch-id: e9942d4f02f72a92af555c51c615991adb95fb8e
+prerequisite-patch-id: d4228c26ec2e9e69226ab4b8a1adfe40be71e2e2
+prerequisite-patch-id: 433f891f57c7f1058f239694b9e5df4630dfb450
+prerequisite-patch-id: 395a24a434c14e0a86c2593175e2c4b2f83d0a15
+prerequisite-patch-id: f7b6b4fb0db3aaab3b76e3536517b536e9470ae5
+prerequisite-patch-id: 95f67e1b177da895271b995d9c66eec294eee6ed
+prerequisite-patch-id: 69e4d9487e53c02a4cf88ebf20b6a44293989b81
+prerequisite-patch-id: 162768f49e58e449b45c1a0d2dfe3024495b7cb8
+prerequisite-patch-id: 5c94f76c6efe7aa74007ec38c35ac067a423f7c5
+prerequisite-patch-id: 7db2bfee60272d5ee87fc909c0135d071c5c92ea
+prerequisite-patch-id: b7030a38ad411b6d849e39b2e56870c8b324f0b5
+prerequisite-patch-id: df0e2a2f7b3d16733818ba5648bb9eebf64106a9

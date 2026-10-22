@@ -54,3 +54,8 @@ patches/ui/dynamic-color-theme/0053-fix-theme-isolate-editor-static-colors.patch
 patches/ui/dynamic-color-theme/0054-fix-theme-disable-dynamic-roles-in-editor.patch
 patches/ui/dynamic-color-theme/0055-fix-theme-isolate-editor-default-theme-metadata.patch
 patches/ui/dynamic-color-theme/0056-fix-theme-keep-editor-dynamic-metadata-available.patch
+patches/scripting/gdscript-helper/0057-fix-gdscript-retain-helper-APIs-after-editor-languag.patch
+patches/ui/theme-string-items/0058-test-theme-cover-sound-and-personal-theme-type-coexi.patch
+patches/ui/dynamic-color-theme/0059-fix-theme-avoid-shadowing-the-upstream-CanvasItem-wi.patch
+patches/scripting/gdscript-helper/0060-fix-gdscript-use-the-initialized-upstream-analysis-s.patch
+patches/ui/dynamic-color-theme/0061-fix-editor-prevent-theme-preview-layout-feedback.patch

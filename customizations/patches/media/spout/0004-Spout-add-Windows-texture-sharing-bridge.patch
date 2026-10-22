@@ -1,4 +1,4 @@
-From 3a33e14f21a1127b8dbd104786883b8b113938da Mon Sep 17 00:00:00 2001
+From d57a83f780f076d90d7c692cc2c1b68db15269ec Mon Sep 17 00:00:00 2001
 From: aiaimimi0920 <153103332+aiaimimi0920@users.noreply.github.com>
 Date: Sun, 30 Aug 2026 04:05:49 +0800
 Subject: [PATCH] Spout: add Windows texture sharing bridge
@@ -1460,11 +1460,11 @@ index 0000000000000000000000000000000000000000..a16bf74f9dcb15e3f0ab1a378aa6cfe1
 +
 +VARIANT_ENUM_CAST(Spout::SpoutLogLevel);
 diff --git a/thirdparty/README.md b/thirdparty/README.md
-index 4f09953afe69fe9eac016021c84320546ac396c9..58051a9afb7f9da383aed426cffd8d3269a49ac8 100644
+index d518d83cc7269edc3a8c9634792d95325ef1accd..0410e2c7aa545a3d3a2b7cec68d532e36449da66 100644
 --- a/thirdparty/README.md
 +++ b/thirdparty/README.md
-@@ -1015,6 +1015,20 @@ Patches:
- - `0009-update-device-blocklist.patch` ([GH-119403](https://github.com/godotengine/godot/pull/119403))
+@@ -1045,6 +1045,20 @@ Patches:
+ - `0010-fix-linux-getenv-unsafe.patch` ([GH-124017](https://github.com/godotengine/godot/pull/124017))
  
  
 +## spout-library
@@ -4295,7 +4295,7 @@ index 0000000000000000000000000000000000000000..0408f58289051c50c9165bbc4e3b98b5
 +- `SpoutLibrary.lib`: `6C8CEBA65294FB76C5CCAD23C059551B92DDEF7D6D6665B39F6B2EC553EEE091`
 +- `SpoutLibrary.dll`: `31F12268169397BACD9048903D9AD711FAE58B788E90A860598B21B1DAAE62EB`
 
-base-commit: 5ec4857b340b6284a18b49b2eda462bd250f219a
+base-commit: 5d1cd20f9117e4721fce626454e2323eb9462d0a
 prerequisite-patch-id: b38459b409a3326aed65d2433e1341638171f884
-prerequisite-patch-id: bdb0fe8d6ba7fff1b900ae33d9bec552ea61724c
+prerequisite-patch-id: b205f59ead6c0d8f2c43e71c9f74d4c0d997491c
 prerequisite-patch-id: 4dcdddc73066f768cb97c56444abacb21bda061c

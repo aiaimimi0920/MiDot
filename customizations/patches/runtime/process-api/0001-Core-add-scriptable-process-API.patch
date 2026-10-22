@@ -1,4 +1,4 @@
-From df077b5fed582a0437149ee09d7ac45dab566af9 Mon Sep 17 00:00:00 2001
+From 10136b15300d0af31dae9cab84e465777c12d681 Mon Sep 17 00:00:00 2001
 From: aiaimimi0920 <153103332+aiaimimi0920@users.noreply.github.com>
 Date: Sun, 30 Aug 2026 00:46:08 +0800
 Subject: [PATCH] Core: add scriptable process API
@@ -594,10 +594,10 @@ index bd8187f721ad4b6ec01cc58c3c7b6c45d5699107..78aeb12ba1d9e9e58c71c201a0c12650
  	FileAccessWindowsPipe() {}
  	virtual ~FileAccessWindowsPipe();
 diff --git a/platform/web/os_web.cpp b/platform/web/os_web.cpp
-index 0adf0199671cff10b7e697b130de01b6d3fbb632..8b84eaa9dd31d9b7f4265f805f50bd3791a46106 100644
+index 41533e8d6da4c48afa2a415ae3f96699be7afd28..76d2982f37719f22a333cf27420d2de7564fa02f 100644
 --- a/platform/web/os_web.cpp
 +++ b/platform/web/os_web.cpp
-@@ -108,7 +108,7 @@ Error OS_Web::execute(const String &p_path, const List<String> &p_arguments, Str
+@@ -111,7 +111,7 @@ Error OS_Web::execute(const String &p_path, const List<String> &p_arguments, Str
  	return create_process(p_path, p_arguments);
  }
  
@@ -607,10 +607,10 @@ index 0adf0199671cff10b7e697b130de01b6d3fbb632..8b84eaa9dd31d9b7f4265f805f50bd37
  }
  
 diff --git a/platform/web/os_web.h b/platform/web/os_web.h
-index e581e9a945a66f3e0cf94db3aee4502637e6c728..870c7e924aac19f9aad6f1830ee8f6640b039f32 100644
+index 6e8282aabeb7b44faeb12565a564294d1c4659c8..56fddb66f872eef5d2b3c61e4aa97f117b913fcb 100644
 --- a/platform/web/os_web.h
 +++ b/platform/web/os_web.h
-@@ -81,7 +81,7 @@ public:
+@@ -82,7 +82,7 @@ public:
  	bool main_loop_iterate();
  
  	Error execute(const String &p_path, const List<String> &p_arguments, String *r_pipe = nullptr, int *r_exitcode = nullptr, bool read_stderr = false, Mutex *p_pipe_mutex = nullptr, bool p_open_console = false) override;
@@ -664,4 +664,4 @@ index 2eeb11c87136beeb0d705bd2bd6ab84b5ccb2f30..48b86e397539ef6ef33fcc226c526893
  	virtual Error kill(const ProcessID &p_pid) override;
  	virtual int get_process_id() const override;
 
-base-commit: 5ec4857b340b6284a18b49b2eda462bd250f219a
+base-commit: 5d1cd20f9117e4721fce626454e2323eb9462d0a

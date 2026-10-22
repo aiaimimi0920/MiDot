@@ -101,6 +101,9 @@ switch ($Topic) {
         Assert-TopicText "modules\gdscript\gdscript_helper.h" "class GDScriptHelper"
         Assert-TopicText "modules\gdscript\gdscript_helper.cpp" "set_validate_code"
         Assert-TopicText "modules\gdscript\register_types.cpp" "GDREGISTER_CLASS(GDScriptHelper)"
+        Assert-TopicText "modules\gdscript\gdscript_helper.h" "namespace GDScriptRuntimeHelper"
+        Assert-TopicText "modules\gdscript\gdscript_helper.cpp" '#include "editor/gdscript_editor_language.h"'
+        Assert-TopicText "tests\modules\gdscript\test_gdscript_helper.cpp" "Headless validation completion and lookup preserve the API"
     }
     "media.gif-support" {
         Assert-TopicText "modules\gif\image_frames.h" "class ImageFrames"
@@ -274,6 +277,7 @@ switch ($Topic) {
         Assert-TopicText "scene\main\window.cpp" "add_theme_string_override"
         Assert-TopicText "editor\scene\gui\theme_editor_plugin.cpp" "_string_item_changed"
         Assert-TopicText "tests\scene\test_theme.cpp" "String theme items"
+        Assert-TopicText "tests\scene\test_theme.cpp" "Sound and personal theme item types coexist"
         Assert-TopicText "tests\scene\test_control.cpp" "String theme overrides"
         Assert-TopicText "tests\scene\test_window.cpp" "String theme overrides"
     }
@@ -301,11 +305,31 @@ switch ($Topic) {
         Assert-TopicText "tests\scene\test_button.cpp" "resolves mirrored state text glyphs"
     }
     "runtime.texture-streaming-init-order" {
-        Assert-TopicText "servers\rendering\rendering_server.cpp" '#include "modules/modules_enabled.gen.h"'
-        Assert-TopicText "servers\rendering\rendering_server.cpp" "Forward renderers read these settings before scene-level modules are initialized."
-        Assert-TopicText "servers\rendering\rendering_server.cpp" 'GLOBAL_DEF_RST("rendering/textures/streaming/enabled", false);'
+        Assert-TopicText "modules\texture_streaming\texture_streaming.cpp" 'void TextureStreaming::register_project_settings()'
+        Assert-TopicText "modules\texture_streaming\texture_streaming.cpp" 'GLOBAL_DEF_RST("rendering/textures/streaming/enabled", false);'
         Assert-TopicText "modules\texture_streaming\texture_streaming.cpp" 'setting_streaming_is_enabled = GLOBAL_GET("rendering/textures/streaming/enabled");'
-        Assert-TopicTextAbsent "modules\texture_streaming\texture_streaming.cpp" 'GLOBAL_DEF_RST("rendering/textures/streaming/enabled", false);'
+        Assert-TopicTextAbsent "servers\rendering\rendering_server.cpp" 'GLOBAL_DEF_RST("rendering/textures/streaming/enabled", false);'
+        $moduleSource = Get-Content -LiteralPath (Join-Path $engine "modules\texture_streaming\register_types.cpp") -Raw -Encoding UTF8
+        if ($moduleSource -notmatch 'if \(p_level == MODULE_INITIALIZATION_LEVEL_CORE\)\s*\{\s*TextureStreaming::register_project_settings\(\);') {
+            throw "Texture streaming settings must be registered at core initialization."
+        }
+        $streamingSource = Get-Content -LiteralPath (Join-Path $engine "modules\texture_streaming\texture_streaming.cpp") -Raw -Encoding UTF8
+        $constructor = $streamingSource.IndexOf('TextureStreaming::TextureStreaming()')
+        $setting = $streamingSource.IndexOf('GLOBAL_DEF_RST("rendering/textures/streaming/enabled", false);')
+        if ($constructor -lt 0 -or $setting -ge $constructor) {
+            throw "Texture streaming settings must not be deferred to scene-level construction."
+        }
+        $mainSource = Get-Content -LiteralPath (Join-Path $engine "main\main.cpp") -Raw -Encoding UTF8
+        $coreCalls = [regex]::Matches($mainSource, '\binitialize_modules\(MODULE_INITIALIZATION_LEVEL_CORE\);')
+        $rendererCalls = [regex]::Matches($mainSource, 'rendering_server->init\(\);')
+        if ($coreCalls.Count -ne 2 -or $rendererCalls.Count -ne 2) {
+            throw "Expected test and application startup paths; review initialization ordering."
+        }
+        for ($i = 0; $i -lt $coreCalls.Count; $i++) {
+            if ($coreCalls[$i].Index -ge $rendererCalls[$i].Index) {
+                throw "Core module settings must be registered before renderer initialization."
+            }
+        }
     }
     "editor.headless-export-teardown" {
         Assert-TopicText "editor\editor_node.cpp" "bool EditorNode::is_cmdline_mode()"
@@ -320,7 +344,7 @@ switch ($Topic) {
 }
 
 if ($Topic -eq "rendering.unjittered-projection") {
-    Assert-TopicText "servers\rendering\shader_preprocessor.cpp" 'insert_builtin_define("HAS_UNJITTERED_PROJECTION_MATRIX", _MKSTR(1), pp_state);'
+    Assert-TopicText "servers\rendering\shader_preprocessor.cpp" 'insert_builtin_define("HAS_UNJITTERED_PROJECTION_MATRIX", _MKSTR(1), rp_state);'
     Assert-TopicText "servers\rendering\shader_types.cpp" 'functions["vertex"].built_ins["UNJITTERED_PROJECTION_MATRIX"] = constt(ShaderLanguage::TYPE_MAT4);'
     Assert-TopicText "servers\rendering\shader_types.cpp" 'functions["fragment"].built_ins["UNJITTERED_PROJECTION_MATRIX"] = constt(ShaderLanguage::TYPE_MAT4);'
     Assert-TopicText "servers\rendering\renderer_rd\storage_rd\render_scene_data_rd.h" 'float unjittered_projection_matrix[16];'
@@ -334,7 +358,7 @@ if ($Topic -eq "rendering.unjittered-projection") {
 if ($Topic -eq "rendering.material-post-light") {
     Assert-TopicText "servers\rendering\shader_language.h" 'StringName post_light;'
     Assert-TopicText "servers\rendering\shader_language.cpp" "Match ShaderCompiler's varying-location allocation."
-    Assert-TopicText "servers\rendering\shader_preprocessor.cpp" 'insert_builtin_define("HAS_MATERIAL_POST_LIGHT", _MKSTR(1), pp_state);'
+    Assert-TopicText "servers\rendering\shader_preprocessor.cpp" 'insert_builtin_define("HAS_MATERIAL_POST_LIGHT", _MKSTR(1), rp_state);'
     Assert-TopicText "servers\rendering\shader_types.cpp" 'functions["post_light"].built_ins["MATERIAL_LIGHT_DATA"] = constt(ShaderLanguage::TYPE_VEC4);'
     Assert-TopicText "servers\rendering\shader_compiler.cpp" 'post_light() is not supported by this renderer; refusing to omit the material HDR stage.'
     Assert-TopicText "servers\rendering\renderer_rd\forward_clustered\scene_shader_forward_clustered.cpp" 'actions.entry_point_stages["post_light"] = ShaderCompiler::STAGE_FRAGMENT;'

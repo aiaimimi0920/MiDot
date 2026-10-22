@@ -1,4 +1,4 @@
-From 6c29e2c8bed2e64cfbf8fd5310b518f56386fac3 Mon Sep 17 00:00:00 2001
+From efaaf9e9ca4b1d52731a3cd236a231d14e922983 Mon Sep 17 00:00:00 2001
 From: aiaimimi0920 <153103332+aiaimimi0920@users.noreply.github.com>
 Date: Sun, 30 Aug 2026 01:29:51 +0800
 Subject: [PATCH] GDScript: expose editor analysis helper
@@ -7,15 +7,15 @@ Port the personal validation, function-outline, completion, and symbol-lookup wr
 
 Godot-Patch-Topic: scripting.gdscript-helper
 ---
- .../gdscript/doc_classes/GDScriptHelper.xml   | 109 ++++++++++
+ .../gdscript/doc_classes/GDScriptHelper.xml   | 109 +++++++++++
+ modules/gdscript/gdscript.cpp                 |   2 +-
  modules/gdscript/gdscript_editor.cpp          |  15 +-
- modules/gdscript/gdscript_helper.cpp          | 199 ++++++++++++++++++
- modules/gdscript/gdscript_helper.h            |  98 +++++++++
+ modules/gdscript/gdscript_helper.cpp          | 170 +++++++++++++++++-
+ modules/gdscript/gdscript_helper.h            |  68 ++++++-
+ modules/gdscript/gdscript_vm.cpp              |  14 +-
  modules/gdscript/register_types.cpp           |   6 +
- 5 files changed, 420 insertions(+), 7 deletions(-)
+ 7 files changed, 366 insertions(+), 18 deletions(-)
  create mode 100644 modules/gdscript/doc_classes/GDScriptHelper.xml
- create mode 100644 modules/gdscript/gdscript_helper.cpp
- create mode 100644 modules/gdscript/gdscript_helper.h
 
 diff --git a/modules/gdscript/doc_classes/GDScriptHelper.xml b/modules/gdscript/doc_classes/GDScriptHelper.xml
 new file mode 100644
@@ -132,14 +132,27 @@ index 0000000000000000000000000000000000000000..92cbf86862a598cdc7b1c3c014870c94
 +		<constant name="LOOKUP_RESULT_MAX" value="11" enum="LookupResultType" />
 +	</constants>
 +</class>
+diff --git a/modules/gdscript/gdscript.cpp b/modules/gdscript/gdscript.cpp
+index f8b3f09283e862b8ac663c09eceefed54e294f3a..8dc7117a3aa248ac0a13305d9e79bdbb2211b20a 100644
+--- a/modules/gdscript/gdscript.cpp
++++ b/modules/gdscript/gdscript.cpp
+@@ -2075,7 +2075,7 @@ void GDScriptInstance::reload_members() {
+ 		}
+ 
+ 		if (!member_value_assigned) {
+-			new_members[E.value.index] = GDScriptHelper::construct_empty_value_for_data_type(E.value.data_type);
++			new_members[E.value.index] = GDScriptRuntimeHelper::construct_empty_value_for_data_type(E.value.data_type);
+ 		}
+ 	}
+ 	members = std::move(new_members);
 diff --git a/modules/gdscript/gdscript_editor.cpp b/modules/gdscript/gdscript_editor.cpp
-index b08055d1d6313e14bdb5815ee11db758670166f9..9c951789aa4a329a0eeaf73f767c791087139dc4 100644
+index 18c6313e8fdd3d180ae64f62aea30aa9bdd6a90b..b7dc9768988d4f7c5e20cb8edc1610c072396d32 100644
 --- a/modules/gdscript/gdscript_editor.cpp
 +++ b/modules/gdscript/gdscript_editor.cpp
-@@ -933,15 +933,16 @@ static String _make_arguments_hint(const GDScriptParser::FunctionNode *p_functio
+@@ -960,15 +960,16 @@ static String _make_arguments_hint(const GDScriptParser::FunctionNode *p_functio
   * @param p_expected - The expected variant type at the context were the string is to be insert. Use `Variant::Type::NIL` if this does not apply.
   */
- static ScriptLanguage::CodeCompletionOption _calculate_string_insertion(const GDScriptParser::Node *p_existing, const String &p_content, Variant::Type p_expected = Variant::NIL) {
+ static EditorLanguage::CompletionOption _calculate_string_insertion(const GDScriptParser::Node *p_existing, const String &p_content, Variant::Type p_expected = Variant::NIL) {
 -	const String quote_style = EDITOR_GET("text_editor/completion/use_single_quotes") ? "'" : "\"";
 +	const bool has_editor_settings = EditorSettings::get_singleton() != nullptr;
 +	const String quote_style = has_editor_settings && bool(EDITOR_GET("text_editor/completion/use_single_quotes")) ? "'" : "\"";
@@ -156,34 +169,34 @@ index b08055d1d6313e14bdb5815ee11db758670166f9..9c951789aa4a329a0eeaf73f767c7910
  
  	String final_code = p_content.quote(quote_style);
  	if (should_have_string_name) {
-@@ -3235,7 +3236,7 @@ static void _list_call_arguments(GDScriptParser::CompletionContext &p_context, c
+@@ -3310,7 +3311,7 @@ static void _list_call_arguments(GDScriptParser::CompletionContext &p_context, c
  						r_result.insert(option.display, option);
  					}
  				}
 -				if (EDITOR_GET("text_editor/completion/complete_file_paths")) {
 +				if (EditorSettings::get_singleton() != nullptr && bool(EDITOR_GET("text_editor/completion/complete_file_paths"))) {
  					if (p_argidx == 0 && method == SNAME("change_scene_to_file") && ClassDB::is_parent_class(class_name, SNAME("SceneTree"))) {
- 						HashMap<String, ScriptLanguage::CodeCompletionOption> list;
+ 						HashMap<String, EditorLanguage::CompletionOption> list;
  						_get_directory_contents(existing_argument, EditorFileSystem::get_singleton()->get_filesystem(), list, SNAME("PackedScene"));
-@@ -3371,7 +3372,7 @@ static bool _get_subscript_type(GDScriptParser::CompletionContext &p_context, co
+@@ -3446,7 +3447,7 @@ static bool _get_subscript_type(GDScriptParser::CompletionContext &p_context, co
  
- static void _find_call_arguments(GDScriptParser::CompletionContext &p_context, const GDScriptParser::Node *p_call, int p_argidx, HashMap<String, ScriptLanguage::CodeCompletionOption> &r_result, bool &r_forced, String &r_arghint) {
+ static void _find_call_arguments(GDScriptParser::CompletionContext &p_context, const GDScriptParser::Node *p_call, int p_argidx, HashMap<String, EditorLanguage::CompletionOption> &r_result, bool &r_forced, String &r_arghint) {
  	if (p_call->type == GDScriptParser::Node::PRELOAD) {
 -		if (p_argidx == 0 && bool(EDITOR_GET("text_editor/completion/complete_file_paths"))) {
 +		if (p_argidx == 0 && EditorSettings::get_singleton() != nullptr && bool(EDITOR_GET("text_editor/completion/complete_file_paths"))) {
  			_get_directory_contents(static_cast<const GDScriptParser::PreloadNode *>(p_call)->path, EditorFileSystem::get_singleton()->get_filesystem(), r_result);
  		}
  
-@@ -3477,7 +3478,7 @@ static void _find_call_arguments(GDScriptParser::CompletionContext &p_context, c
+@@ -3552,7 +3553,7 @@ static void _find_call_arguments(GDScriptParser::CompletionContext &p_context, c
  }
  
- ::Error GDScriptEditorLanguage::complete_code(const String &p_code, const String &p_path, Object *p_owner, List<ScriptLanguage::CodeCompletionOption> *r_options, bool &r_forced, String &r_call_hint) {
+ ::Error GDScriptEditorLanguage::complete_code(const String &p_code, const String &p_path, Object *p_owner, List<EditorLanguage::CompletionOption> *r_options, bool &r_forced, String &r_call_hint) {
 -	const String quote_style = EDITOR_GET("text_editor/completion/use_single_quotes") ? "'" : "\"";
 +	const String quote_style = EditorSettings::get_singleton() != nullptr && bool(EDITOR_GET("text_editor/completion/use_single_quotes")) ? "'" : "\"";
  
  	GDScriptParser parser;
  	GDScriptAnalyzer analyzer(&parser);
-@@ -3714,7 +3715,7 @@ static void _find_call_arguments(GDScriptParser::CompletionContext &p_context, c
+@@ -3789,7 +3790,7 @@ static void _find_call_arguments(GDScriptParser::CompletionContext &p_context, c
  				existing = preload->path;
  			}
  
@@ -193,48 +206,30 @@ index b08055d1d6313e14bdb5815ee11db758670166f9..9c951789aa4a329a0eeaf73f767c7910
  				r_forced = true;
  			}
 diff --git a/modules/gdscript/gdscript_helper.cpp b/modules/gdscript/gdscript_helper.cpp
-new file mode 100644
-index 0000000000000000000000000000000000000000..5fed0fe05afdd39819ae75f1134e165451d7cdb0
---- /dev/null
+index 3a83541d049072c10f2ba018e34b6d1ce25d2541..f8f5bbbdbf75c18cffb9e295e50246874d180a46 100644
+--- a/modules/gdscript/gdscript_helper.cpp
 +++ b/modules/gdscript/gdscript_helper.cpp
-@@ -0,0 +1,199 @@
-+/**************************************************************************/
-+/*  gdscript_helper.cpp                                                   */
-+/**************************************************************************/
-+/*                         This file is part of:                          */
-+/*                             GODOT ENGINE                               */
-+/*                        https://godotengine.org                         */
-+/**************************************************************************/
-+/* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
-+/* Copyright (c) 2007-2014 Juan Linietsky, Ariel Manzur.                  */
-+/*                                                                        */
-+/* Permission is hereby granted, free of charge, to any person obtaining  */
-+/* a copy of this software and associated documentation files (the        */
-+/* "Software"), to deal in the Software without restriction, including    */
-+/* without limitation the rights to use, copy, modify, merge, publish,    */
-+/* distribute, sublicense, and/or sell copies of the Software, and to     */
-+/* permit persons to whom the Software is furnished to do so, subject to  */
-+/* the following conditions:                                              */
-+/*                                                                        */
-+/* The above copyright notice and this permission notice shall be         */
-+/* included in all copies or substantial portions of the Software.        */
-+/*                                                                        */
-+/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,        */
-+/* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF     */
-+/* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. */
-+/* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY   */
-+/* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,   */
-+/* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE      */
-+/* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
-+/**************************************************************************/
-+
-+#include "gdscript_helper.h"
+@@ -32,7 +32,7 @@
+ 
+ #include "core/variant/variant.h"
+ 
+-namespace GDScriptHelper {
++namespace GDScriptRuntimeHelper {
+ 
+ Variant construct_empty_value_for_data_type(const GDScriptDataType &p_data_type) {
+ 	if (p_data_type.kind == GDScriptDataType::BUILTIN) {
+@@ -69,4 +69,170 @@ Variant construct_empty_value_for_data_type(const GDScriptDataType &p_data_type)
+ 	return Variant();
+ }
+ 
+-} //namespace GDScriptHelper
++} // namespace GDScriptRuntimeHelper
 +
 +#ifdef TOOLS_ENABLED
 +
 +#include "core/io/resource_loader.h"
 +#include "core/object/class_db.h"
-+#include "editor/gdscript_editor_language.h"
++#include "gdscript_editor.h"
 +
 +void GDScriptHelper::_bind_methods() {
 +	ClassDB::bind_method(D_METHOD("set_validate_code", "code", "script_path"), &GDScriptHelper::set_validate_code, DEFVAL(String()));
@@ -266,32 +261,30 @@ index 0000000000000000000000000000000000000000..5fed0fe05afdd39819ae75f1134e1654
 +	BIND_ENUM_CONSTANT(LOOKUP_RESULT_MAX);
 +}
 +
-+int GDScriptHelper::_get_completion_kind_priority(ScriptLanguage::CodeCompletionKind p_kind) {
++int GDScriptHelper::_get_completion_kind_priority(EditorLanguage::CompletionKind p_kind) {
 +	switch (p_kind) {
-+		case ScriptLanguage::CODE_COMPLETION_KIND_VARIABLE:
++		case EditorLanguage::CompletionKind::VARIABLE:
 +			return 0;
-+		case ScriptLanguage::CODE_COMPLETION_KIND_MEMBER:
++		case EditorLanguage::CompletionKind::MEMBER_VARIABLE:
 +			return 1;
-+		case ScriptLanguage::CODE_COMPLETION_KIND_FUNCTION:
++		case EditorLanguage::CompletionKind::FUNCTION:
 +			return 2;
-+		case ScriptLanguage::CODE_COMPLETION_KIND_ENUM:
++		case EditorLanguage::CompletionKind::ENUM:
 +			return 3;
-+		case ScriptLanguage::CODE_COMPLETION_KIND_SIGNAL:
++		case EditorLanguage::CompletionKind::SIGNAL:
 +			return 4;
-+		case ScriptLanguage::CODE_COMPLETION_KIND_CONSTANT:
++		case EditorLanguage::CompletionKind::CONSTANT:
 +			return 5;
-+		case ScriptLanguage::CODE_COMPLETION_KIND_CLASS:
++		case EditorLanguage::CompletionKind::CLASS:
 +			return 6;
-+		case ScriptLanguage::CODE_COMPLETION_KIND_NODE_PATH:
++		case EditorLanguage::CompletionKind::NODE_PATH:
 +			return 7;
-+		case ScriptLanguage::CODE_COMPLETION_KIND_FILE_PATH:
++		case EditorLanguage::CompletionKind::FILE_PATH:
 +			return 8;
-+		case ScriptLanguage::CODE_COMPLETION_KIND_PLAIN_TEXT:
++		case EditorLanguage::CompletionKind::PLAIN_TEXT:
 +			return 9;
-+		case ScriptLanguage::CODE_COMPLETION_KIND_KEYWORD:
++		case EditorLanguage::CompletionKind::KEYWORD:
 +			return 10;
-+		case ScriptLanguage::CODE_COMPLETION_KIND_MAX:
-+			return 11;
 +	}
 +	return 11;
 +}
@@ -350,9 +343,9 @@ index 0000000000000000000000000000000000000000..5fed0fe05afdd39819ae75f1134e1654
 +
 +TypedArray<Dictionary> GDScriptHelper::get_completion_options() const {
 +	TypedArray<Dictionary> result;
-+	for (const ScriptLanguage::CodeCompletionOption &completion_option : completion_options) {
++	for (const EditorLanguage::CompletionOption &completion_option : completion_options) {
 +		Dictionary option;
-+		option["type"] = completion_option.kind;
++		option["type"] = static_cast<int>(completion_option.kind);
 +		option["display_text"] = completion_option.display;
 +		option["insert_text"] = completion_option.insert_text;
 +		option["default_value"] = completion_option.default_value;
@@ -398,43 +391,19 @@ index 0000000000000000000000000000000000000000..5fed0fe05afdd39819ae75f1134e1654
 +
 +#endif // TOOLS_ENABLED
 diff --git a/modules/gdscript/gdscript_helper.h b/modules/gdscript/gdscript_helper.h
-new file mode 100644
-index 0000000000000000000000000000000000000000..a948dd515dfae1a191180b383164907f630cdfc1
---- /dev/null
+index 0f8257c733bd58b4ad781107a42ddba3ee1dfd03..6761ac0779c43ba55f1c0cef76b9d111437d68ba 100644
+--- a/modules/gdscript/gdscript_helper.h
 +++ b/modules/gdscript/gdscript_helper.h
-@@ -0,0 +1,98 @@
-+/**************************************************************************/
-+/*  gdscript_helper.h                                                     */
-+/**************************************************************************/
-+/*                         This file is part of:                          */
-+/*                             GODOT ENGINE                               */
-+/*                        https://godotengine.org                         */
-+/**************************************************************************/
-+/* Copyright (c) 2014-present Godot Engine contributors (see AUTHORS.md). */
-+/* Copyright (c) 2007-2014 Juan Linietsky, Ariel Manzur.                  */
-+/*                                                                        */
-+/* Permission is hereby granted, free of charge, to any person obtaining  */
-+/* a copy of this software and associated documentation files (the        */
-+/* "Software"), to deal in the Software without restriction, including    */
-+/* without limitation the rights to use, copy, modify, merge, publish,    */
-+/* distribute, sublicense, and/or sell copies of the Software, and to     */
-+/* permit persons to whom the Software is furnished to do so, subject to  */
-+/* the following conditions:                                              */
-+/*                                                                        */
-+/* The above copyright notice and this permission notice shall be         */
-+/* included in all copies or substantial portions of the Software.        */
-+/*                                                                        */
-+/* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,        */
-+/* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF     */
-+/* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. */
-+/* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY   */
-+/* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,   */
-+/* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE      */
-+/* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                 */
-+/**************************************************************************/
-+
-+#pragma once
-+
+@@ -34,8 +34,74 @@
+ 
+ #include "core/variant/variant.h"
+ 
+-namespace GDScriptHelper {
++namespace GDScriptRuntimeHelper {
+ 
+ Variant construct_empty_value_for_data_type(const GDScriptDataType &p_data_type);
+ 
+ };
 +#ifdef TOOLS_ENABLED
 +
 +#include "core/object/editor_language.h"
@@ -445,14 +414,14 @@ index 0000000000000000000000000000000000000000..a948dd515dfae1a191180b383164907f
 +
 +	List<String> functions;
 +	List<EditorLanguage::ScriptError> errors;
-+	List<ScriptLanguage::CodeCompletionOption> completion_options;
++	List<EditorLanguage::CompletionOption> completion_options;
 +	String completion_hint;
 +	bool completion_forced = false;
 +
-+	static int _get_completion_kind_priority(ScriptLanguage::CodeCompletionKind p_kind);
++	static int _get_completion_kind_priority(EditorLanguage::CompletionKind p_kind);
 +
 +	struct CompletionOptionComparator {
-+		_FORCE_INLINE_ bool operator()(const ScriptLanguage::CodeCompletionOption &p_left, const ScriptLanguage::CodeCompletionOption &p_right) const {
++		_FORCE_INLINE_ bool operator()(const EditorLanguage::CompletionOption &p_left, const EditorLanguage::CompletionOption &p_right) const {
 +			if (p_left.location != p_right.location) {
 +				return p_left.location < p_right.location;
 +			}
@@ -501,8 +470,73 @@ index 0000000000000000000000000000000000000000..a948dd515dfae1a191180b383164907f
 +VARIANT_ENUM_CAST(GDScriptHelper::LookupResultType);
 +
 +#endif // TOOLS_ENABLED
+diff --git a/modules/gdscript/gdscript_vm.cpp b/modules/gdscript/gdscript_vm.cpp
+index da78d9a56c57c726bbf6f69fe6fc5f8dfd17d45b..72d78cbec5711437dc7f44d4cc2a2702002f5101 100644
+--- a/modules/gdscript/gdscript_vm.cpp
++++ b/modules/gdscript/gdscript_vm.cpp
+@@ -468,7 +468,7 @@ Variant GDScriptFunction::call(GDScriptInstance *p_instance, const Variant **p_a
+ 	OPCODES_TABLE;
+ 
+ 	if (!_code_ptr) {
+-		return GDScriptHelper::construct_empty_value_for_data_type(return_type);
++		return GDScriptRuntimeHelper::construct_empty_value_for_data_type(return_type);
+ 	}
+ 
+ 	r_err.error = Callable::CallError::CALL_OK;
+@@ -490,7 +490,7 @@ Variant GDScriptFunction::call(GDScriptInstance *p_instance, const Variant **p_a
+ 		_err_print_error(err_func.utf8().get_data(), err_file.utf8().get_data(), err_line, err_text, false, ERR_HANDLER_SCRIPT);
+ 		GDScriptLanguage::get_singleton()->debug_break(err_text, false);
+ #endif
+-		return GDScriptHelper::construct_empty_value_for_data_type(return_type);
++		return GDScriptRuntimeHelper::construct_empty_value_for_data_type(return_type);
+ 	}
+ 
+ 	Variant retvalue;
+@@ -526,13 +526,13 @@ Variant GDScriptFunction::call(GDScriptInstance *p_instance, const Variant **p_a
+ 					r_err.error = Callable::CallError::CALL_ERROR_TOO_MANY_ARGUMENTS;
+ 					r_err.expected = _argument_count;
+ 					call_depth--;
+-					return GDScriptHelper::construct_empty_value_for_data_type(return_type);
++					return GDScriptRuntimeHelper::construct_empty_value_for_data_type(return_type);
+ 				}
+ 			} else if (p_argcount < _argument_count - _default_arg_count) {
+ 				r_err.error = Callable::CallError::CALL_ERROR_TOO_FEW_ARGUMENTS;
+ 				r_err.expected = _argument_count - _default_arg_count;
+ 				call_depth--;
+-				return GDScriptHelper::construct_empty_value_for_data_type(return_type);
++				return GDScriptRuntimeHelper::construct_empty_value_for_data_type(return_type);
+ 			} else {
+ 				defarg = _argument_count - p_argcount;
+ 			}
+@@ -560,7 +560,7 @@ Variant GDScriptFunction::call(GDScriptInstance *p_instance, const Variant **p_a
+ 				r_err.argument = i;
+ 				r_err.expected = argument_types[i].builtin_type;
+ 				call_depth--;
+-				return GDScriptHelper::construct_empty_value_for_data_type(return_type);
++				return GDScriptRuntimeHelper::construct_empty_value_for_data_type(return_type);
+ 			}
+ 			if (argument_types[i].kind == GDScriptDataType::BUILTIN) {
+ 				if (argument_types[i].builtin_type == Variant::DICTIONARY && argument_types[i].has_container_element_types()) {
+@@ -580,7 +580,7 @@ Variant GDScriptFunction::call(GDScriptInstance *p_instance, const Variant **p_a
+ 						r_err.argument = i;
+ 						r_err.expected = argument_types[i].builtin_type;
+ 						call_depth--;
+-						return GDScriptHelper::construct_empty_value_for_data_type(return_type);
++						return GDScriptRuntimeHelper::construct_empty_value_for_data_type(return_type);
+ 					}
+ 					memnew_placement(&stack[i + FIXED_ADDRESSES_MAX], Variant(variant));
+ 				}
+@@ -3976,7 +3976,7 @@ Variant GDScriptFunction::call(GDScriptInstance *p_instance, const Variant **p_a
+ 		GDScriptLanguage::get_singleton()->debug_break(err_text, false);
+ 
+ 		// Get a default return type in case of failure
+-		retvalue = GDScriptHelper::construct_empty_value_for_data_type(return_type);
++		retvalue = GDScriptRuntimeHelper::construct_empty_value_for_data_type(return_type);
+ #endif
+ 
+ 		OPCODE_OUT;
 diff --git a/modules/gdscript/register_types.cpp b/modules/gdscript/register_types.cpp
-index c987d50dc0c90eeff134faf7404bd9d7999497e6..a08aca279e48d1d8789ba7773d7bc89620f266e2 100644
+index d1ed8f94bc69d7c4f60c60ff925d32ec1f2e1a1e..48a95db5c56cb40b740466249f863e0081fac42a 100644
 --- a/modules/gdscript/register_types.cpp
 +++ b/modules/gdscript/register_types.cpp
 @@ -38,6 +38,8 @@
@@ -526,5 +560,5 @@ index c987d50dc0c90eeff134faf7404bd9d7999497e6..a08aca279e48d1d8789ba7773d7bc896
  
  #ifdef TOOLS_ENABLED
 
-base-commit: 5ec4857b340b6284a18b49b2eda462bd250f219a
+base-commit: 5d1cd20f9117e4721fce626454e2323eb9462d0a
 prerequisite-patch-id: b38459b409a3326aed65d2433e1341638171f884

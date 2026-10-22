@@ -1,0 +1,151 @@
+From 95563bfd3385515f035dce47ed806af3acfce3ff Mon Sep 17 00:00:00 2001
+From: aiaimimi0920 <153103332+aiaimimi0920@users.noreply.github.com>
+Date: Thu, 22 Oct 2026 23:44:13 +0800
+Subject: [PATCH] test(theme): cover sound and personal theme type coexistence
+
+Keep established ColorRole, ColorScheme and String enum values stable, and exercise generic item and Control/Window override routes alongside upstream sound items.
+
+Godot-Patch-Topic: ui.theme-string-items
+---
+ tests/scene/test_theme.cpp | 62 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 62 insertions(+)
+
+diff --git a/tests/scene/test_theme.cpp b/tests/scene/test_theme.cpp
+index 05f2d917d9be3110749552757f15a3b7298b1d72..467a44b011cafff7d4412bdc90afd84ece0bbebd 100644
+--- a/tests/scene/test_theme.cpp
++++ b/tests/scene/test_theme.cpp
+@@ -32,6 +32,8 @@
+ 
+ TEST_FORCE_LINK(test_theme)
+ 
++#include "scene/gui/control.h"
++#include "scene/main/window.h"
+ #include "scene/resources/image_texture.h"
+ #include "scene/resources/style_box_flat.h"
+ #include "scene/resources/style_box_line.h"
+@@ -222,6 +224,66 @@ TEST_CASE("[Theme] String theme items") {
+ 	CHECK_FALSE(copy->has_string("caption", "Button"));
+ }
+ 
++TEST_CASE("[Theme] Sound and personal theme item types coexist") {
++	CHECK(Theme::DATA_TYPE_COLOR_ROLE == 6);
++	CHECK(Theme::DATA_TYPE_COLOR_SCHEME == 7);
++	CHECK(Theme::DATA_TYPE_STRING == 8);
++	CHECK(Theme::DATA_TYPE_SOUND == 9);
++	CHECK(Theme::DATA_TYPE_MAX == 10);
++
++	Ref<Theme> theme = memnew(Theme);
++	Ref<AudioStream> sound = memnew(AudioStream);
++	Ref<ColorScheme> scheme = memnew(ColorScheme);
++	theme->set_theme_item(Theme::DATA_TYPE_SOUND, "shared", "Button", sound);
++	theme->set_theme_item(Theme::DATA_TYPE_STRING, "shared", "Button", String("caption"));
++	theme->set_theme_item(Theme::DATA_TYPE_COLOR_ROLE, "shared", "Button", int64_t(ColorRole::PRIMARY));
++	theme->set_theme_item(Theme::DATA_TYPE_COLOR_SCHEME, "shared", "Button", scheme);
++
++	Ref<Theme> copy = memnew(Theme);
++	copy->merge_with(theme);
++	CHECK(Ref<AudioStream>(copy->get_theme_item(Theme::DATA_TYPE_SOUND, "shared", "Button")) == sound);
++	CHECK(copy->get_theme_item(Theme::DATA_TYPE_STRING, "shared", "Button") == Variant("caption"));
++	CHECK(int64_t(copy->get_theme_item(Theme::DATA_TYPE_COLOR_ROLE, "shared", "Button")) == int64_t(ColorRole::PRIMARY));
++	CHECK(Ref<ColorScheme>(copy->get_theme_item(Theme::DATA_TYPE_COLOR_SCHEME, "shared", "Button")) == scheme);
++	CHECK(Ref<AudioStream>(copy->get("Button/sounds/shared")) == sound);
++	CHECK(copy->get("Button/strings/shared") == Variant("caption"));
++
++	copy->clear_theme_item(Theme::DATA_TYPE_SOUND, "shared", "Button");
++	CHECK_FALSE(copy->has_sound("shared", "Button"));
++	CHECK(copy->has_string("shared", "Button"));
++	CHECK(copy->has_color_role("shared", "Button"));
++	CHECK(copy->has_color_scheme("shared", "Button"));
++}
++
++TEST_CASE("[SceneTree][Theme] Control and Window preserve sound and personal override routes") {
++	Ref<AudioStream> sound = memnew(AudioStream);
++	Ref<ColorScheme> scheme = memnew(ColorScheme);
++	Node *nodes[] = { memnew(Control), memnew(Window) };
++	for (Node *node : nodes) {
++		bool valid = false;
++		node->set("theme_override_sounds/shared", sound, &valid);
++		CHECK(valid);
++		node->set("theme_override_strings/shared", String("caption"), &valid);
++		CHECK(valid);
++		node->set("theme_override_color_roles/shared", int64_t(ColorRole::PRIMARY), &valid);
++		CHECK(valid);
++		node->set("theme_override_color_schemes/shared", scheme, &valid);
++		CHECK(valid);
++		CHECK(Ref<AudioStream>(node->get("theme_override_sounds/shared")) == sound);
++		CHECK(node->get("theme_override_strings/shared") == Variant("caption"));
++		CHECK(int64_t(node->get("theme_override_color_roles/shared")) == int64_t(ColorRole::PRIMARY));
++		CHECK(Ref<ColorScheme>(node->get("theme_override_color_schemes/shared")) == scheme);
++
++		node->set("theme_override_sounds/shared", Variant());
++		CHECK(node->get("theme_override_sounds/shared").get_type() == Variant::NIL);
++		CHECK(node->get("theme_override_strings/shared") == Variant("caption"));
++		node->set("theme_override_strings/shared", Variant());
++		CHECK(node->get("theme_override_strings/shared").get_type() == Variant::NIL);
++		CHECK(Ref<ColorScheme>(node->get("theme_override_color_schemes/shared")) == scheme);
++		memdelete(node);
++	}
++}
++
+ TEST_CASE("[Theme] StyleBox dynamic colors") {
+ 	Ref<ColorScheme> default_scheme = memnew(ColorScheme(Color("#6750a4")));
+ 	Ref<ColorScheme> explicit_scheme = memnew(ColorScheme(Color("#006495")));
+
+base-commit: 5d1cd20f9117e4721fce626454e2323eb9462d0a
+prerequisite-patch-id: b38459b409a3326aed65d2433e1341638171f884
+prerequisite-patch-id: b205f59ead6c0d8f2c43e71c9f74d4c0d997491c
+prerequisite-patch-id: 4dcdddc73066f768cb97c56444abacb21bda061c
+prerequisite-patch-id: 34eb3988424d10f34043f09ec0c44ce34db72683
+prerequisite-patch-id: 4dd1cec6888d5160c85be2072b9e5dd05411d007
+prerequisite-patch-id: 73c65ea8aa25ee3915ec20f693bd27deebfd512e
+prerequisite-patch-id: bdb0025d4207a7cf0e1466ca96b2824d238b3caf
+prerequisite-patch-id: 8c55a8201fec417bc2629b903ea2d630aedab1d8
+prerequisite-patch-id: 9dfaaac9d4a47edf9d1eccce8fa66b69e674a911
+prerequisite-patch-id: 17fa223ec74d20c7792e45826a4f0d8ecd7f85d7
+prerequisite-patch-id: 0fb9ef780b3f10a7e82968e44defda508734fa91
+prerequisite-patch-id: 2af824bf187ff13746bd620b1032f57d166c0114
+prerequisite-patch-id: dc8aa901272b27086c9045fc0b9335986d3a8128
+prerequisite-patch-id: 0ce30d5045f596dbc6bf72cbcd9bb16472513013
+prerequisite-patch-id: 50d820c0fb3ac27ddef8f76b133637558f8bcc8e
+prerequisite-patch-id: 69b2baab747aed9362c0ca4c161fc02e5970db44
+prerequisite-patch-id: 41b4bd5af73a2a33c2e64048b72e0d4f3c664f19
+prerequisite-patch-id: 44c3271900a02cc9b76bea0eeab8318468df3773
+prerequisite-patch-id: 14ad80fb2ee81b00b9194186196bba9d350bc28e
+prerequisite-patch-id: 67692c41af9b4e8c91298594cc3db77e981863de
+prerequisite-patch-id: d5e37dc01427a0639bba6123e6afee995d62ef4a
+prerequisite-patch-id: 5b14b52ed17c4439ab6471388936f7b5d8fb4b4a
+prerequisite-patch-id: 2e5d11daca8780d00fe2d10677ac0c26098fae5c
+prerequisite-patch-id: 06b6906be778d545881f82f2431b2204eb052a6c
+prerequisite-patch-id: 6f98206b25188cf56bc55e3fbad4fff5da6d6d4e
+prerequisite-patch-id: 9c598b9a701c8d9fb585255c239a2f64c998f3a0
+prerequisite-patch-id: 148113e476c059293ce209839c317a4945cc1899
+prerequisite-patch-id: 68f8ac60d0f60d3ac0bb1fe23aa79abd660c2009
+prerequisite-patch-id: c4af5500ee3eeb05e7e3556ae941b4890b6bc0c2
+prerequisite-patch-id: 075c9922d2a9fadb91e8c3402b4e7d2f7bf7f8a1
+prerequisite-patch-id: 3b6bc3f484f1654f8bca99626ff2507a0e17a3ca
+prerequisite-patch-id: d4fed2df8ba748ad28488271c1b2c42cc88f8c17
+prerequisite-patch-id: 6a2c61a480ce572ae1c3692257cf60463d4d3cf9
+prerequisite-patch-id: a3cb1ca4de756f71a6ec53eeb037b5ff643baa73
+prerequisite-patch-id: 02e0656ba365a7fb2cad0c69ca9ecbcf05ea35f1
+prerequisite-patch-id: 6b9471813c5552c60fce6f086172833038fed2ae
+prerequisite-patch-id: 9a80815a3f443dabb008cef85de0783e1530a9c9
+prerequisite-patch-id: 6cbac35a7fd4756f09c6b54a683203752361d1b8
+prerequisite-patch-id: d1179ee94009db93d0dbde68386f42b028303eeb
+prerequisite-patch-id: 7fa76bc0dcf10c37ddce6dfe863cf8a15db1a4e3
+prerequisite-patch-id: 59285ed00363fbf066365f96211e649c4e9e8707
+prerequisite-patch-id: 7fef71675ff2ac560045ba78cb2e69d3d05bf3da
+prerequisite-patch-id: cb3f5d7d6c2d28699fd25638d57711baff02bf35
+prerequisite-patch-id: 77196bacb24fd150ffc6b82969c4d274c01d6f9a
+prerequisite-patch-id: e9942d4f02f72a92af555c51c615991adb95fb8e
+prerequisite-patch-id: d4228c26ec2e9e69226ab4b8a1adfe40be71e2e2
+prerequisite-patch-id: 433f891f57c7f1058f239694b9e5df4630dfb450
+prerequisite-patch-id: 395a24a434c14e0a86c2593175e2c4b2f83d0a15
+prerequisite-patch-id: f7b6b4fb0db3aaab3b76e3536517b536e9470ae5
+prerequisite-patch-id: 95f67e1b177da895271b995d9c66eec294eee6ed
+prerequisite-patch-id: 69e4d9487e53c02a4cf88ebf20b6a44293989b81
+prerequisite-patch-id: 162768f49e58e449b45c1a0d2dfe3024495b7cb8
+prerequisite-patch-id: 5c94f76c6efe7aa74007ec38c35ac067a423f7c5
+prerequisite-patch-id: 7db2bfee60272d5ee87fc909c0135d071c5c92ea
+prerequisite-patch-id: b7030a38ad411b6d849e39b2e56870c8b324f0b5
+prerequisite-patch-id: df0e2a2f7b3d16733818ba5648bb9eebf64106a9
+prerequisite-patch-id: 70d811c3343ae738833b5113d711815bcb671030

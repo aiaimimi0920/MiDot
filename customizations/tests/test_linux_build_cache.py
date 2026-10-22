@@ -1,5 +1,6 @@
 """Cache wiring must not replace source verification, builds or runtime probes."""
 import importlib.util
+import json
 from pathlib import Path
 import sys
 import tempfile
@@ -7,6 +8,7 @@ import unittest
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
+LOCK = json.loads((ROOT / "customizations/stack.lock.json").read_text(encoding="utf-8"))
 
 
 def load_builder(kind):
@@ -22,6 +24,20 @@ class BuildReached(Exception):
 
 
 class LinuxCacheTests(unittest.TestCase):
+    def test_reviewed_identities_and_dependencies_follow_catalog(self):
+        self.assertEqual(load_builder("diagnostic").ENGINE, LOCK["integration"]["commit"])
+        for kind in ("editor", "diagnostic"):
+            with self.subTest(kind=kind):
+                workflow = (ROOT / f".github/workflows/linux-{kind}.yml").read_text()
+                self.assertIn(f'EXPECTED_ENGINE_COMMIT: {LOCK["integration"]["commit"]}', workflow)
+                self.assertIn(f'EXPECTED_UPSTREAM_COMMIT: {LOCK["upstream"]["commit"]}', workflow)
+                self.assertIn("python3.12 -m venv", workflow)
+                self.assertIn(
+                    "zstandard==0.25.0 --hash=sha256:"
+                    "5a56ba0db2d244117ed744dfa8f6f5b366e14148e00de44723413b2f3938a902",
+                    workflow,
+                )
+
     def test_editor_optional_cache_preserves_build_flags(self):
         module = load_builder("editor")
         for cached in (False, True):
@@ -29,7 +45,7 @@ class LinuxCacheTests(unittest.TestCase):
                 root = Path(temp)
                 argv = ["build", "--engine", temp, "--output", str(root / "out"),
                         "--jobs", "2", "--expected-commit",
-                        "38b6ddee72e16d9d646057ee6ba533c122afc47c"]
+                        LOCK["integration"]["commit"]]
                 if cached:
                     argv += ["--cache-dir", str(root / "cache")]
                 with patch.object(sys, "argv", argv), patch.object(

@@ -50,8 +50,8 @@ jobs:
     timeout-minutes: 90
     env:
       POWERSHELL_TELEMETRY_OPTOUT: '1'
-      EXPECTED_ENGINE_COMMIT: 38b6ddee72e16d9d646057ee6ba533c122afc47c
-      EXPECTED_UPSTREAM_COMMIT: 5ec4857b340b6284a18b49b2eda462bd250f219a
+      EXPECTED_ENGINE_COMMIT: aa99fb9b9e029fb7406c8521bc00efe4565cdf6f
+      EXPECTED_UPSTREAM_COMMIT: 5d1cd20f9117e4721fce626454e2323eb9462d0a
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -88,8 +88,11 @@ jobs:
       - name: Install isolated locked build dependency
         shell: bash
         run: |
-          python3 -m venv .linux-build-venv
-          printf '%s\n' 'SCons==4.10.1 --hash=sha256:bd9d1c52f908d874eba92a8c0c0a8dcf2ed9f3b88ab956d0fce1da479c4e7126' > .linux-build-venv/requirements.txt
+          python3.12 -m venv .linux-build-venv
+          printf '%s\n' \
+            'SCons==4.10.1 --hash=sha256:bd9d1c52f908d874eba92a8c0c0a8dcf2ed9f3b88ab956d0fce1da479c4e7126' \
+            'zstandard==0.25.0 --hash=sha256:5a56ba0db2d244117ed744dfa8f6f5b366e14148e00de44723413b2f3938a902' \
+            > .linux-build-venv/requirements.txt
           .linux-build-venv/bin/python -m pip --isolated install --disable-pip-version-check \
             --index-url https://pypi.org/simple --only-binary=:all: --require-hashes \
             -r .linux-build-venv/requirements.txt

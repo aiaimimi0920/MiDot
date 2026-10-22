@@ -1,4 +1,4 @@
-From 380a06d5f6639e714da91b092a04672e019bac67 Mon Sep 17 00:00:00 2001
+From 012adbdf70d2b04368fdfbc287e3aa30613a7e21 Mon Sep 17 00:00:00 2001
 From: aiaimimi0920 <153103332+aiaimimi0920@users.noreply.github.com>
 Date: Sun, 30 Aug 2026 06:58:37 +0800
 Subject: [PATCH] Spine: add animation runtime integration
@@ -40116,8 +40116,8 @@ index 0000000000000000000000000000000000000000..c888608c8505cc5f220b8d98fdbfcf3a
 +	other->_timelineAttachment = this->_timelineAttachment;
 +}
 
-base-commit: 5ec4857b340b6284a18b49b2eda462bd250f219a
+base-commit: 5d1cd20f9117e4721fce626454e2323eb9462d0a
 prerequisite-patch-id: b38459b409a3326aed65d2433e1341638171f884
-prerequisite-patch-id: bdb0fe8d6ba7fff1b900ae33d9bec552ea61724c
+prerequisite-patch-id: b205f59ead6c0d8f2c43e71c9f74d4c0d997491c
 prerequisite-patch-id: 4dcdddc73066f768cb97c56444abacb21bda061c
-prerequisite-patch-id: 1f2fbc55f35da3e943dcbaeeb3c9a6d798621bf3
+prerequisite-patch-id: 34eb3988424d10f34043f09ec0c44ce34db72683
